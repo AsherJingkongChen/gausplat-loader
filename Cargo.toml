@@ -1,0 +1,9 @@
+[package]
+edition = "2021"
+name = "gausplat-importer"
+description = "A library to import data for gausplat-trainer"
+publish = false
+version = "0.0.0"
+
+[dependencies]
+bytemuck = {version = "1.16.1"}
