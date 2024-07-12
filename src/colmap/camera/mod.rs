@@ -1,10 +1,9 @@
 pub mod cameras;
 pub mod pinhole;
 
-use crate::{
-    error::*,
-    function::{read_to_slice, Decoder},
-};
+pub use crate::function::Decoder;
+use crate::{error::*, function::read_to_slice};
+pub use cameras::*;
 pub use pinhole::*;
 use std::io;
 
@@ -23,7 +22,7 @@ pub enum Camera {
 }
 
 impl Decoder for Camera {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::BufRead>(reader: &mut R) -> Result<Self, DecodeError> {
         let [camera_id, model_id] = read_to_slice!(reader, u32, 2)?;
         let [width, height] = read_to_slice!(reader, u64, 2)?;
 

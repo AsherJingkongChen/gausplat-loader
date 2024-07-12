@@ -5,19 +5,19 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError>;
+    fn decode<R: io::BufRead>(reader: &mut R) -> Result<Self, DecodeError>;
 }
 
 macro_rules! read_to_slice {
     ($R:expr, $T:ty, $N:expr) => {{
         use crate::error::*;
 
-        let bytes = &mut [0; $N * std::mem::size_of::<$T>()];
+        let mut bytes = [0; $N * std::mem::size_of::<$T>()];
 
-        std::io::Read::read_exact($R, bytes)
+        std::io::Read::read_exact($R, &mut bytes)
             .map_err(DecodeError::Io)
             .and_then(|_| {
-                bytemuck::checked::try_from_bytes::<[$T; $N]>(bytes)
+                bytemuck::checked::try_from_bytes::<[$T; $N]>(&bytes)
                     .map_err(DecodeError::Cast)
                     .map(|v| *v)
             })
