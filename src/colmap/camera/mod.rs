@@ -3,7 +3,7 @@ pub mod pinhole;
 
 use crate::{
     error::*,
-    function::{try_read_to_slice, Decoder},
+    function::{read_to_slice, Decoder},
 };
 pub use pinhole::*;
 use std::io;
@@ -24,24 +24,23 @@ pub enum Camera {
 
 impl Decoder for Camera {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let [id, model_id] = try_read_to_slice!(reader, u32, 2)?;
-        let [width, height] = try_read_to_slice!(reader, u64, 2)?;
+        let [camera_id, model_id] = read_to_slice!(reader, u32, 2)?;
+        let [width, height] = read_to_slice!(reader, u64, 2)?;
 
         match model_id {
             0 | 1 => {
                 let [focal_length_x, focal_length_y] = match model_id {
                     0 => {
-                        let [focal_length] =
-                            try_read_to_slice!(reader, f64, 1)?;
+                        let [focal_length] = read_to_slice!(reader, f64, 1)?;
                         [focal_length, focal_length]
                     },
-                    1 => try_read_to_slice!(reader, f64, 2)?,
+                    1 => read_to_slice!(reader, f64, 2)?,
                     _ => unreachable!(),
                 };
                 let [principal_point_x, principal_point_y] =
-                    try_read_to_slice!(reader, f64, 2)?;
+                    read_to_slice!(reader, f64, 2)?;
                 Ok(Self::Pinhole(PinholeCamera {
-                    id,
+                    camera_id,
                     width,
                     height,
                     focal_length_x,
@@ -103,7 +102,7 @@ mod tests {
         assert_eq!(
             camera,
             Camera::Pinhole(PinholeCamera {
-                id: 1,
+                camera_id: 1,
                 width: 1959,
                 height: 1090,
                 focal_length_x: 1159.5880733038061,

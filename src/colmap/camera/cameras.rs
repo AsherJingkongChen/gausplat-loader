@@ -1,7 +1,7 @@
 use super::Camera;
 use crate::{
     error::*,
-    function::{try_read_to_slice, Decoder},
+    function::{read_to_slice, Decoder},
 };
 use std::collections::HashMap;
 use std::io;
@@ -10,14 +10,14 @@ pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let [camera_count] = try_read_to_slice!(reader, u64, 1)?;
+        let [camera_count] = read_to_slice!(reader, u64, 1)?;
         let mut cameras = HashMap::with_capacity(camera_count as usize);
 
         for _ in 0..camera_count {
             let camera = Camera::decode(reader)?;
             match &camera {
                 Camera::Pinhole(pinhole) => {
-                    cameras.insert(pinhole.id, camera);
+                    cameras.insert(pinhole.camera_id, camera);
                 },
                 _ => {
                     return Err(DecodeError::UnsupportedCameraModelType(camera))
@@ -63,7 +63,7 @@ mod tests {
         assert_eq!(
             cameras.get(&1),
             Some(&Camera::Pinhole(PinholeCamera {
-                id: 1,
+                camera_id: 1,
                 width: 1959,
                 height: 1090,
                 focal_length_x: 1159.5880733038061,
@@ -75,7 +75,7 @@ mod tests {
         assert_eq!(
             cameras.get(&2),
             Some(&Camera::Pinhole(PinholeCamera {
-                id: 2,
+                camera_id: 2,
                 width: 1957,
                 height: 1091,
                 focal_length_x: 1163.2547280302354,

@@ -8,7 +8,7 @@ where
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError>;
 }
 
-macro_rules! try_read_to_slice {
+macro_rules! read_to_slice {
     ($R:expr, $T:ty, $N:expr) => {{
         use crate::error::*;
 
@@ -24,17 +24,17 @@ macro_rules! try_read_to_slice {
     }};
 }
 
-pub(crate) use try_read_to_slice;
+pub(crate) use read_to_slice;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn try_read_to_slice() {
+    fn read_to_slice() {
         let mut reader = std::io::Cursor::new(&[1, 0, 0, 0, 4, 0, 0, 0]);
-        let result = try_read_to_slice!(&mut reader, u32, 2);
-        assert!(result.is_ok(), "{:?}", result.unwrap_err());
+        let result = read_to_slice!(&mut reader, u32, 2);
+        assert!(result.is_ok(), "{:#?}", result.unwrap_err());
 
         let result = result.unwrap();
         assert_eq!(result[0], 1);
