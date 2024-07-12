@@ -1,7 +1,10 @@
+use crate::colmap::camera::Camera;
+
 #[derive(Debug)]
 pub enum DecodeError {
     Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
 
-    InvalidCameraModelId(u32),
+    UnknownCameraModelId(u32),
+    UnsupportedCameraModelType(Camera),
 }

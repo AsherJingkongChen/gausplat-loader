@@ -8,9 +8,8 @@ use crate::{
 pub use pinhole::*;
 use std::io;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Camera {
-    SimplePinhole,
     Pinhole(PinholeCamera),
     SimpleRadial,
     Radial,
@@ -26,14 +25,22 @@ pub enum Camera {
 impl Decoder for Camera {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
         let [id, model_id] = try_read_to_slice!(reader, u32, 2)?;
+        let [width, height] = try_read_to_slice!(reader, u64, 2)?;
 
         match model_id {
-            0 => Ok(Self::SimplePinhole),
-            1 => {
-                let [width, height] = try_read_to_slice!(reader, u64, 2)?;
-                let [focal_length_x, focal_length_y, principal_point_x, principal_point_y] =
-                    try_read_to_slice!(reader, f64, 4)?;
-                let camera = PinholeCamera {
+            0 | 1 => {
+                let [focal_length_x, focal_length_y] = match model_id {
+                    0 => {
+                        let [focal_length] =
+                            try_read_to_slice!(reader, f64, 1)?;
+                        [focal_length, focal_length]
+                    },
+                    1 => try_read_to_slice!(reader, f64, 2)?,
+                    _ => unreachable!(),
+                };
+                let [principal_point_x, principal_point_y] =
+                    try_read_to_slice!(reader, f64, 2)?;
+                Ok(Self::Pinhole(PinholeCamera {
                     id,
                     width,
                     height,
@@ -41,8 +48,7 @@ impl Decoder for Camera {
                     focal_length_y,
                     principal_point_x,
                     principal_point_y,
-                };
-                Ok(Self::Pinhole(camera))
+                }))
             },
             2 => Ok(Self::SimpleRadial),
             3 => Ok(Self::Radial),
@@ -53,7 +59,7 @@ impl Decoder for Camera {
             8 => Ok(Self::SimpleRadialFisheye),
             9 => Ok(Self::RadialFisheye),
             10 => Ok(Self::ThinPrismFisheye),
-            _ => Err(DecodeError::InvalidCameraModelId(model_id)),
+            _ => Err(DecodeError::UnknownCameraModelId(model_id)),
         }
     }
 }
