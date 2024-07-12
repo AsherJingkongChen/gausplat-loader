@@ -1,9 +1,12 @@
+pub mod cameras;
 pub mod pinhole;
 
-use crate::{error::*, function::Decoder};
-use bytemuck::try_from_bytes;
+use crate::{
+    error::*,
+    function::{try_read_to_slice, Decoder},
+};
 pub use pinhole::*;
-use std::{io, mem::size_of};
+use std::io;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Camera {
@@ -22,33 +25,14 @@ pub enum Camera {
 
 impl Decoder for Camera {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let [id, model_id] = {
-            type T = u32;
-            const N: usize = 2;
-            let mut bytes = [0; N * size_of::<T>()];
-            reader.read(&mut bytes).map_err(DecodeError::Io)?;
-            *try_from_bytes::<[T; N]>(&bytes).map_err(DecodeError::CastError)?
-        };
+        let [id, model_id] = try_read_to_slice!(reader, u32, 2)?;
 
         match model_id {
             0 => Ok(Self::SimplePinhole),
             1 => {
-                let [width, height] = {
-                    type T = u64;
-                    const N: usize = 2;
-                    let mut bytes = [0; N * size_of::<T>()];
-                    reader.read(&mut bytes).map_err(DecodeError::Io)?;
-                    *try_from_bytes::<[T; N]>(&bytes)
-                        .map_err(DecodeError::CastError)?
-                };
-                let [focal_length_x, focal_length_y, principal_point_x, principal_point_y] = {
-                    type T = f64;
-                    const N: usize = 4;
-                    let mut bytes = [0; N * size_of::<T>()];
-                    reader.read(&mut bytes).map_err(DecodeError::Io)?;
-                    *try_from_bytes::<[T; N]>(&bytes)
-                        .map_err(DecodeError::CastError)?
-                };
+                let [width, height] = try_read_to_slice!(reader, u64, 2)?;
+                let [focal_length_x, focal_length_y, principal_point_x, principal_point_y] =
+                    try_read_to_slice!(reader, f64, 4)?;
                 let camera = PinholeCamera {
                     id,
                     width,

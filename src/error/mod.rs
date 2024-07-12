@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum DecodeError {
+    Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
-    CastError(bytemuck::PodCastError),
+
     InvalidCameraModelId(u32),
 }
