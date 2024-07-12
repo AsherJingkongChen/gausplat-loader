@@ -14,7 +14,7 @@ macro_rules! try_read_to_slice {
 
         let bytes = &mut [0; $N * std::mem::size_of::<$T>()];
 
-        std::io::Read::read($R, bytes)
+        std::io::Read::read_exact($R, bytes)
             .map_err(DecodeError::Io)
             .and_then(|_| {
                 bytemuck::checked::try_from_bytes::<[$T; $N]>(bytes)

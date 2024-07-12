@@ -61,11 +61,25 @@ impl Decoder for Camera {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn camera_decode_io_error() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[]);
+        let camera = Camera::decode(reader);
+        let result = match camera {
+            Err(DecodeError::Io(_)) => true,
+            _ => false,
+        };
+        assert!(result, "{:#?}", camera);
+    }
+
+    #[test]
     fn camera_decode_pinhole_camera() {
         use super::*;
         use std::io::Cursor;
 
-        let mut reader = Cursor::new(
+        let reader = &mut Cursor::new(
             b"\x01\x00\x00\x00\
             \x01\x00\x00\x00\
             \xa7\x07\x00\x00\x00\x00\x00\x00\
@@ -76,8 +90,8 @@ mod tests {
             \x00\x00\x00\x00\x00\x08\x81\x40",
         );
 
-        let camera = Camera::decode(&mut reader);
-        assert!(camera.is_ok(), "{:?}", camera.unwrap_err());
+        let camera = Camera::decode(reader);
+        assert!(camera.is_ok(), "{:#?}", camera.unwrap_err());
 
         let camera = camera.unwrap();
         assert_eq!(
