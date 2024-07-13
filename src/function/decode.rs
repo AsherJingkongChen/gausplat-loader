@@ -10,9 +10,18 @@ where
     ) -> Result<Self, DecodeError>;
 }
 
+macro_rules! advance {
+    ($R:expr, $N:expr) => {{
+        use crate::error::DecodeError;
+        use std::io;
+
+        io::Seek::seek($R, io::SeekFrom::Current($N)).map_err(DecodeError::Io)
+    }};
+}
+
 macro_rules! read_to_slice {
     ($R:expr, $T:ty, $N:expr) => {{
-        use crate::error::*;
+        use crate::error::DecodeError;
 
         let mut bytes = [0; $N * std::mem::size_of::<$T>()];
 
@@ -26,6 +35,7 @@ macro_rules! read_to_slice {
     }};
 }
 
+pub(crate) use advance;
 pub(crate) use read_to_slice;
 
 #[cfg(test)]

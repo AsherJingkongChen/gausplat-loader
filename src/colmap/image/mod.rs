@@ -1,9 +1,12 @@
 pub mod images;
 
 pub use crate::function::Decoder;
-use crate::{error::*, function::read_to_slice};
-use std::io;
+use crate::{
+    error::*,
+    function::{advance, read_to_slice},
+};
 pub use images::*;
+use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Image {
@@ -18,7 +21,7 @@ impl Decoder for Image {
     fn decode<R: io::Read + io::Seek>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
-        use io::{BufRead, Seek};
+        use io::BufRead;
 
         let reader = &mut io::BufReader::new(reader);
         let [image_id] = read_to_slice!(reader, u32, 1)?;
@@ -33,9 +36,7 @@ impl Decoder for Image {
         };
         {
             let point_count = read_to_slice!(reader, u64, 1)?[0] as i64;
-            reader
-                .seek(io::SeekFrom::Current(24 * point_count))
-                .map_err(DecodeError::Io)?;
+            advance!(reader, 24 * point_count)?;
         };
 
         Ok(Self {

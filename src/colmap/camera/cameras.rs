@@ -19,9 +19,7 @@ impl Decoder for Cameras {
                 Camera::Pinhole(pinhole) => {
                     cameras.insert(pinhole.camera_id, camera);
                 },
-                _ => {
-                    return Err(DecodeError::UnsupportedCameraModel(camera))
-                },
+                _ => return Err(DecodeError::UnsupportedCameraModel(camera)),
             }
         }
 
