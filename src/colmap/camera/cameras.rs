@@ -7,7 +7,7 @@ use std::io;
 pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode<R: io::BufRead + io::Seek>(
+    fn decode<R: io::Read + io::Seek>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
         let camera_count = read_to_slice!(reader, u64, 1)?[0] as usize;
@@ -20,7 +20,7 @@ impl Decoder for Cameras {
                     cameras.insert(pinhole.camera_id, camera);
                 },
                 _ => {
-                    return Err(DecodeError::UnsupportedCameraModelType(camera))
+                    return Err(DecodeError::UnsupportedCameraModel(camera))
                 },
             }
         }

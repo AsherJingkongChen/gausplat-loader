@@ -5,7 +5,7 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: io::BufRead + io::Seek>(
+    fn decode<R: io::Read + io::Seek>(
         reader: &mut R
     ) -> Result<Self, DecodeError>;
 }

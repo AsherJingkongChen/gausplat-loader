@@ -6,7 +6,7 @@ pub enum DecodeError {
     Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
     UnknownCameraModelId(u32),
-    UnsupportedCameraModelType(Camera),
+    UnsupportedCameraModel(Camera),
     Utf8(std::string::FromUtf8Error),
 }
 

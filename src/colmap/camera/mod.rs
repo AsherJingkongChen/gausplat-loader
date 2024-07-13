@@ -22,7 +22,7 @@ pub enum Camera {
 }
 
 impl Decoder for Camera {
-    fn decode<R: io::BufRead + io::Seek>(
+    fn decode<R: io::Read + io::Seek>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
         let [camera_id, model_id] = read_to_slice!(reader, u32, 2)?;
