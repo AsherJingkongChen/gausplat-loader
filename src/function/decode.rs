@@ -12,8 +12,16 @@ pub(crate) fn advance<R: io::Read>(
     reader: &mut R,
     byte_count: usize,
 ) -> Result<(), DecodeError> {
+    const BUFFER_SIZE_LEVEL: usize = 3 + 10;
+    const BUFFER_SIZE: usize = 1 << BUFFER_SIZE_LEVEL;
+
+    for _ in 0..(byte_count >> BUFFER_SIZE_LEVEL) {
+        reader
+            .read_exact(&mut [0; BUFFER_SIZE])
+            .map_err(DecodeError::Io)?;
+    }
     reader
-        .read_exact(&mut vec![0; byte_count])
+        .read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])
         .map(|_| ())
         .map_err(DecodeError::Io)
 }
