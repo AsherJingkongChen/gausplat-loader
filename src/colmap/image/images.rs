@@ -6,7 +6,7 @@ use std::{collections::HashMap, io};
 pub type Images = HashMap<u32, Image>;
 
 impl Decoder for Images {
-    fn decode<R: io::Read + io::Seek>(
+    fn decode<R: io::Read>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
         let image_count = read_to_slice!(reader, u64, 1)?[0] as usize;
@@ -21,6 +21,31 @@ impl Decoder for Images {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn images_decode_zero_bytes() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[]);
+
+        let images = Images::decode(reader);
+        assert!(images.is_err(), "{:#?}", images.unwrap());
+    }
+
+    #[test]
+    fn images_decode_zero_entries() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+
+        let images = Images::decode(reader);
+        assert!(images.is_ok(), "{:#?}", images.unwrap_err());
+
+        let images = images.unwrap();
+        assert!(images.is_empty());
+    }
+
     #[test]
     fn images_decode() {
         use super::*;

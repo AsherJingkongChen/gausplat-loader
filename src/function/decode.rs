@@ -5,16 +5,15 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: io::Read + io::Seek>(
-        reader: &mut R
-    ) -> Result<Self, DecodeError>;
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError>;
 }
 
-pub(crate) fn advance<R: io::Seek>(
+pub(crate) fn advance<R: io::Read>(
     reader: &mut R,
-    byte_count: u64,
+    byte_count: usize,
 ) -> Result<(), DecodeError> {
-    io::Seek::seek(reader, io::SeekFrom::Current(byte_count as i64))
+    reader
+        .read_exact(&mut vec![0; byte_count])
         .map(|_| ())
         .map_err(DecodeError::Io)
 }

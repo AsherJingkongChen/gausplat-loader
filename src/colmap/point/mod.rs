@@ -15,7 +15,7 @@ pub struct Point {
 }
 
 impl Decoder for Point {
-    fn decode<R: io::Read + io::Seek>(
+    fn decode<R: io::Read>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
         advance(reader, 8)?;
@@ -23,7 +23,7 @@ impl Decoder for Point {
         let color = read_to_slice!(reader, u8, 3)?;
         {
             advance(reader, 8)?;
-            let track_count = read_to_slice!(reader, u64, 1)?[0];
+            let track_count = read_to_slice!(reader, u64, 1)?[0] as usize;
             advance(reader, 8 * track_count)?;
         }
 

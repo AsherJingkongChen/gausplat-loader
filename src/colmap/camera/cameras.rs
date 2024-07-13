@@ -7,7 +7,7 @@ use std::io;
 pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode<R: io::Read + io::Seek>(
+    fn decode<R: io::Read>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
         let camera_count = read_to_slice!(reader, u64, 1)?[0] as usize;

@@ -5,9 +5,7 @@ use std::io;
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {
-    fn decode<R: io::Read + io::Seek>(
-        reader: &mut R
-    ) -> Result<Self, DecodeError> {
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
         let point_count = read_to_slice!(reader, u64, 1)?[0] as usize;
         let mut points = Self::with_capacity(point_count);
         for _ in 0..point_count {
@@ -20,6 +18,31 @@ impl Decoder for Points {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn points_decode_zero_bytes() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[]);
+
+        let points = Points::decode(reader);
+        assert!(points.is_err(), "{:#?}", points.unwrap());
+    }
+
+    #[test]
+    fn points_decode_zero_entries() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+
+        let points = Points::decode(reader);
+        assert!(points.is_ok(), "{:#?}", points.unwrap_err());
+
+        let points = points.unwrap();
+        assert!(points.is_empty());
+    }
+
     #[test]
     fn points_decode() {
         use super::*;
