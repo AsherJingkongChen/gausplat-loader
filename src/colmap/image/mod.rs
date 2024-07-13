@@ -21,14 +21,14 @@ impl Decoder for Image {
     fn decode<R: io::Read + io::Seek>(
         reader: &mut R
     ) -> Result<Self, DecodeError> {
-        use io::BufRead;
-
         let reader = &mut io::BufReader::new(reader);
         let [image_id] = read_to_slice!(reader, u32, 1)?;
         let rotation = read_to_slice!(reader, f64, 4)?;
         let translation = read_to_slice!(reader, f64, 3)?;
         let [camera_id] = read_to_slice!(reader, u32, 1)?;
         let file_name = {
+            use io::BufRead;
+
             let mut bytes = Vec::new();
             reader.read_until(0, &mut bytes).map_err(DecodeError::Io)?;
             bytes.pop();

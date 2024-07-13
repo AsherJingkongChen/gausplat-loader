@@ -30,6 +30,31 @@ impl Decoder for Cameras {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn cameras_decode_zero_bytes() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[]);
+
+        let cameras = Cameras::decode(reader);
+        assert!(cameras.is_err(), "{:#?}", cameras.unwrap());
+    }
+
+    #[test]
+    fn cameras_decode_zero_entries() {
+        use super::*;
+        use std::io::Cursor;
+
+        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+
+        let cameras = Cameras::decode(reader);
+        assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
+
+        let cameras = cameras.unwrap();
+        assert!(cameras.is_empty());
+    }
+
+    #[test]
     fn cameras_decode() {
         use super::super::*;
         use std::io::Cursor;
