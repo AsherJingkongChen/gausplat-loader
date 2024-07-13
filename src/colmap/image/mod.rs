@@ -35,8 +35,8 @@ impl Decoder for Image {
             String::from_utf8(bytes).map_err(DecodeError::Utf8)?
         };
         {
-            let point_count = read_to_slice!(reader, u64, 1)?[0] as i64;
-            advance!(reader, 24 * point_count)?;
+            let point_count = read_to_slice!(reader, u64, 1)?[0];
+            advance(reader, 24 * point_count)?;
         };
 
         Ok(Self {
