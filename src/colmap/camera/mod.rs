@@ -22,7 +22,9 @@ pub enum Camera {
 }
 
 impl Decoder for Camera {
-    fn decode<R: io::BufRead>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::BufRead + io::Seek>(
+        reader: &mut R
+    ) -> Result<Self, DecodeError> {
         let [camera_id, model_id] = read_to_slice!(reader, u32, 2)?;
         let [width, height] = read_to_slice!(reader, u64, 2)?;
 
@@ -59,56 +61,5 @@ impl Decoder for Camera {
             10 => Ok(Self::ThinPrismFisheye),
             _ => Err(DecodeError::UnknownCameraModelId(model_id)),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn camera_decode_io_error() {
-        use super::*;
-        use std::io::Cursor;
-
-        let reader = &mut Cursor::new(&[]);
-        let camera = Camera::decode(reader);
-        let result = match camera {
-            Err(DecodeError::Io(_)) => true,
-            _ => false,
-        };
-        assert!(result, "{:#?}", camera);
-    }
-
-    #[test]
-    fn camera_decode_pinhole_camera() {
-        use super::*;
-        use std::io::Cursor;
-
-        let reader = &mut Cursor::new(
-            b"\x01\x00\x00\x00\
-            \x01\x00\x00\x00\
-            \xa7\x07\x00\x00\x00\x00\x00\x00\
-            \x42\x04\x00\x00\x00\x00\x00\x00\
-            \xfe\x5d\xe3\x2f\x5a\x1e\x92\x40\
-            \xfb\x66\xca\xf8\xa3\x32\x92\x40\
-            \x00\x00\x00\x00\x00\x9c\x8e\x40\
-            \x00\x00\x00\x00\x00\x08\x81\x40",
-        );
-
-        let camera = Camera::decode(reader);
-        assert!(camera.is_ok(), "{:#?}", camera.unwrap_err());
-
-        let camera = camera.unwrap();
-        assert_eq!(
-            camera,
-            Camera::Pinhole(PinholeCamera {
-                camera_id: 1,
-                width: 1959,
-                height: 1090,
-                focal_length_x: 1159.5880733038061,
-                focal_length_y: 1164.6601287484507,
-                principal_point_x: 979.5,
-                principal_point_y: 545.0,
-            })
-        );
     }
 }

@@ -5,7 +5,9 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: io::BufRead>(reader: &mut R) -> Result<Self, DecodeError>;
+    fn decode<R: io::BufRead + io::Seek>(
+        reader: &mut R
+    ) -> Result<Self, DecodeError>;
 }
 
 macro_rules! read_to_slice {

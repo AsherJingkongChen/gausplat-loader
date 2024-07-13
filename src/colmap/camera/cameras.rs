@@ -7,9 +7,11 @@ use std::io;
 pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode<R: io::BufRead>(reader: &mut R) -> Result<Self, DecodeError> {
-        let [camera_count] = read_to_slice!(reader, u64, 1)?;
-        let mut cameras = HashMap::with_capacity(camera_count as usize);
+    fn decode<R: io::BufRead + io::Seek>(
+        reader: &mut R
+    ) -> Result<Self, DecodeError> {
+        let camera_count = read_to_slice!(reader, u64, 1)?[0] as usize;
+        let mut cameras = Self::with_capacity(camera_count);
 
         for _ in 0..camera_count {
             let camera = Camera::decode(reader)?;
@@ -34,29 +36,25 @@ mod tests {
         use super::super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(
-            b"\x02\x00\x00\x00\x00\x00\x00\x00\
-            \x01\x00\x00\x00\
-            \x01\x00\x00\x00\
-            \xa7\x07\x00\x00\x00\x00\x00\x00\
-            \x42\x04\x00\x00\x00\x00\x00\x00\
-            \xfe\x5d\xe3\x2f\x5a\x1e\x92\x40\
-            \xfb\x66\xca\xf8\xa3\x32\x92\x40\
-            \x00\x00\x00\x00\x00\x9c\x8e\x40\
-            \x00\x00\x00\x00\x00\x08\x81\x40\
-            \x02\x00\x00\x00\
-            \x00\x00\x00\x00\
-            \xa5\x07\x00\x00\x00\x00\x00\x00\
-            \x43\x04\x00\x00\x00\x00\x00\x00\
-            \xf1\xbc\x6c\xd7\x04\x2d\x92\x40\
-            \x00\x00\x00\x00\x00\x94\x8e\x40\
-            \x00\x00\x00\x00\x00\x0c\x81\x40",
-        );
+        let reader = &mut Cursor::new(&[
+            0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+            0x00, 0x01, 0x00, 0x00, 0x00, 0xa7, 0x07, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x42, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfe,
+            0x5d, 0xe3, 0x2f, 0x5a, 0x1e, 0x92, 0x40, 0xfb, 0x66, 0xca, 0xf8,
+            0xa3, 0x32, 0x92, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9c, 0x8e,
+            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x81, 0x40, 0x02, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa5, 0x07, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x43, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0xf1, 0xbc, 0x6c, 0xd7, 0x04, 0x2d, 0x92, 0x40, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x94, 0x8e, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
+            0x81, 0x40,
+        ]);
 
         let cameras = Cameras::decode(reader);
         assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
 
         let cameras = cameras.unwrap();
+        assert_eq!(cameras.len(), 2);
         assert_eq!(
             cameras.get(&1),
             Some(&Camera::Pinhole(PinholeCamera {
