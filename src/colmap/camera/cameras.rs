@@ -15,12 +15,7 @@ impl Decoder for Cameras {
 
         for _ in 0..camera_count {
             let camera = Camera::decode(reader)?;
-            match &camera {
-                Camera::Pinhole(pinhole) => {
-                    cameras.insert(pinhole.camera_id, camera);
-                },
-                _ => return Err(DecodeError::UnsupportedCameraModel(camera)),
-            }
+            cameras.insert(camera.camera_id(), camera);
         }
 
         Ok(cameras)

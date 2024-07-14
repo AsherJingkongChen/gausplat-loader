@@ -21,8 +21,8 @@ impl Decoder for Point {
         advance(reader, 8)?;
         let position = read_to_slice!(reader, f64, 3)?;
         let color = read_to_slice!(reader, u8, 3)?;
+        advance(reader, 8)?;
         {
-            advance(reader, 8)?;
             let track_count = read_to_slice!(reader, u64, 1)?[0] as usize;
             advance(reader, 8 * track_count)?;
         }
