@@ -7,12 +7,12 @@ pub type Images = HashMap<u32, Image>;
 
 impl Decoder for Images {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let reader = &mut io::BufReader::new(reader);
+        let mut reader = io::BufReader::new(reader);
 
-        let image_count = read_to_slice!(reader, u64, 1)?[0] as usize;
+        let image_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;
         let mut images = Self::with_capacity(image_count);
         for _ in 0..image_count {
-            let image = Image::decode(reader)?;
+            let image = Image::decode(&mut reader)?;
             images.insert(image.image_id, image);
         }
 
@@ -27,9 +27,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[]);
+        let mut reader = Cursor::new(&[]);
 
-        let images = Images::decode(reader);
+        let images = Images::decode(&mut reader);
         assert!(images.is_err(), "{:#?}", images.unwrap());
     }
 
@@ -38,9 +38,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let images = Images::decode(reader);
+        let images = Images::decode(&mut reader);
         assert!(images.is_ok(), "{:#?}", images.unwrap_err());
 
         let images = images.unwrap();
@@ -52,7 +52,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[
+        let mut reader = Cursor::new(&[
             0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
             0x00, 0x55, 0x80, 0x33, 0x6f, 0x36, 0xfc, 0xee, 0x3f, 0x04, 0x1f,
             0x73, 0x55, 0x8a, 0x93, 0x96, 0xbf, 0x5a, 0x19, 0x42, 0xcb, 0xb9,
@@ -73,7 +73,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
 
-        let images = Images::decode(reader);
+        let images = Images::decode(&mut reader);
         assert!(images.is_ok(), "{:#?}", images.unwrap_err());
 
         let images = images.unwrap();

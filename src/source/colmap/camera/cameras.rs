@@ -8,12 +8,12 @@ pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let reader = &mut io::BufReader::new(reader);
+        let mut reader = io::BufReader::new(reader);
 
-        let camera_count = read_to_slice!(reader, u64, 1)?[0] as usize;
+        let camera_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;
         let mut cameras = Self::with_capacity(camera_count);
         for _ in 0..camera_count {
-            let camera = Camera::decode(reader)?;
+            let camera = Camera::decode(&mut reader)?;
             cameras.insert(camera.camera_id(), camera);
         }
 
@@ -28,9 +28,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[]);
+        let mut reader = Cursor::new(&[]);
 
-        let cameras = Cameras::decode(reader);
+        let cameras = Cameras::decode(&mut reader);
         assert!(cameras.is_err(), "{:#?}", cameras.unwrap());
     }
 
@@ -39,9 +39,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let cameras = Cameras::decode(reader);
+        let cameras = Cameras::decode(&mut reader);
         assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
 
         let cameras = cameras.unwrap();
@@ -53,7 +53,7 @@ mod tests {
         use super::super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[
+        let mut reader = Cursor::new(&[
             0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
             0x00, 0x01, 0x00, 0x00, 0x00, 0xa7, 0x07, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x42, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfe,
@@ -67,7 +67,7 @@ mod tests {
             0x81, 0x40,
         ]);
 
-        let cameras = Cameras::decode(reader);
+        let cameras = Cameras::decode(&mut reader);
         assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
 
         let cameras = cameras.unwrap();

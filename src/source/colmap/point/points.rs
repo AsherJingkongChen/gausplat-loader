@@ -2,16 +2,17 @@ use super::Point;
 pub use crate::function::Decoder;
 use crate::{error::*, function::read_to_slice};
 use std::io;
+
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
-        let reader = &mut io::BufReader::new(reader);
+        let mut reader = io::BufReader::new(reader);
 
-        let point_count = read_to_slice!(reader, u64, 1)?[0] as usize;
+        let point_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;
         let mut points = Self::with_capacity(point_count);
         for _ in 0..point_count {
-            let point = Point::decode(reader)?;
+            let point = Point::decode(&mut reader)?;
             points.push(point);
         }
 
@@ -26,9 +27,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[]);
+        let mut reader = Cursor::new(&[]);
 
-        let points = Points::decode(reader);
+        let points = Points::decode(&mut reader);
         assert!(points.is_err(), "{:#?}", points.unwrap());
     }
 
@@ -37,9 +38,9 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let points = Points::decode(reader);
+        let points = Points::decode(&mut reader);
         assert!(points.is_ok(), "{:#?}", points.unwrap_err());
 
         let points = points.unwrap();
@@ -51,7 +52,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = &mut Cursor::new(&[
+        let mut reader = Cursor::new(&[
             0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x25, 0x0f, 0xc5, 0x11, 0x70, 0x58,
             0xff, 0x3f, 0x32, 0x1e, 0xe3, 0x7d, 0x81, 0x6d, 0xdf, 0xbf, 0x55,
@@ -72,7 +73,7 @@ mod tests {
             0x00, 0x00, 0xb8, 0x26, 0x00, 0x00,
         ]);
 
-        let points = Points::decode(reader);
+        let points = Points::decode(&mut reader);
         assert!(points.is_ok(), "{:#?}", points.unwrap_err());
 
         let points = points.unwrap();
