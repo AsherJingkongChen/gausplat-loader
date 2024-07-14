@@ -1,4 +1,4 @@
-use crate::colmap::camera::Camera;
+use crate::source::colmap::Camera;
 use std::{error, fmt};
 
 #[derive(Debug)]
