@@ -4,29 +4,27 @@ use crate::error::*;
 pub use image_files::*;
 use std::io;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct ImageFile<R: io::Read + io::Seek> {
     pub file_name: String,
     pub reader: R,
 }
 
 impl<R: io::Read + io::Seek> ImageFile<R> {
-    pub fn format(&self) -> Result<image::ImageFormat, DecodeError> {
-        image::ImageFormat::from_path(&self.file_name)
-            .map_err(DecodeError::Image)
-    }
-
-    pub fn read(&mut self) -> Result<image::RgbImage, DecodeError> {
+    pub fn read(&mut self) -> Result<image::RgbImage, Error> {
         use image::DynamicImage;
         use io::Seek;
 
-        let format = self.format()?;
         let mut reader = io::BufReader::new(&mut self.reader);
 
-        reader.rewind().map_err(DecodeError::Io)?;
+        reader.rewind().map_err(Error::Io)?;
 
-        image::load(reader, format)
+        image::io::Reader::new(reader)
+            .with_guessed_format()
+            .map_err(Error::Io)?
+            .decode()
             .map(DynamicImage::into_rgb8)
-            .map_err(DecodeError::Image)
+            .map_err(Error::Image)
     }
 }
 

@@ -24,28 +24,28 @@ pub enum Camera {
 impl Camera {
     pub fn camera_id(&self) -> u32 {
         match self {
-            Self::Pinhole(pinhole) => pinhole.camera_id,
+            Self::Pinhole(camera) => camera.camera_id,
             _ => unimplemented!(),
         }
     }
 
     pub fn height(&self) -> u64 {
         match self {
-            Self::Pinhole(pinhole) => pinhole.height,
+            Self::Pinhole(camera) => camera.height,
             _ => unimplemented!(),
         }
     }
 
     pub fn width(&self) -> u64 {
         match self {
-            Self::Pinhole(pinhole) => pinhole.width,
+            Self::Pinhole(camera) => camera.width,
             _ => unimplemented!(),
         }
     }
 }
 
 impl Decoder for Camera {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         let [camera_id, model_id] = read_to_slice!(reader, u32, 2)?;
         let [width, height] = read_to_slice!(reader, u64, 2)?;
 
@@ -72,7 +72,7 @@ impl Decoder for Camera {
                 }))
             },
             2..=10 => {
-                Err(DecodeError::UnsupportedCameraModel(match model_id {
+                Err(Error::UnsupportedCameraModel(match model_id {
                     2 => Self::SimpleRadial,
                     3 => Self::Radial,
                     4 => Self::OpenCV,
@@ -85,7 +85,7 @@ impl Decoder for Camera {
                     _ => unreachable!(),
                 }))
             },
-            _ => Err(DecodeError::UnknownCameraModelId(model_id)),
+            _ => Err(Error::UnknownCameraModelId(model_id)),
         }
     }
 }

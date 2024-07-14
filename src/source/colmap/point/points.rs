@@ -6,7 +6,7 @@ use std::io;
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         let mut reader = io::BufReader::new(reader);
 
         let point_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;

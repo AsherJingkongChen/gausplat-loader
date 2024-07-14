@@ -2,7 +2,7 @@ use crate::source::colmap::Camera;
 use std::{error, fmt};
 
 #[derive(Debug)]
-pub enum DecodeError {
+pub enum Error {
     Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
     Image(image::ImageError),
@@ -11,7 +11,7 @@ pub enum DecodeError {
     Utf8(std::string::FromUtf8Error),
 }
 
-impl fmt::Display for DecodeError {
+impl fmt::Display for Error {
     fn fmt(
         &self,
         f: &mut fmt::Formatter,
@@ -20,4 +20,4 @@ impl fmt::Display for DecodeError {
     }
 }
 
-impl error::Error for DecodeError {}
+impl error::Error for Error {}

@@ -15,7 +15,7 @@ pub struct Point {
 }
 
 impl Decoder for Point {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         advance(reader, 8)?;
         let position = read_to_slice!(reader, f64, 3)?;
         let color = read_to_slice!(reader, u8, 3)?;

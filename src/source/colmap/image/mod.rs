@@ -18,7 +18,7 @@ pub struct Image {
 }
 
 impl Decoder for Image {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         let [image_id] = read_to_slice!(reader, u32, 1)?;
         let rotation = read_to_slice!(reader, f64, 4)?;
         let translation = read_to_slice!(reader, f64, 3)?;
@@ -32,7 +32,7 @@ impl Decoder for Image {
                 }
                 bytes.push(byte);
             }
-            String::from_utf8(bytes).map_err(DecodeError::Utf8)?
+            String::from_utf8(bytes).map_err(Error::Utf8)?
         };
         {
             let point_count = read_to_slice!(reader, u64, 1)?[0] as usize;
