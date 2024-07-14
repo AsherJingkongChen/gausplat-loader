@@ -5,6 +5,7 @@ use std::{error, fmt};
 pub enum DecodeError {
     Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
+    Image(image::ImageError),
     UnknownCameraModelId(u32),
     UnsupportedCameraModel(Camera),
     Utf8(std::string::FromUtf8Error),
