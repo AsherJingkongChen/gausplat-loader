@@ -8,9 +8,10 @@ pub type Cameras = HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, DecodeError> {
+        let reader = &mut io::BufReader::new(reader);
+
         let camera_count = read_to_slice!(reader, u64, 1)?[0] as usize;
         let mut cameras = Self::with_capacity(camera_count);
-
         for _ in 0..camera_count {
             let camera = Camera::decode(reader)?;
             cameras.insert(camera.camera_id(), camera);
