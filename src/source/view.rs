@@ -1,4 +1,9 @@
-#[derive(Debug, PartialEq)]
+use std::fmt;
+use std::collections::HashMap;
+
+pub type Views = HashMap<u32, View>;
+
+#[derive(Clone, PartialEq)]
 pub struct View {
     pub affine_transformation: [[f64; 4]; 4],
     pub field_of_view_x: f64,
@@ -17,5 +22,24 @@ impl View {
 
     pub fn view_id(&self) -> &u32 {
         &self.view_id
+    }
+}
+
+impl fmt::Debug for View {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        f.debug_struct("View")
+            .field("affine_transformation", &self.affine_transformation)
+            .field("field_of_view_x", &self.field_of_view_x)
+            .field("field_of_view_y", &self.field_of_view_y)
+            .field("image_file_name", &self.image_file_name)
+            .field("image_height", &self.image.height())
+            .field("image_width", &self.image.width())
+            .field("view_id", &self.view_id)
+            .field("view_height", &self.view_height)
+            .field("view_width", &self.view_width)
+            .finish()
     }
 }

@@ -1,3 +1,5 @@
+pub type Points = Vec<Point>;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Point {
     pub color: [f64; 3],
