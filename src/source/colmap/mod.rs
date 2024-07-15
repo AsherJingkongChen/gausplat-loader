@@ -66,7 +66,7 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                     value.unwrap()
                 };
 
-                let affine_transformation = {
+                let view_transform = {
                     let r = rotation_matrix_from_quaternion(&image.rotation);
                     let t = image.translation;
                     [
@@ -96,7 +96,6 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                 let image = image_file.read()?;
 
                 let view = source::View {
-                    affine_transformation,
                     field_of_view_x,
                     field_of_view_y,
                     image,
@@ -104,6 +103,7 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                     view_id,
                     view_height,
                     view_width,
+                    view_transform,
                 };
                 Ok((view_id, view))
             })

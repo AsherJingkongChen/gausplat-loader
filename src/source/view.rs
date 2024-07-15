@@ -5,7 +5,7 @@ pub type Views = HashMap<u32, View>;
 
 #[derive(Clone, PartialEq)]
 pub struct View {
-    pub affine_transformation: [[f64; 4]; 4],
+    pub view_transform: [[f64; 4]; 4],
     pub field_of_view_x: f64,
     pub field_of_view_y: f64,
     pub image: image::RgbImage,
@@ -31,7 +31,6 @@ impl fmt::Debug for View {
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         f.debug_struct("View")
-            .field("affine_transformation", &self.affine_transformation)
             .field("field_of_view_x", &self.field_of_view_x)
             .field("field_of_view_y", &self.field_of_view_y)
             .field("image_file_name", &self.image_file_name)
@@ -40,6 +39,7 @@ impl fmt::Debug for View {
             .field("view_id", &self.view_id)
             .field("view_height", &self.view_height)
             .field("view_width", &self.view_width)
+            .field("view_transform", &self.view_transform)
             .finish()
     }
 }
