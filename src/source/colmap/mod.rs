@@ -4,7 +4,9 @@ pub mod image_file;
 pub mod point;
 
 use crate::error::*;
-use crate::function::rotation_matrix_from_quaternion;
+use crate::function::{
+    projection_transform_from_field_of_views, rotation_matrix_from_quaternion,
+};
 use crate::{function::field_of_view_from_focal_length, source};
 pub use camera::*;
 pub use image::*;
@@ -66,16 +68,6 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                     value.unwrap()
                 };
 
-                let view_transform = {
-                    let r = rotation_matrix_from_quaternion(&image.rotation);
-                    let t = image.translation;
-                    [
-                        [r[0][0], r[0][1], r[0][2], t[0]],
-                        [r[1][0], r[1][1], r[1][2], t[1]],
-                        [r[2][0], r[2][1], r[2][2], t[2]],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
-                };
                 let field_of_view_x = match camera {
                     Camera::Pinhole(camera) => field_of_view_from_focal_length(
                         camera.focal_length_x,
@@ -90,19 +82,32 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                     ),
                     _ => return Err(Error::Unimplemented),
                 };
+                let projection_transform =
+                    projection_transform_from_field_of_views(
+                        field_of_view_x,
+                        field_of_view_y,
+                        100.0,
+                        0.01,
+                        1.0,
+                    );
+                let view_transform = {
+                    let r = rotation_matrix_from_quaternion(&image.rotation);
+                    let t = image.translation;
+                    [
+                        [r[0][0], r[0][1], r[0][2], t[0]],
+                        [r[1][0], r[1][1], r[1][2], t[1]],
+                        [r[2][0], r[2][1], r[2][2], t[2]],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ]
+                };
                 let view_id = image.image_id().to_owned();
-                let view_height = camera.height().to_owned();
-                let view_width = camera.width().to_owned();
                 let image = image_file.read()?;
 
                 let view = source::View {
-                    field_of_view_x,
-                    field_of_view_y,
                     image,
                     image_file_name,
+                    projection_transform,
                     view_id,
-                    view_height,
-                    view_width,
                     view_transform,
                 };
                 Ok((view_id, view))
