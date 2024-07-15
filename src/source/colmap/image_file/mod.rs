@@ -6,25 +6,37 @@ use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageFile<R: io::Read + io::Seek> {
-    pub file_name: String,
+    file_name: String,
     pub reader: R,
 }
 
 impl<R: io::Read + io::Seek> ImageFile<R> {
+    pub fn new(
+        file_name: String,
+        reader: R,
+    ) -> Self {
+        Self { file_name, reader }
+    }
+
+    pub fn file_name(&self) -> &str {
+        &self.file_name
+    }
+
     pub fn read(&mut self) -> Result<image::RgbImage, Error> {
         use image::DynamicImage;
-        use io::Seek;
 
-        let mut reader = io::BufReader::new(&mut self.reader);
+        let reader = {
+            let reader = &mut self.reader;
+            reader.rewind().map_err(Error::Io)?;
+            image::io::Reader::new(io::BufReader::new(reader))
+        };
 
-        reader.rewind().map_err(Error::Io)?;
-
-        image::io::Reader::new(reader)
+        reader
             .with_guessed_format()
             .map_err(Error::Io)?
             .decode()
-            .map(DynamicImage::into_rgb8)
             .map_err(Error::Image)
+            .map(DynamicImage::into_rgb8)
     }
 }
 

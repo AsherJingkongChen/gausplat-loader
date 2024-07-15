@@ -1,6 +1,6 @@
 use super::Image;
 pub use crate::function::Decoder;
-use crate::{error::*, function::read_to_slice};
+use crate::{error::*, function::read_slice};
 use std::{collections::HashMap, io};
 
 pub type Images = HashMap<u32, Image>;
@@ -9,11 +9,11 @@ impl Decoder for Images {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         let mut reader = io::BufReader::new(reader);
 
-        let image_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;
+        let image_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
         let mut images = Self::with_capacity(image_count);
         for _ in 0..image_count {
             let image = Image::decode(&mut reader)?;
-            images.insert(image.image_id, image);
+            images.insert(image.image_id().to_owned(), image);
         }
 
         Ok(images)

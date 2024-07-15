@@ -7,6 +7,7 @@ pub enum Error {
     Io(std::io::Error),
     Image(image::ImageError),
     NoSuchCameraId(u32),
+    NoSuchImageFileName(String),
     UnknownCameraModelId(u32),
     UnsupportedCameraModel(Camera),
     Utf8(std::string::FromUtf8Error),

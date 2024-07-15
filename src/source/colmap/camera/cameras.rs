@@ -1,6 +1,6 @@
 use super::Camera;
 pub use crate::function::Decoder;
-use crate::{error::*, function::read_to_slice};
+use crate::{error::*, function::read_slice};
 use std::collections::HashMap;
 use std::io;
 
@@ -10,11 +10,11 @@ impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         let mut reader = io::BufReader::new(reader);
 
-        let camera_count = read_to_slice!(&mut reader, u64, 1)?[0] as usize;
+        let camera_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
         let mut cameras = Self::with_capacity(camera_count);
         for _ in 0..camera_count {
             let camera = Camera::decode(&mut reader)?;
-            cameras.insert(camera.camera_id(), camera);
+            cameras.insert(camera.camera_id().to_owned(), camera);
         }
 
         Ok(cameras)
@@ -80,8 +80,6 @@ mod tests {
                 height: 1090,
                 focal_length_x: 1159.5880733038061,
                 focal_length_y: 1164.6601287484507,
-                principal_point_x: 979.5,
-                principal_point_y: 545.0,
             }))
         );
         assert_eq!(
@@ -92,8 +90,6 @@ mod tests {
                 height: 1091,
                 focal_length_x: 1163.2547280302354,
                 focal_length_y: 1163.2547280302354,
-                principal_point_x: 978.5,
-                principal_point_y: 545.5,
             }))
         );
     }
