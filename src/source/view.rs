@@ -1,5 +1,5 @@
-use std::fmt;
 use std::collections::HashMap;
+use std::fmt;
 
 pub type Views = HashMap<u32, View>;
 

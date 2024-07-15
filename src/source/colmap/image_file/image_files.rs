@@ -1,4 +1,4 @@
 use super::ImageFile;
-use std::collections::HashMap;
+use dashmap::DashMap;
 
-pub type ImageFiles<R> = HashMap<String, ImageFile<R>>;
+pub type ImageFiles<R> = DashMap<String, ImageFile<R>>;

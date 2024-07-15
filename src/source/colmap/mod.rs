@@ -14,7 +14,6 @@ pub use source::Source;
 use std::fmt;
 use std::io;
 
-#[derive(Clone, PartialEq)]
 pub struct ColmapSource<R: io::Read + io::Seek> {
     pub cameras: Cameras,
     pub images: Images,
@@ -22,7 +21,7 @@ pub struct ColmapSource<R: io::Read + io::Seek> {
     pub points: Points,
 }
 
-impl<R: io::Read + io::Seek> Source for ColmapSource<R> {
+impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
     fn read_points(&mut self) -> Result<source::Points, Error> {
         Ok(self
             .points
@@ -39,11 +38,14 @@ impl<R: io::Read + io::Seek> Source for ColmapSource<R> {
     }
 
     fn read_views(&mut self) -> Result<source::Views, Error> {
+        use rayon::iter::{ParallelBridge, ParallelIterator};
+
         let duration = std::time::Instant::now();
 
         let views = self
             .images
             .values()
+            .par_bridge()
             .map(|image| {
                 let camera = {
                     let key = image.camera_id();
@@ -54,7 +56,7 @@ impl<R: io::Read + io::Seek> Source for ColmapSource<R> {
                     value.unwrap()
                 };
                 let image_file_name = image.file_name().to_owned();
-                let image_file = {
+                let mut image_file = {
                     let value = self.image_files.get_mut(&image_file_name);
                     if value.is_none() {
                         return Err(Error::NoSuchImageFileName(
@@ -105,7 +107,7 @@ impl<R: io::Read + io::Seek> Source for ColmapSource<R> {
                 };
                 Ok((view_id, view))
             })
-            .collect::<Result<_, Error>>();
+            .collect();
 
         println!("Duration image file read: {:?}", duration.elapsed());
 

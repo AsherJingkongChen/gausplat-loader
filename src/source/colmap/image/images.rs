@@ -10,12 +10,12 @@ impl Decoder for Images {
         let mut reader = io::BufReader::new(reader);
 
         let image_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
-        let images = (0..image_count).map(|_| {
-            let image = Image::decode(&mut reader)?;
-            Ok((image.image_id().to_owned(), image))
-        }).collect::<Result<_, Error>>()?;
-
-        Ok(images)
+        (0..image_count)
+            .map(|_| {
+                let image = Image::decode(&mut reader)?;
+                Ok((image.image_id().to_owned(), image))
+            })
+            .collect()
     }
 }
 

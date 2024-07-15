@@ -7,11 +7,13 @@ version = "0.0.0"
 
 [dependencies]
 bytemuck = {version = "1.16.1"}
-image = { version = "0.25.1", default-features = false }
+dashmap = {version = "6.0.1", features = ["rayon"]}
+image = {version = "0.25.1", default-features = false}
+rayon = {version = "1.10.0"}
 
 [dev-dependencies]
-anyhow = {version = "1.0.86"}
-image = { version = "0.25.1", default-features = false, features = ["jpeg", "png"] }
+anyhow = {version = "*"}
+image = {version = "*", default-features = false, features = ["jpeg", "png", "rayon"]}
 
 [profile.dev]
 opt-level = 1

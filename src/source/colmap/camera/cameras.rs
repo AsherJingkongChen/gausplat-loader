@@ -11,14 +11,12 @@ impl Decoder for Cameras {
         let mut reader = io::BufReader::new(reader);
 
         let camera_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
-        let cameras = (0..camera_count)
+        (0..camera_count)
             .map(|_| {
                 let camera = Camera::decode(&mut reader)?;
                 Ok((camera.camera_id().to_owned(), camera))
             })
-            .collect::<Result<_, Error>>()?;
-
-        Ok(cameras)
+            .collect()
     }
 }
 
