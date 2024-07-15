@@ -11,4 +11,4 @@ image = { version = "0.25.1", default-features = false }
 
 [dev-dependencies]
 anyhow = {version = "1.0.86"}
-image = { version = "0.25.1", default-features = false, features = ["png"] }
+image = { version = "0.25.1", default-features = false, features = ["jpeg", "png"] }

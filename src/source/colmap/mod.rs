@@ -10,6 +10,7 @@ pub use camera::*;
 pub use image::*;
 pub use image_file::*;
 pub use point::*;
+pub use source::Source;
 use std::collections::HashMap;
 use std::io;
 
@@ -20,14 +21,18 @@ pub struct ColmapSource<R: io::Read + io::Seek> {
     pub points: Points,
 }
 
-impl<R: io::Read + io::Seek> source::Source for ColmapSource<R> {
+impl<R: io::Read + io::Seek> Source for ColmapSource<R> {
     fn read_points(&mut self) -> Result<Vec<source::Point>, Error> {
         Ok(self
             .points
             .iter()
-            .map(|point| source::Point {
-                color: point.color.to_owned(),
-                position: point.position.to_owned(),
+            .map(|Point { color, position }| source::Point {
+                color: [
+                    color[0] as f64 / 255.0,
+                    color[1] as f64 / 255.0,
+                    color[2] as f64 / 255.0,
+                ],
+                position: position.to_owned(),
             })
             .collect())
     }
@@ -43,11 +48,11 @@ impl<R: io::Read + io::Seek> source::Source for ColmapSource<R> {
                 }
                 value.unwrap()
             };
+            let image_file_name = image.file_name().to_owned();
             let image_file = {
-                let key = image.file_name();
-                let value = self.image_files.get_mut(key);
+                let value = self.image_files.get_mut(&image_file_name);
                 if value.is_none() {
-                    return Err(Error::NoSuchImageFileName(key.to_owned()));
+                    return Err(Error::NoSuchImageFileName(image_file_name));
                 }
                 value.unwrap()
             };
@@ -67,20 +72,19 @@ impl<R: io::Read + io::Seek> source::Source for ColmapSource<R> {
                     camera.focal_length_x,
                     camera.width as f64,
                 ),
-                _ => unimplemented!(),
+                _ => return Err(Error::Unimplemented),
             };
             let field_of_view_y = match camera {
                 Camera::Pinhole(camera) => field_of_view_from_focal_length(
                     camera.focal_length_y,
                     camera.height as f64,
                 ),
-                _ => unimplemented!(),
+                _ => return Err(Error::Unimplemented),
             };
-            let image_buffer = image_file.read()?;
-            let image_file_name = image_file.file_name().to_owned();
             let view_height = camera.height().to_owned();
             let view_width = camera.width().to_owned();
             let view_id = image.image_id().to_owned();
+            let image = image_file.read()?;
 
             views.insert(
                 view_id,
@@ -88,11 +92,11 @@ impl<R: io::Read + io::Seek> source::Source for ColmapSource<R> {
                     affine_transformation,
                     field_of_view_x,
                     field_of_view_y,
-                    image_buffer,
+                    image,
                     image_file_name,
                     view_height,
-                    view_id,
                     view_width,
+                    view_id,
                 },
             );
         }

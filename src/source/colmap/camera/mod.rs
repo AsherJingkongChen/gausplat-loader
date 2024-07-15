@@ -2,7 +2,10 @@ pub mod cameras;
 pub mod pinhole;
 
 pub use crate::function::Decoder;
-use crate::{error::*, function::{advance, read_slice}};
+use crate::{
+    error::*,
+    function::{advance, read_slice},
+};
 pub use cameras::*;
 pub use pinhole::*;
 use std::io;
@@ -68,20 +71,18 @@ impl Decoder for Camera {
                     focal_length_y,
                 }))
             },
-            2..=10 => {
-                Err(Error::UnsupportedCameraModel(match model_id {
-                    2 => Self::SimpleRadial,
-                    3 => Self::Radial,
-                    4 => Self::OpenCV,
-                    5 => Self::OpenCVFisheye,
-                    6 => Self::FullOpenCV,
-                    7 => Self::FOV,
-                    8 => Self::SimpleRadialFisheye,
-                    9 => Self::RadialFisheye,
-                    10 => Self::ThinPrismFisheye,
-                    _ => unreachable!(),
-                }))
-            },
+            2..=10 => Err(Error::UnsupportedCameraModel(match model_id {
+                2 => Self::SimpleRadial,
+                3 => Self::Radial,
+                4 => Self::OpenCV,
+                5 => Self::OpenCVFisheye,
+                6 => Self::FullOpenCV,
+                7 => Self::FOV,
+                8 => Self::SimpleRadialFisheye,
+                9 => Self::RadialFisheye,
+                10 => Self::ThinPrismFisheye,
+                _ => unreachable!(),
+            })),
             _ => Err(Error::UnknownCameraModelId(model_id)),
         }
     }

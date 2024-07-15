@@ -9,6 +9,7 @@ pub enum Error {
     NoSuchCameraId(u32),
     NoSuchImageFileName(String),
     UnknownCameraModelId(u32),
+    Unimplemented,
     UnsupportedCameraModel(Camera),
     Utf8(std::string::FromUtf8Error),
 }
