@@ -60,6 +60,12 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     value.unwrap()
                 };
 
+                let (focal_length_x, focal_length_y) = match camera {
+                    Camera::Pinhole(camera) => {
+                        (camera.focal_length_x, camera.focal_length_y)
+                    },
+                    _ => return Err(Error::Unimplemented),
+                };
                 let position = image.position();
                 let projection_transform = match camera {
                     Camera::Pinhole(camera) => camera.projection_transform(),
@@ -70,6 +76,8 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let image = image_file.read()?;
 
                 let view = scene::View {
+                    focal_length_x,
+                    focal_length_y,
                     image,
                     image_file_name,
                     position,

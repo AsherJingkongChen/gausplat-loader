@@ -5,6 +5,8 @@ pub use views::*;
 
 #[derive(Clone, PartialEq)]
 pub struct View {
+    pub focal_length_x: f64,
+    pub focal_length_y: f64,
     pub image: image::RgbImage,
     pub(crate) image_file_name: String,
     pub position: [f64; 3],
