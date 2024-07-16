@@ -4,12 +4,11 @@ pub mod image_file;
 pub mod point;
 
 use crate::error::*;
-use crate::source;
+use crate::scene;
 pub use camera::*;
 pub use image::*;
 pub use image_file::*;
 pub use point::*;
-pub use source::Source;
 use std::fmt;
 use std::io;
 
@@ -20,29 +19,31 @@ pub struct ColmapSource<R: io::Read + io::Seek> {
     pub points: Points,
 }
 
-impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
-    fn read_points(&mut self) -> Result<source::Points, Error> {
-        Ok(self
+impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
+    for scene::Scene
+{
+    type Error = Error;
+
+    fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
+        use rayon::iter::{ParallelBridge, ParallelIterator};
+
+        let points = source
             .points
-            .iter()
-            .map(|point| source::Point {
+            .into_iter()
+            .map(|point| scene::Point {
                 color: point.color_normalized(),
                 position: point.position.to_owned(),
             })
-            .collect())
-    }
+            .collect();
 
-    fn read_views(&mut self) -> Result<source::Views, Error> {
-        use rayon::iter::{ParallelBridge, ParallelIterator};
-
-        let views = self
+        let views = source
             .images
             .values()
             .par_bridge()
             .map(|image| {
                 let camera = {
                     let key = image.camera_id();
-                    let value = self.cameras.get(key);
+                    let value = source.cameras.get(key);
                     if value.is_none() {
                         return Err(Error::NoSuchCameraId(key.to_owned()));
                     }
@@ -50,7 +51,7 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                 };
                 let image_file_name = image.file_name().to_owned();
                 let mut image_file = {
-                    let value = self.image_files.get_mut(&image_file_name);
+                    let value = source.image_files.get_mut(&image_file_name);
                     if value.is_none() {
                         return Err(Error::NoSuchImageFileName(
                             image_file_name,
@@ -67,7 +68,7 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                 let view_transform = image.view_transform();
                 let image = image_file.read()?;
 
-                let view = source::View {
+                let view = scene::View {
                     image,
                     image_file_name,
                     projection_transform,
@@ -76,9 +77,9 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                 };
                 Ok((view_id, view))
             })
-            .collect();
+            .collect::<Result<_, _>>()?;
 
-        views
+        Ok(scene::Scene { points, views })
     }
 }
 

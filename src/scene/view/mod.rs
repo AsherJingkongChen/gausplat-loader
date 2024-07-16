@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-use std::fmt;
+pub mod views;
 
-pub type Views = HashMap<u32, View>;
+use std::fmt;
+pub use views::*;
 
 #[derive(Clone, PartialEq)]
 pub struct View {
     pub image: image::RgbImage,
+    pub(crate) image_file_name: String,
     pub projection_transform: [[f64; 4]; 4],
-    pub(super) image_file_name: String,
-    pub(super) view_id: u32,
+    pub(crate) view_id: u32,
     pub view_transform: [[f64; 4]; 4],
 }
 
@@ -31,6 +31,7 @@ impl fmt::Debug for View {
             .field("image_file_name", &self.image_file_name)
             .field("image_height", &self.image.height())
             .field("image_width", &self.image.width())
+            .field("projection_transform", &self.projection_transform)
             .field("view_id", &self.view_id)
             .field("view_transform", &self.view_transform)
             .finish()

@@ -1,6 +1,6 @@
 #[derive(Clone, Debug, PartialEq)]
 pub struct PinholeCamera {
-    pub(super) camera_id: u32,
+    pub(crate) camera_id: u32,
     pub width: u64,
     pub height: u64,
     pub focal_length_x: f64,

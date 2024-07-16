@@ -1,4 +1,6 @@
-pub type Points = Vec<Point>;
+pub mod points;
+
+pub use points::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Point {
