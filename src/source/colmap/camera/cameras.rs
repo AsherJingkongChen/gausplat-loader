@@ -23,7 +23,7 @@ impl Decoder for Cameras {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn cameras_decode_zero_bytes() {
+    fn decode_zero_bytes() {
         use super::*;
         use std::io::Cursor;
 
@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    fn cameras_decode_zero_entries() {
+    fn decode_zero_entries() {
         use super::*;
         use std::io::Cursor;
 
@@ -48,7 +48,7 @@ mod tests {
     }
 
     #[test]
-    fn cameras_decode() {
+    fn decode() {
         use super::super::*;
         use std::io::Cursor;
 

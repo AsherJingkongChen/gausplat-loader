@@ -22,7 +22,7 @@ impl Decoder for Images {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn images_decode_zero_bytes() {
+    fn decode_zero_bytes() {
         use super::*;
         use std::io::Cursor;
 
@@ -33,7 +33,7 @@ mod tests {
     }
 
     #[test]
-    fn images_decode_zero_entries() {
+    fn decode_zero_entries() {
         use super::*;
         use std::io::Cursor;
 
@@ -47,7 +47,7 @@ mod tests {
     }
 
     #[test]
-    fn images_decode() {
+    fn decode() {
         use super::*;
         use std::io::Cursor;
 

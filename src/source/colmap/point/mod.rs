@@ -14,6 +14,16 @@ pub struct Point {
     pub color: [u8; 3],
 }
 
+impl Point {
+    pub fn color_normalized(&self) -> [f64; 3] {
+        [
+            self.color[0] as f64 / 255.0,
+            self.color[1] as f64 / 255.0,
+            self.color[2] as f64 / 255.0,
+        ]
+    }
+}
+
 impl Decoder for Point {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
         advance(reader, 8)?;

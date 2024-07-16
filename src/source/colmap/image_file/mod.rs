@@ -43,7 +43,7 @@ impl<R: io::Read + io::Seek> ImageFile<R> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn image_file_read() {
+    fn read() {
         use super::*;
         use std::io::Cursor;
 

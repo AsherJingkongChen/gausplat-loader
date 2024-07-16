@@ -4,10 +4,7 @@ pub mod image_file;
 pub mod point;
 
 use crate::error::*;
-use crate::function::{
-    projection_transform_from_field_of_views, rotation_matrix_from_quaternion,
-};
-use crate::{function::field_of_view_from_focal_length, source};
+use crate::source;
 pub use camera::*;
 pub use image::*;
 pub use image_file::*;
@@ -28,21 +25,15 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
         Ok(self
             .points
             .iter()
-            .map(|Point { color, position }| source::Point {
-                color: [
-                    color[0] as f64 / 255.0,
-                    color[1] as f64 / 255.0,
-                    color[2] as f64 / 255.0,
-                ],
-                position: position.to_owned(),
+            .map(|point| source::Point {
+                color: point.color_normalized(),
+                position: point.position.to_owned(),
             })
             .collect())
     }
 
     fn read_views(&mut self) -> Result<source::Views, Error> {
         use rayon::iter::{ParallelBridge, ParallelIterator};
-
-        let duration = std::time::Instant::now();
 
         let views = self
             .images
@@ -68,39 +59,12 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                     value.unwrap()
                 };
 
-                let field_of_view_x = match camera {
-                    Camera::Pinhole(camera) => field_of_view_from_focal_length(
-                        camera.focal_length_x,
-                        camera.width as f64,
-                    ),
+                let projection_transform = match camera {
+                    Camera::Pinhole(camera) => camera.projection_transform(),
                     _ => return Err(Error::Unimplemented),
-                };
-                let field_of_view_y = match camera {
-                    Camera::Pinhole(camera) => field_of_view_from_focal_length(
-                        camera.focal_length_y,
-                        camera.height as f64,
-                    ),
-                    _ => return Err(Error::Unimplemented),
-                };
-                let projection_transform =
-                    projection_transform_from_field_of_views(
-                        field_of_view_x,
-                        field_of_view_y,
-                        100.0,
-                        0.01,
-                        1.0,
-                    );
-                let view_transform = {
-                    let r = rotation_matrix_from_quaternion(&image.rotation);
-                    let t = image.translation;
-                    [
-                        [r[0][0], r[0][1], r[0][2], t[0]],
-                        [r[1][0], r[1][1], r[1][2], t[1]],
-                        [r[2][0], r[2][1], r[2][2], t[2]],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ]
                 };
                 let view_id = image.image_id().to_owned();
+                let view_transform = image.view_transform();
                 let image = image_file.read()?;
 
                 let view = source::View {
@@ -113,8 +77,6 @@ impl<R: io::Read + io::Seek + Sync + Send> Source for ColmapSource<R> {
                 Ok((view_id, view))
             })
             .collect();
-
-        println!("Duration image file read: {:?}", duration.elapsed());
 
         views
     }
