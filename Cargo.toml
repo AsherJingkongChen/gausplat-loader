@@ -1,19 +1,16 @@
 [package]
+authors = ["Asher Jingkong Chen"]
 description = "A library to import data for gausplat-trainer"
-edition = "2021"
+edition.workspace = true
+license-file = "LICENSE"
 name = "gausplat-importer"
 publish = false
-version = "0.0.0"
+readme = "README.md"
+repository = "https://github.com/AsherJingkongChen/gausplat-importer"
+version.workspace = true
 
 [dependencies]
-bytemuck = {version = "1.16.1"}
-dashmap = {version = "6.0.1", features = ["rayon"]}
-image = {version = "0.25.1", default-features = false}
-rayon = {version = "1.10.0"}
-
-[dev-dependencies]
-anyhow = {version = "*"}
-image = {version = "*", default-features = false, features = ["jpeg", "png", "rayon"]}
-
-[profile.dev]
-opt-level = 1
+bytemuck = {workspace = true}
+dashmap = {workspace = true}
+image = {workspace = true}
+rayon = {workspace = true}
