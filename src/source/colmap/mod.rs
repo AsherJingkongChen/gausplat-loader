@@ -60,6 +60,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     value.unwrap()
                 };
 
+                let position = image.position();
                 let projection_transform = match camera {
                     Camera::Pinhole(camera) => camera.projection_transform(),
                     _ => return Err(Error::Unimplemented),
@@ -71,6 +72,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let view = scene::View {
                     image,
                     image_file_name,
+                    position,
                     projection_transform,
                     view_id,
                     view_transform,

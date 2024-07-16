@@ -7,6 +7,7 @@ pub use views::*;
 pub struct View {
     pub image: image::RgbImage,
     pub(crate) image_file_name: String,
+    pub position: [f64; 3],
     pub projection_transform: [[f64; 4]; 4],
     pub(crate) view_id: u32,
     pub view_transform: [[f64; 4]; 4],

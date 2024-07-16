@@ -30,9 +30,9 @@ impl Image {
         &self.file_name
     }
 
-    pub fn view_transform(&self) -> [[f64; 4]; 4] {
+    /// The transformation matrix computed from the rotation quaternion
+    pub fn rotation_transform(&self) -> [[f64; 3]; 3] {
         let [r0, r1, r2, r3] = self.rotation;
-        let [t0, t1, t2] = self.translation;
         let r1_r1 = r1 * r1 * 2.0;
         let r2_r2 = r2 * r2 * 2.0;
         let r3_r3 = r3 * r3 * 2.0;
@@ -43,11 +43,34 @@ impl Image {
         let r1_r3 = r1 * r3 * 2.0;
         let r2_r3 = r2 * r3 * 2.0;
         [
-            [1.0 - r2_r2 - r3_r3, r1_r2 - r0_r3, r1_r3 + r0_r2, t0],
-            [r1_r2 + r0_r3, 1.0 - r1_r1 - r3_r3, r2_r3 - r0_r1, t1],
-            [r1_r3 - r0_r2, r2_r3 + r0_r1, 1.0 - r1_r1 - r2_r2, t2],
+            [1.0 - r2_r2 - r3_r3, r1_r2 - r0_r3, r1_r3 + r0_r2],
+            [r1_r2 + r0_r3, 1.0 - r1_r1 - r3_r3, r2_r3 - r0_r1],
+            [r1_r3 - r0_r2, r2_r3 + r0_r1, 1.0 - r1_r1 - r2_r2],
+        ]
+    }
+
+    /// The transformation matrix from world space to camera space
+    pub fn view_transform(&self) -> [[f64; 4]; 4] {
+        let r = self.rotation_transform();
+        let t = self.translation;
+        [
+            [r[0][0], r[0][1], r[0][2], t[0]],
+            [r[1][0], r[1][1], r[1][2], t[1]],
+            [r[2][0], r[2][1], r[2][2], t[2]],
             [0.0, 0.0, 0.0, 1.0],
         ]
+    }
+
+    /// The position of the camera in world space
+    pub fn position(&self) -> [f64; 3] {
+        let r = self.rotation_transform();
+        let t = self.translation;
+        let r_inv_t = [
+            -r[0][0] * t[0] - r[1][0] * t[1] - r[2][0] * t[2],
+            -r[0][1] * t[0] - r[1][1] * t[1] - r[2][1] * t[2],
+            -r[0][2] * t[0] - r[1][2] * t[1] - r[2][2] * t[2],
+        ];
+        r_inv_t
     }
 }
 
@@ -86,11 +109,39 @@ impl Decoder for Image {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn position() {
+        use super::*;
+
+        let image = Image {
+            image_id: Default::default(),
+            rotation: [
+                0.9928923624805012,
+                0.006208227229002722,
+                -0.11837120574960786,
+                0.010699163142319695,
+            ],
+            translation: [
+                2.1400970808418642,
+                0.18616441825409558,
+                4.726341984431894,
+            ],
+            camera_id: Default::default(),
+            file_name: Default::default(),
+        };
+
+        let position = image.position();
+        assert_eq!(
+            position,
+            [-3.194916373379071, -0.18378876753171225, -4.087996124741175]
+        );
+    }
+
+    #[test]
     fn view_transform() {
         use super::*;
 
         let image = Image {
-            image_id: 0,
+            image_id: Default::default(),
             rotation: [
                 0.9961499472928047,
                 -0.03510862409346388,
@@ -98,8 +149,8 @@ mod tests {
                 0.003070795788047984,
             ],
             translation: [0.129242027423, 0.0, -0.3424233862],
-            camera_id: 0,
-            file_name: String::new(),
+            camera_id: Default::default(),
+            file_name: Default::default(),
         };
 
         let view_transform = image.view_transform();
