@@ -1,4 +1,3 @@
 use super::ImageFile;
-use dashmap::DashMap;
 
-pub type ImageFiles<R> = DashMap<String, ImageFile<R>>;
+pub type ImageFiles<R> = dashmap::DashMap<String, ImageFile<R>>;

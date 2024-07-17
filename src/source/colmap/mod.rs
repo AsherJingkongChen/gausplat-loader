@@ -36,7 +36,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             })
             .collect();
 
-        let views = source
+        let (images, views) = source
             .images
             .values()
             .par_bridge()
@@ -74,22 +74,30 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let view_id = image.image_id().to_owned();
                 let view_transform = image.view_transform();
                 let image = image_file.read()?;
+                let image_height = image.height();
+                let image_width = image.width();
 
+                let image = scene::Image { image, view_id };
                 let view = scene::View {
                     focal_length_x,
                     focal_length_y,
-                    image,
                     image_file_name,
+                    image_height,
+                    image_width,
                     position,
                     projection_transform,
                     view_id,
                     view_transform,
                 };
-                Ok((view_id, view))
+                Ok(((view_id, image), (view_id, view)))
             })
             .collect::<Result<_, _>>()?;
 
-        Ok(scene::Scene { points, views })
+        Ok(scene::Scene {
+            images,
+            points,
+            views,
+        })
     }
 }
 

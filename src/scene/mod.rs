@@ -1,13 +1,16 @@
+pub mod image;
 pub mod point;
 pub mod view;
 
 use std::fmt;
 
+pub use image::*;
 pub use point::*;
 pub use view::*;
 
 #[derive(Clone, PartialEq)]
 pub struct Scene {
+    pub images: Images,
     pub points: Points,
     pub views: Views,
 }
