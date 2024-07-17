@@ -30,7 +30,7 @@ impl Image {
         &self.file_name
     }
 
-    /// The transformation matrix computed from the rotation quaternion
+    /// The transformation matrix computed from the normalized quaternion `self.rotation`
     pub fn rotation_transform(&self) -> [[f64; 3]; 3] {
         let [r0, r1, r2, r3] = self.rotation;
         let r1_r1 = r1 * r1 * 2.0;
