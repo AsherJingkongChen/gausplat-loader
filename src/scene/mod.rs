@@ -21,6 +21,7 @@ impl fmt::Debug for Scene {
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         f.debug_struct("Scene")
+            .field("images.len()", &self.images.len())
             .field("points.len()", &self.points.len())
             .field("views.len()", &self.views.len())
             .finish()
