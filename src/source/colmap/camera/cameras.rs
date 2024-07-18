@@ -1,10 +1,9 @@
 use super::Camera;
 pub use crate::function::Decoder;
 use crate::{error::*, function::read_slice};
-use std::collections::HashMap;
 use std::io;
 
-pub type Cameras = HashMap<u32, Camera>;
+pub type Cameras = std::collections::HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {

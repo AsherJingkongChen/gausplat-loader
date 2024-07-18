@@ -1,9 +1,9 @@
 use super::Image;
 pub use crate::function::Decoder;
 use crate::{error::*, function::read_slice};
-use std::{collections::HashMap, io};
+use std::io;
 
-pub type Images = HashMap<u32, Image>;
+pub type Images = std::collections::HashMap<u32, Image>;
 
 impl Decoder for Images {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
