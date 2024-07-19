@@ -31,7 +31,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             .points
             .into_iter()
             .map(|point| scene::Point {
-                color: point.color_normalized(),
+                color_rgb: point.color_rgb_normalized(),
                 position: point.position.to_owned(),
             })
             .collect();

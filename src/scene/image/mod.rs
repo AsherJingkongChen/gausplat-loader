@@ -1,7 +1,7 @@
 pub mod images;
 
-use std::fmt;
 pub use images::*;
+use std::fmt;
 
 #[derive(Clone, PartialEq)]
 pub struct Image {
