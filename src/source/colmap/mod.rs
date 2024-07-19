@@ -45,7 +45,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     let key = image.camera_id();
                     let value = source.cameras.get(key);
                     if value.is_none() {
-                        return Err(Error::NoSuchCameraId(key.to_owned()));
+                        return Err(Error::UnknownCameraId(key.to_owned()));
                     }
                     value.unwrap()
                 };
@@ -53,7 +53,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let mut image_file = {
                     let value = source.image_files.get_mut(&image_file_name);
                     if value.is_none() {
-                        return Err(Error::NoSuchImageFileName(
+                        return Err(Error::UnknownImageFileName(
                             image_file_name,
                         ));
                     }

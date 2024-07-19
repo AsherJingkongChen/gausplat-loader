@@ -6,10 +6,10 @@ pub enum Error {
     Cast(bytemuck::checked::CheckedCastError),
     Io(std::io::Error),
     Image(image::ImageError),
-    NoSuchCameraId(u32),
-    NoSuchImageFileName(String),
-    UnknownCameraModelId(u32),
     Unimplemented,
+    UnknownCameraId(u32),
+    UnknownCameraModelId(u32),
+    UnknownImageFileName(String),
     UnsupportedCameraModel(Camera),
     Utf8(std::string::FromUtf8Error),
 }
