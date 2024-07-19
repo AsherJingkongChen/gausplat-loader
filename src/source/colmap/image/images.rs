@@ -1,4 +1,4 @@
-use super::Image;
+pub use super::Image;
 pub use crate::function::Decoder;
 use crate::{error::*, function::read_slice};
 use std::io;

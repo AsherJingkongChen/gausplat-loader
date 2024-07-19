@@ -1,4 +1,5 @@
-use crate::error::*;
+pub use crate::error::Error;
+
 use std::io;
 
 pub trait Decoder

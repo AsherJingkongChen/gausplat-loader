@@ -1,11 +1,12 @@
 pub mod points;
 
 pub use crate::function::Decoder;
+pub use points::*;
+
 use crate::{
     error::*,
     function::{advance, read_slice},
 };
-pub use points::*;
 use std::io;
 
 #[derive(Clone, Debug, PartialEq)]

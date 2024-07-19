@@ -3,12 +3,12 @@ pub mod image;
 pub mod image_file;
 pub mod point;
 
-use crate::error::*;
-use crate::scene;
 pub use camera::*;
 pub use image::*;
 pub use image_file::*;
 pub use point::*;
+
+use crate::scene;
 use std::fmt;
 use std::io;
 

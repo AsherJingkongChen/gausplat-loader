@@ -1,5 +1,6 @@
-use super::Camera;
+pub use super::Camera;
 pub use crate::function::Decoder;
+
 use crate::{error::*, function::read_slice};
 use std::io;
 

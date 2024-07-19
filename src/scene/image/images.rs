@@ -1,4 +1,3 @@
-use super::Image;
-use std::collections::HashMap;
+pub use super::Image;
 
-pub type Images = HashMap<u32, Image>;
+pub type Images = std::collections::HashMap<u32, Image>;

@@ -1,4 +1,3 @@
-use super::View;
-use std::collections::HashMap;
+pub use super::View;
 
-pub type Views = HashMap<u32, View>;
+pub type Views = std::collections::HashMap<u32, View>;

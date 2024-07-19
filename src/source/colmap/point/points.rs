@@ -1,4 +1,4 @@
-use super::Point;
+pub use super::Point;
 pub use crate::function::Decoder;
 use crate::{error::*, function::read_slice};
 use std::io;

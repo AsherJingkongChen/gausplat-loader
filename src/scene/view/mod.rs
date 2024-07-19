@@ -1,7 +1,8 @@
 pub mod views;
 
-use std::fmt;
 pub use views::*;
+
+use std::fmt;
 
 #[derive(Clone, PartialEq)]
 pub struct View {

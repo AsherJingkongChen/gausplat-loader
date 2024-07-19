@@ -1,11 +1,12 @@
 pub mod images;
 
 pub use crate::function::Decoder;
+pub use images::*;
+
 use crate::{
     error::*,
     function::{advance, read_slice},
 };
-pub use images::*;
 use std::io;
 
 #[derive(Clone, Debug, PartialEq)]

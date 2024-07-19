@@ -1,7 +1,8 @@
 pub mod image_files;
 
-use crate::error::*;
+pub use crate::error::Error;
 pub use image_files::*;
+
 use std::io;
 
 #[derive(Clone, Debug, PartialEq)]

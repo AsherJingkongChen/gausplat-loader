@@ -2,12 +2,13 @@ pub mod cameras;
 pub mod pinhole;
 
 pub use crate::function::Decoder;
+pub use cameras::*;
+pub use pinhole::*;
+
 use crate::{
     error::*,
     function::{advance, read_slice},
 };
-pub use cameras::*;
-pub use pinhole::*;
 use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
