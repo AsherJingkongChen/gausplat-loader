@@ -8,7 +8,7 @@ pub use image::*;
 pub use image_file::*;
 pub use point::*;
 
-use crate::scene;
+use crate::scene::sparse_view;
 use std::fmt;
 use std::io;
 
@@ -20,7 +20,7 @@ pub struct ColmapSource<R: io::Read + io::Seek> {
 }
 
 impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
-    for scene::Scene
+    for sparse_view::SparseViewScene
 {
     type Error = Error;
 
@@ -30,7 +30,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
         let points = source
             .points
             .into_iter()
-            .map(|point| scene::Point {
+            .map(|point| sparse_view::Point {
                 color_rgb: point.color_rgb_normalized(),
                 position: point.position.to_owned(),
             })
@@ -77,8 +77,8 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let image_height = image.height();
                 let image_width = image.width();
 
-                let image = scene::Image { image, view_id };
-                let view = scene::View {
+                let image = sparse_view::Image { image, view_id };
+                let view = sparse_view::View {
                     focal_length_x,
                     focal_length_y,
                     image_file_name,
@@ -93,7 +93,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             })
             .collect::<Result<_, _>>()?;
 
-        Ok(scene::Scene {
+        Ok(Self {
             images,
             points,
             views,
