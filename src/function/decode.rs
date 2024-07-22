@@ -37,7 +37,7 @@ macro_rules! read_slice {
             .and_then(|_| {
                 bytemuck::checked::try_from_bytes::<[$T; $N]>(&bytes)
                     .map_err(Error::Cast)
-                    .map(|v| *v)
+                    .map(ToOwned::to_owned)
             })
     }};
 }

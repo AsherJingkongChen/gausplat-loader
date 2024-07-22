@@ -24,8 +24,6 @@ impl<R: io::Read + io::Seek> ImageFile<R> {
     }
 
     pub fn read(&mut self) -> Result<image::RgbImage, Error> {
-        use image::DynamicImage;
-
         let reader = {
             let reader = &mut self.reader;
             reader.rewind().map_err(Error::Io)?;
@@ -37,7 +35,7 @@ impl<R: io::Read + io::Seek> ImageFile<R> {
             .map_err(Error::Io)?
             .decode()
             .map_err(Error::Image)
-            .map(DynamicImage::into_rgb8)
+            .map(Into::into)
     }
 }
 

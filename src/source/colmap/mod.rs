@@ -9,6 +9,7 @@ pub use image_file::*;
 pub use point::*;
 
 use crate::scene::sparse_view;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::fmt;
 use std::io;
 
@@ -25,8 +26,6 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
     type Error = Error;
 
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
-        use rayon::iter::{ParallelBridge, ParallelIterator};
-
         let points = source
             .points
             .into_iter()
@@ -38,9 +37,8 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
 
         let (images, views) = source
             .images
-            .values()
-            .par_bridge()
-            .map(|image| {
+            .into_par_iter()
+            .map(|(_, image)| {
                 let camera = {
                     let key = image.camera_id();
                     let value = source.cameras.get(key);
