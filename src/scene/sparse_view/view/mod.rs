@@ -8,23 +8,13 @@ use std::fmt;
 pub struct View {
     pub focal_length_x: f64,
     pub focal_length_y: f64,
-    pub(crate) image_file_name: String,
+    pub image_file_name: String,
     pub image_height: u32,
     pub image_width: u32,
     pub position: [f64; 3],
     pub projection_transform: [[f64; 4]; 4],
-    pub(crate) view_id: u32,
+    pub view_id: u32,
     pub view_transform: [[f64; 4]; 4],
-}
-
-impl View {
-    pub fn image_file_name(&self) -> &str {
-        &self.image_file_name
-    }
-
-    pub fn view_id(&self) -> &u32 {
-        &self.view_id
-    }
 }
 
 impl fmt::Debug for View {

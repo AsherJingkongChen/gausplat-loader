@@ -14,7 +14,7 @@ impl Decoder for Cameras {
         (0..camera_count)
             .map(|_| {
                 let camera = Camera::decode(&mut reader)?;
-                Ok((camera.camera_id().to_owned(), camera))
+                Ok((camera.camera_id(), camera))
             })
             .collect()
     }

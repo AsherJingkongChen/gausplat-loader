@@ -7,25 +7,14 @@ use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ImageFile<R: io::Read + io::Seek> {
-    file_name: String,
-    pub reader: R,
+    pub file_name: String,
+    pub file_reader: R,
 }
 
 impl<R: io::Read + io::Seek> ImageFile<R> {
-    pub fn new(
-        file_name: String,
-        reader: R,
-    ) -> Self {
-        Self { file_name, reader }
-    }
-
-    pub fn file_name(&self) -> &str {
-        &self.file_name
-    }
-
     pub fn read(&mut self) -> Result<image::RgbImage, Error> {
         let reader = {
-            let reader = &mut self.reader;
+            let reader = &mut self.file_reader;
             reader.rewind().map_err(Error::Io)?;
             image::io::Reader::new(io::BufReader::new(reader))
         };
@@ -46,7 +35,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let reader = Cursor::new(&[
+        let file_reader = Cursor::new(&[
             0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00,
             0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
             0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4, 0x89,
@@ -66,7 +55,7 @@ mod tests {
 
         let mut image_file = ImageFile {
             file_name: "#ff003d8b-1x1.png".into(),
-            reader,
+            file_reader,
         };
 
         // It should be idempotent except for IO errors

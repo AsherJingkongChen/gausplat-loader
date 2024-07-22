@@ -11,24 +11,23 @@ use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Image {
-    image_id: u32,
+    pub image_id: u32,
     pub rotation: [f64; 4],
     pub translation: [f64; 3],
-    camera_id: u32,
-    file_name: String,
+    pub camera_id: u32,
+    pub file_name: String,
 }
 
 impl Image {
-    pub fn image_id(&self) -> &u32 {
-        &self.image_id
-    }
-
-    pub fn camera_id(&self) -> &u32 {
-        &self.camera_id
-    }
-
-    pub fn file_name(&self) -> &str {
-        &self.file_name
+    /// The position of the camera in world space
+    pub fn position(&self) -> [f64; 3] {
+        let r = self.rotation_transform();
+        let t = self.translation;
+        [
+            -r[0][0] * t[0] - r[1][0] * t[1] - r[2][0] * t[2],
+            -r[0][1] * t[0] - r[1][1] * t[1] - r[2][1] * t[2],
+            -r[0][2] * t[0] - r[1][2] * t[1] - r[2][2] * t[2],
+        ]
     }
 
     /// The transformation matrix computed from the normalized quaternion `self.rotation`
@@ -60,18 +59,6 @@ impl Image {
             [r[2][0], r[2][1], r[2][2], t[2]],
             [0.0, 0.0, 0.0, 1.0],
         ]
-    }
-
-    /// The position of the camera in world space
-    pub fn position(&self) -> [f64; 3] {
-        let r = self.rotation_transform();
-        let t = self.translation;
-        let r_inv_t = [
-            -r[0][0] * t[0] - r[1][0] * t[1] - r[2][0] * t[2],
-            -r[0][1] * t[0] - r[1][1] * t[1] - r[2][1] * t[2],
-            -r[0][2] * t[0] - r[1][2] * t[1] - r[2][2] * t[2],
-        ];
-        r_inv_t
     }
 }
 

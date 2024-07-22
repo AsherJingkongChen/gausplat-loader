@@ -13,7 +13,7 @@ impl Decoder for Images {
         (0..image_count)
             .map(|_| {
                 let image = Image::decode(&mut reader)?;
-                Ok((image.image_id().to_owned(), image))
+                Ok((image.image_id, image))
             })
             .collect()
     }

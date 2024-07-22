@@ -10,13 +10,9 @@ impl Decoder for Points {
         let mut reader = io::BufReader::new(reader);
 
         let point_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
-        let mut points = Self::with_capacity(point_count);
-        for _ in 0..point_count {
-            let point = Point::decode(&mut reader)?;
-            points.push(point);
-        }
-
-        Ok(points)
+        (0..point_count)
+            .map(|_| Point::decode(&mut reader))
+            .collect()
     }
 }
 
@@ -86,7 +82,7 @@ mod tests {
                     -0.4910587052695262,
                     1.3207623479974775,
                 ],
-                color: [93, 123, 111],
+                color_rgb: [93, 123, 111],
             }
         );
         assert_eq!(
@@ -97,7 +93,7 @@ mod tests {
                     -0.021278424749087633,
                     -1.25838578394435
                 ],
-                color: [121, 139, 126],
+                color_rgb: [121, 139, 126],
             }
         );
         assert_eq!(
@@ -108,7 +104,7 @@ mod tests {
                     0.09020603401721115,
                     1.295539797168422
                 ],
-                color: [198, 186, 148],
+                color_rgb: [198, 186, 148],
             }
         );
     }

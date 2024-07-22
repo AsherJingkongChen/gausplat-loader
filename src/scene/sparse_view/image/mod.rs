@@ -7,13 +7,7 @@ use std::fmt;
 #[derive(Clone, PartialEq)]
 pub struct Image {
     pub image: image::RgbImage,
-    pub(crate) view_id: u32,
-}
-
-impl Image {
-    pub fn view_id(&self) -> &u32 {
-        &self.view_id
-    }
+    pub view_id: u32,
 }
 
 impl fmt::Debug for Image {

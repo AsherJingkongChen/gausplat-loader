@@ -31,7 +31,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             .into_iter()
             .map(|point| sparse_view::Point {
                 color_rgb: point.color_rgb_normalized(),
-                position: point.position.to_owned(),
+                position: point.position,
             })
             .collect();
 
@@ -40,19 +40,18 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             .into_par_iter()
             .map(|(_, image)| {
                 let camera = {
-                    let key = image.camera_id();
-                    let value = source.cameras.get(key);
+                    let key = image.camera_id;
+                    let value = source.cameras.get(&key);
                     if value.is_none() {
-                        return Err(Error::UnknownCameraId(key.to_owned()));
+                        return Err(Error::UnknownCameraId(key));
                     }
                     value.unwrap()
                 };
-                let image_file_name = image.file_name().to_owned();
                 let mut image_file = {
-                    let value = source.image_files.get_mut(&image_file_name);
+                    let value = source.image_files.get_mut(&image.file_name);
                     if value.is_none() {
                         return Err(Error::UnknownImageFileName(
-                            image_file_name,
+                            image.file_name,
                         ));
                     }
                     value.unwrap()
@@ -69,8 +68,9 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     Camera::Pinhole(camera) => camera.projection_transform(),
                     _ => return Err(Error::Unimplemented),
                 };
-                let view_id = image.image_id().to_owned();
+                let view_id = image.image_id;
                 let view_transform = image.view_transform();
+                let image_file_name = image.file_name;
                 let image = image_file.read()?;
                 let image_height = image.height();
                 let image_width = image.width();

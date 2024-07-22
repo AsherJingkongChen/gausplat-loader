@@ -26,23 +26,23 @@ pub enum Camera {
 }
 
 impl Camera {
-    pub fn camera_id(&self) -> &u32 {
+    pub fn camera_id(&self) -> u32 {
         match self {
-            Self::Pinhole(camera) => &camera.camera_id,
+            Self::Pinhole(camera) => camera.camera_id,
             _ => unimplemented!(),
         }
     }
 
-    pub fn height(&self) -> &u64 {
+    pub fn height(&self) -> u64 {
         match self {
-            Self::Pinhole(camera) => &camera.height,
+            Self::Pinhole(camera) => camera.height,
             _ => unimplemented!(),
         }
     }
 
-    pub fn width(&self) -> &u64 {
+    pub fn width(&self) -> u64 {
         match self {
-            Self::Pinhole(camera) => &camera.width,
+            Self::Pinhole(camera) => camera.width,
             _ => unimplemented!(),
         }
     }
