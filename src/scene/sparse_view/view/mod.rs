@@ -11,9 +11,16 @@ pub struct View {
     pub image_file_name: String,
     pub image_height: u32,
     pub image_width: u32,
-    pub position: [f64; 3],
+
+    /// The transformation matrix from view space to clipped space
     pub projection_transform: [[f64; 4]; 4],
+
     pub view_id: u32,
+
+    /// The position of the view in world space
+    pub view_position: [f64; 3],
+
+    /// The transformation matrix from world space to view space
     pub view_transform: [[f64; 4]; 4],
 }
 
@@ -28,9 +35,9 @@ impl fmt::Debug for View {
             .field("image_file_name", &self.image_file_name)
             .field("image_height", &self.image_height)
             .field("image_width", &self.image_width)
-            .field("position", &self.position)
             .field("projection_transform", &self.projection_transform)
             .field("view_id", &self.view_id)
+            .field("view_position", &self.view_position)
             .field("view_transform", &self.view_transform)
             .finish()
     }

@@ -63,12 +63,12 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     },
                     _ => return Err(Error::Unimplemented),
                 };
-                let position = image.position();
                 let projection_transform = match camera {
                     Camera::Pinhole(camera) => camera.projection_transform(),
                     _ => return Err(Error::Unimplemented),
                 };
                 let view_id = image.image_id;
+                let view_position = image.view_position();
                 let view_transform = image.view_transform();
                 let image_file_name = image.file_name;
                 let image = image_file.read()?;
@@ -82,9 +82,9 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     image_file_name,
                     image_height,
                     image_width,
-                    position,
                     projection_transform,
                     view_id,
+                    view_position,
                     view_transform,
                 };
                 Ok(((view_id, image), (view_id, view)))
