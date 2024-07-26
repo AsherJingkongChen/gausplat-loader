@@ -13,6 +13,7 @@ pub struct View {
     pub image_width: u32,
 
     /// The transformation matrix from view space to clipped space
+    #[deprecated]
     pub projection_transform: [[f64; 4]; 4],
 
     pub view_id: u32,

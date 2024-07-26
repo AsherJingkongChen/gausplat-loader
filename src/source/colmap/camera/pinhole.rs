@@ -9,6 +9,7 @@ pub struct PinholeCamera {
 
 impl PinholeCamera {
     /// The transformation matrix from camera space to clipped space
+    #[deprecated]
     pub fn projection_transform(&self) -> [[f64; 4]; 4] {
         const Z_FAR: f64 = 100.0;
         const Z_NEAR: f64 = 0.01;
@@ -29,6 +30,7 @@ impl PinholeCamera {
 
 #[cfg(test)]
 mod tests {
+    #[deprecated]
     #[test]
     fn projection_transform() {
         use super::*;
