@@ -14,13 +14,13 @@ impl PinholeCamera {
         const Z_NEAR: f64 = 0.01;
         const Z_SIGN: f64 = 1.0;
 
-        let x_tan_inv = (2.0 * self.focal_length_x) / (self.width as f64);
-        let y_tan_inv = (2.0 * self.focal_length_y) / (self.height as f64);
+        let fx_2_w = self.focal_length_x * 2.0 / self.width as f64;
+        let fy_2_h = self.focal_length_y * 2.0 / self.height as f64;
         let z_scale = Z_FAR / (Z_FAR - Z_NEAR);
 
         [
-            [x_tan_inv, 0.0, 0.0, 0.0],
-            [0.0, y_tan_inv, 0.0, 0.0],
+            [fx_2_w, 0.0, 0.0, 0.0],
+            [0.0, fy_2_h, 0.0, 0.0],
             [0.0, 0.0, Z_SIGN * z_scale, -Z_NEAR * z_scale],
             [0.0, 0.0, Z_SIGN, 0.0],
         ]
