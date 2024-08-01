@@ -36,6 +36,9 @@ impl Decoder for Point {
             advance(reader, 8 * track_count)?;
         }
 
-        Ok(Self { position, color_rgb })
+        Ok(Self {
+            position,
+            color_rgb,
+        })
     }
 }

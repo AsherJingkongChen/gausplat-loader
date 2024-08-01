@@ -57,16 +57,6 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     value.unwrap()
                 };
 
-                let (focal_length_x, focal_length_y) = match camera {
-                    Camera::Pinhole(camera) => {
-                        (camera.focal_length_x, camera.focal_length_y)
-                    },
-                    _ => return Err(Error::Unimplemented),
-                };
-                let projection_transform = match camera {
-                    Camera::Pinhole(camera) => camera.projection_transform(),
-                    _ => return Err(Error::Unimplemented),
-                };
                 let view_id = image.image_id;
                 let view_position = image.view_position();
                 let view_transform = image.view_transform();
@@ -75,14 +65,23 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                 let image_height = image.height();
                 let image_width = image.width();
 
+                let (field_of_view_x, field_of_view_y) = match camera {
+                    Camera::Pinhole(camera) => (
+                        2.0 * (camera.width as f64)
+                            .atan2(2.0 * camera.focal_length_x),
+                        2.0 * (camera.height as f64)
+                            .atan2(2.0 * camera.focal_length_y),
+                    ),
+                    _ => return Err(Error::Unimplemented),
+                };
+
                 let image = sparse_view::Image { image, view_id };
                 let view = sparse_view::View {
-                    focal_length_x,
-                    focal_length_y,
+                    field_of_view_x,
+                    field_of_view_y,
                     image_file_name,
                     image_height,
                     image_width,
-                    projection_transform,
                     view_id,
                     view_position,
                     view_transform,

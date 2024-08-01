@@ -6,16 +6,11 @@ use std::fmt;
 
 #[derive(Clone, PartialEq)]
 pub struct View {
-    pub focal_length_x: f64,
-    pub focal_length_y: f64,
+    pub field_of_view_x: f64,
+    pub field_of_view_y: f64,
     pub image_file_name: String,
     pub image_height: u32,
     pub image_width: u32,
-
-    /// The transformation matrix from view space to clipped space
-    #[deprecated]
-    pub projection_transform: [[f64; 4]; 4],
-
     pub view_id: u32,
 
     /// The position of the view in world space
@@ -31,12 +26,11 @@ impl fmt::Debug for View {
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         f.debug_struct("View")
-            .field("focal_length_x", &self.focal_length_x)
-            .field("focal_length_y", &self.focal_length_y)
+            .field("field_of_view_x", &self.field_of_view_x)
+            .field("field_of_view_y", &self.field_of_view_y)
             .field("image_file_name", &self.image_file_name)
             .field("image_height", &self.image_height)
             .field("image_width", &self.image_width)
-            .field("projection_transform", &self.projection_transform)
             .field("view_id", &self.view_id)
             .field("view_position", &self.view_position)
             .field("view_transform", &self.view_transform)
