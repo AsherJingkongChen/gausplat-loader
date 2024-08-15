@@ -1,4 +1,4 @@
-pub use crate::source::colmap::Camera;
+pub use crate::scene::source::colmap::Camera;
 
 use std::{error, fmt};
 
