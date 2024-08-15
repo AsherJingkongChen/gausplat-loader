@@ -26,23 +26,23 @@ pub(crate) fn advance<R: io::Read>(
         .map_err(Error::Io)
 }
 
-macro_rules! read_slice {
-    ($R:expr, $T:ty, $N:expr) => {{
-        use crate::error::Error;
+pub(crate) fn read_slice<T, const N: usize>(
+    reader: &mut impl io::Read
+) -> Result<[T; N], Error>
+where
+    [T; N]: bytemuck::Pod,
+{
+    let mut bytes = vec![0; std::mem::size_of::<[T; N]>()];
 
-        let mut bytes = [0; $N * std::mem::size_of::<$T>()];
-
-        std::io::Read::read_exact($R, &mut bytes)
-            .map_err(Error::Io)
-            .and_then(|_| {
-                bytemuck::checked::try_from_bytes::<[$T; $N]>(&bytes)
-                    .map_err(Error::Cast)
-                    .map(ToOwned::to_owned)
-            })
-    }};
+    reader
+        .read_exact(&mut bytes)
+        .map_err(Error::Io)
+        .and_then(|_| {
+            bytemuck::checked::try_from_bytes::<[T; N]>(&bytes)
+                .map_err(Error::Cast)
+                .map(ToOwned::to_owned)
+        })
 }
-
-pub(crate) use read_slice;
 
 #[cfg(test)]
 mod tests {
@@ -50,8 +50,8 @@ mod tests {
     fn read_slice() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[1, 0, 0, 0, 4, 0, 0, 0]);
-        let result = read_slice!(&mut reader, u32, 2);
+        let reader = &mut std::io::Cursor::new(&[1, 0, 0, 0, 4, 0, 0, 0]);
+        let result = read_slice::<u32, 2>(reader);
         assert!(result.is_ok(), "{:#?}", result.unwrap_err());
 
         let result = result.unwrap();

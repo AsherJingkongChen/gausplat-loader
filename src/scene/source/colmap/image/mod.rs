@@ -64,14 +64,14 @@ impl Image {
 
 impl Decoder for Image {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let [image_id] = read_slice!(reader, u32, 1)?;
-        let rotation = read_slice!(reader, f64, 4)?;
-        let translation = read_slice!(reader, f64, 3)?;
-        let [camera_id] = read_slice!(reader, u32, 1)?;
+        let [image_id] = read_slice::<u32, 1>(reader)?;
+        let rotation = read_slice::<f64, 4>(reader)?;
+        let translation = read_slice::<f64, 3>(reader)?;
+        let [camera_id] = read_slice::<u32, 1>(reader)?;
         let file_name = {
             let mut bytes = Vec::new();
             loop {
-                let byte = read_slice!(reader, u8, 1)?[0];
+                let [byte] = read_slice::<u8, 1>(reader)?;
                 if byte == 0 {
                     break;
                 }
@@ -80,7 +80,7 @@ impl Decoder for Image {
             String::from_utf8(bytes).map_err(Error::Utf8)?
         };
         {
-            let point_count = read_slice!(reader, u64, 1)?[0] as usize;
+            let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
             advance(reader, 24 * point_count)?;
         };
 

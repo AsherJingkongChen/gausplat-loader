@@ -50,17 +50,17 @@ impl Camera {
 
 impl Decoder for Camera {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let [camera_id, model_id] = read_slice!(reader, u32, 2)?;
-        let [width, height] = read_slice!(reader, u64, 2)?;
+        let [camera_id, model_id] = read_slice::<u32, 2>(reader)?;
+        let [width, height] = read_slice::<u64, 2>(reader)?;
 
         match model_id {
             0..=1 => {
                 let [focal_length_x, focal_length_y] = match model_id {
                     0 => {
-                        let [focal_length] = read_slice!(reader, f64, 1)?;
+                        let [focal_length] = read_slice::<f64, 1>(reader)?;
                         [focal_length, focal_length]
                     },
-                    1 => read_slice!(reader, f64, 2)?,
+                    1 => read_slice::<f64, 2>(reader)?,
                     _ => unreachable!(),
                 };
                 advance(reader, 16)?;

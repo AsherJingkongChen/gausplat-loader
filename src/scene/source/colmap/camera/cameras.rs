@@ -8,12 +8,12 @@ pub type Cameras = std::collections::HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let mut reader = io::BufReader::new(reader);
+        let reader = &mut io::BufReader::new(reader);
 
-        let camera_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
+        let camera_count = read_slice::<u64, 1>(reader)?[0] as usize;
         (0..camera_count)
             .map(|_| {
-                let camera = Camera::decode(&mut reader)?;
+                let camera = Camera::decode(reader)?;
                 Ok((camera.camera_id(), camera))
             })
             .collect()

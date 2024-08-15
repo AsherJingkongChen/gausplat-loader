@@ -7,12 +7,12 @@ pub type Images = std::collections::HashMap<u32, Image>;
 
 impl Decoder for Images {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let mut reader = io::BufReader::new(reader);
+        let reader = &mut io::BufReader::new(reader);
 
-        let image_count = read_slice!(&mut reader, u64, 1)?[0] as usize;
+        let image_count = read_slice::<u64, 1>(reader)?[0] as usize;
         (0..image_count)
             .map(|_| {
-                let image = Image::decode(&mut reader)?;
+                let image = Image::decode(reader)?;
                 Ok((image.image_id, image))
             })
             .collect()
