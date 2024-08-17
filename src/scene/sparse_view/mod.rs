@@ -8,7 +8,7 @@ pub use view::*;
 
 use std::fmt;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 pub struct SparseViewScene {
     /// The image id is also the view id
     pub images: Images,

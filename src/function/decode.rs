@@ -37,9 +37,7 @@ where
     reader
         .read_exact(&mut bytes)
         .map_err(Error::Io)
-        .map(|_| {
-            bytemuck::from_bytes::<[T; N]>(&bytes).to_owned()
-        })
+        .map(|_| bytemuck::from_bytes::<[T; N]>(&bytes).to_owned())
 }
 
 #[cfg(test)]

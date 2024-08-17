@@ -4,7 +4,7 @@ pub use images::*;
 
 use std::fmt;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 pub struct Image {
     pub image: image::RgbImage,
     pub view_id: u32,

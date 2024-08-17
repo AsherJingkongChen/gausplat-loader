@@ -4,7 +4,7 @@ pub use views::*;
 
 use std::fmt;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 pub struct View {
     pub field_of_view_x: f64,
     pub field_of_view_y: f64,
