@@ -1,6 +1,6 @@
 [package]
 authors = ["Asher Jingkong Chen"]
-description = "A library to import scenes for `gausplat-trainer`"
+description = "A library to import scenes for `gausplat-renderer`"
 edition.workspace = true
 license-file = "LICENSE"
 name = "gausplat-importer"
@@ -10,8 +10,8 @@ repository = "https://github.com/AsherJingkongChen/gausplat-importer"
 version.workspace = true
 
 [dependencies]
-bytemuck = {workspace = true}
-dashmap = {workspace = true}
+bytemuck = {workspace = true, features = ["derive"]}
+dashmap = {workspace = true, features = ["rayon"]}
 image = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}

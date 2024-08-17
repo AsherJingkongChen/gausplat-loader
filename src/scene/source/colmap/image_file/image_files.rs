@@ -1,3 +1,3 @@
 pub use super::ImageFile;
 
-pub type ImageFiles<R> = dashmap::DashMap<String, ImageFile<R>>;
+pub type ImageFiles<R> = std::collections::HashMap<String, ImageFile<R>>;

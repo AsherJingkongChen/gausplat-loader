@@ -1,3 +1,3 @@
 # gausplat-importer
 
-> A library to import scenes for `gausplat-trainer`
+> A library to import scenes for `gausplat-renderer`

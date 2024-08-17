@@ -27,17 +27,25 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
         let points = source
             .points
-            .into_par_iter()
+            .into_iter()
             .map(|point| sparse_view::Point {
                 color_rgb: point.color_rgb_normalized(),
                 position: point.position,
             })
             .collect();
 
+        let image_files = Vec::from_iter(source.image_files.into_values())
+            .into_par_iter()
+            .map(|mut image_file| {
+                let image = image_file.read()?;
+                Ok((image_file.file_name, image))
+            })
+            .collect::<Result<dashmap::DashMap<_, _>, _>>()?;
+
         let (images, views) = source
             .images
-            .into_par_iter()
-            .map(|(_, image)| {
+            .into_values()
+            .map(|image| {
                 let view_id = image.image_id;
                 let view_position = image.view_position();
                 let view_transform = image.view_transform();
@@ -46,11 +54,10 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     .cameras
                     .get(&image.camera_id)
                     .ok_or(Error::UnknownCameraId(image.camera_id))?;
-                let image = source
-                    .image_files
-                    .get_mut(&image.file_name)
+                let image = image_files
+                    .remove(&image.file_name)
                     .ok_or(Error::UnknownImageFileName(image.file_name))?
-                    .read()?;
+                    .1;
                 let image_height = image.height();
                 let image_width = image.width();
                 let (field_of_view_x, field_of_view_y) = match camera {

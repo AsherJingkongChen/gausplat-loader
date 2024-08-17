@@ -9,6 +9,7 @@ use crate::{
     error::*,
     function::{advance, read_slice},
 };
+use bytemuck::{Pod, Zeroable};
 use std::io;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -38,8 +39,12 @@ impl Camera {
 
 impl Decoder for Camera {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let [camera_id, model_id] = read_slice::<u32, 2>(reader)?;
-        let [width, height] = read_slice::<u64, 2>(reader)?;
+        #[derive(Clone, Copy, Pod, Zeroable)]
+        #[repr(C)]
+        struct Packet(u32, u32, u64, u64);
+
+        let [Packet(camera_id, model_id, width, height)] =
+            read_slice::<Packet, 1>(reader)?;
 
         match model_id {
             0..=1 => {

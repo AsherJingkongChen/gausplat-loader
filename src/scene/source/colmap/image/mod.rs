@@ -7,6 +7,7 @@ use crate::{
     error::*,
     function::{advance, read_slice},
 };
+use bytemuck::{Pod, Zeroable};
 use std::io;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -64,12 +65,15 @@ impl Image {
 
 impl Decoder for Image {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
+        #[derive(Clone, Copy, Pod, Zeroable)]
+        #[repr(C)]
+        struct Packet([f64; 4], [f64; 3]);
+
         let [image_id] = read_slice::<u32, 1>(reader)?;
-        let rotation = read_slice::<f64, 4>(reader)?;
-        let translation = read_slice::<f64, 3>(reader)?;
+        let [Packet(rotation, translation)] = read_slice::<Packet, 1>(reader)?;
         let [camera_id] = read_slice::<u32, 1>(reader)?;
         let file_name = {
-            let mut bytes = Vec::new();
+            let mut bytes = Vec::with_capacity(16);
             loop {
                 let [byte] = read_slice::<u8, 1>(reader)?;
                 if byte == 0 {
@@ -79,10 +83,8 @@ impl Decoder for Image {
             }
             String::from_utf8(bytes).map_err(Error::Utf8)?
         };
-        {
-            let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
-            advance(reader, 24 * point_count)?;
-        };
+        let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        advance(reader, 24 * point_count)?;
 
         Ok(Self {
             image_id,
