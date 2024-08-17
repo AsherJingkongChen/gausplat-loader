@@ -35,7 +35,7 @@ mod tests {
         let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
         let points = Points::decode(&mut reader);
-        assert!(points.is_ok(), "{:#?}", points.unwrap_err());
+        assert!(points.is_ok(), "{}", points.unwrap_err());
 
         let points = points.unwrap();
         assert!(points.is_empty());
@@ -68,7 +68,7 @@ mod tests {
         ]);
 
         let points = Points::decode(&mut reader);
-        assert!(points.is_ok(), "{:#?}", points.unwrap_err());
+        assert!(points.is_ok(), "{}", points.unwrap_err());
 
         let points = points.unwrap();
         assert_eq!(points.len(), 3);

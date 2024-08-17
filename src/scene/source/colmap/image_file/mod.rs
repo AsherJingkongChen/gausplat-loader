@@ -61,7 +61,7 @@ mod tests {
         // It should be idempotent except for IO errors
         for _ in 0..3 {
             let image = image_file.read();
-            assert!(image.is_ok(), "{:#?}", image.unwrap_err());
+            assert!(image.is_ok(), "{}", image.unwrap_err());
 
             let image = image.unwrap();
             assert_eq!(image.height(), 1);

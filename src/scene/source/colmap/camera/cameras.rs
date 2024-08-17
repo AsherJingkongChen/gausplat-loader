@@ -41,7 +41,7 @@ mod tests {
         let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
         let cameras = Cameras::decode(&mut reader);
-        assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
+        assert!(cameras.is_ok(), "{}", cameras.unwrap_err());
 
         let cameras = cameras.unwrap();
         assert!(cameras.is_empty());
@@ -67,7 +67,7 @@ mod tests {
         ]);
 
         let cameras = Cameras::decode(&mut reader);
-        assert!(cameras.is_ok(), "{:#?}", cameras.unwrap_err());
+        assert!(cameras.is_ok(), "{}", cameras.unwrap_err());
 
         let cameras = cameras.unwrap();
         assert_eq!(cameras.len(), 2);

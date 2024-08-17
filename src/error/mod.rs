@@ -1,27 +1,32 @@
 pub use crate::scene::source::colmap::Camera;
 
-use std::{error, fmt};
-
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
-    Cast(bytemuck::checked::CheckedCastError),
+    #[error("IO Error: {0}")]
     Io(std::io::Error),
+    #[error("Image Error: {0}")]
     Image(image::ImageError),
-    Unimplemented,
+    #[error("Unknown camera id: {0}")]
     UnknownCameraId(u32),
+    #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
+    #[error("Unknown image file name: {0}")]
     UnknownImageFileName(String),
-    UnsupportedCameraModel(Camera),
+    #[error("UTF-8 Error: {}", ._0.format())]
     Utf8(std::string::FromUtf8Error),
 }
 
-impl fmt::Display for Error {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
+trait ErrorDisplay {
+    fn format(&self) -> String;
 }
 
-impl error::Error for Error {}
+impl ErrorDisplay for std::string::FromUtf8Error {
+    fn format(&self) -> String {
+        let utf8_error = self.utf8_error();
+        let invalid_range = utf8_error.valid_up_to()
+            ..(utf8_error.valid_up_to() + utf8_error.error_len().unwrap_or(0));
+        let bytes = self.as_bytes();
+
+        format!("{}: {:02x?}", self, bytes[invalid_range].to_vec())
+    }
+}

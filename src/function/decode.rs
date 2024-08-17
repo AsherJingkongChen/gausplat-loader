@@ -37,10 +37,8 @@ where
     reader
         .read_exact(&mut bytes)
         .map_err(Error::Io)
-        .and_then(|_| {
-            bytemuck::checked::try_from_bytes::<[T; N]>(&bytes)
-                .map_err(Error::Cast)
-                .map(ToOwned::to_owned)
+        .map(|_| {
+            bytemuck::from_bytes::<[T; N]>(&bytes).to_owned()
         })
 }
 
@@ -52,7 +50,7 @@ mod tests {
 
         let reader = &mut std::io::Cursor::new(&[1, 0, 0, 0, 4, 0, 0, 0]);
         let result = read_slice::<u32, 2>(reader);
-        assert!(result.is_ok(), "{:#?}", result.unwrap_err());
+        assert!(result.is_ok(), "{}", result.unwrap_err());
 
         let result = result.unwrap();
         assert_eq!(result[0], 1);

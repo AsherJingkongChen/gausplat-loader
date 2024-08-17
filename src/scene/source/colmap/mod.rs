@@ -10,8 +10,7 @@ pub use point::*;
 
 use crate::scene::sparse_view;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::fmt;
-use std::io;
+use std::{fmt, io};
 
 pub struct ColmapSource<R: io::Read + io::Seek> {
     pub cameras: Cameras,
@@ -28,7 +27,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
         let points = source
             .points
-            .into_iter()
+            .into_par_iter()
             .map(|point| sparse_view::Point {
                 color_rgb: point.color_rgb_normalized(),
                 position: point.position,
@@ -39,32 +38,21 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             .images
             .into_par_iter()
             .map(|(_, image)| {
-                let camera = {
-                    let key = image.camera_id;
-                    let value = source.cameras.get(&key);
-                    if value.is_none() {
-                        return Err(Error::UnknownCameraId(key));
-                    }
-                    value.unwrap()
-                };
-                let mut image_file = {
-                    let value = source.image_files.get_mut(&image.file_name);
-                    if value.is_none() {
-                        return Err(Error::UnknownImageFileName(
-                            image.file_name,
-                        ));
-                    }
-                    value.unwrap()
-                };
-
                 let view_id = image.image_id;
                 let view_position = image.view_position();
                 let view_transform = image.view_transform();
-                let image_file_name = image.file_name;
-                let image = image_file.read()?;
+                let image_file_name = image.file_name.to_owned();
+                let camera = source
+                    .cameras
+                    .get(&image.camera_id)
+                    .ok_or(Error::UnknownCameraId(image.camera_id))?;
+                let image = source
+                    .image_files
+                    .get_mut(&image.file_name)
+                    .ok_or(Error::UnknownImageFileName(image.file_name))?
+                    .read()?;
                 let image_height = image.height();
                 let image_width = image.width();
-
                 let (field_of_view_x, field_of_view_y) = match camera {
                     Camera::Pinhole(camera) => (
                         2.0 * (camera.width as f64)
@@ -72,7 +60,6 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                         2.0 * (camera.height as f64)
                             .atan2(2.0 * camera.focal_length_y),
                     ),
-                    _ => return Err(Error::Unimplemented),
                 };
 
                 let image = sparse_view::Image { image, view_id };
@@ -86,9 +73,10 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
                     view_position,
                     view_transform,
                 };
+
                 Ok(((view_id, image), (view_id, view)))
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<_, Self::Error>>()?;
 
         Ok(Self {
             images,

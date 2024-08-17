@@ -9,7 +9,7 @@ use crate::{
 };
 use std::io;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
     pub position: [f64; 3],
     pub color_rgb: [u8; 3],
