@@ -3,17 +3,22 @@ pub use crate::scene::source::colmap::Camera;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("IO Error: {0}")]
-    Io(std::io::Error),
+    Io(#[from] std::io::Error),
+
     #[error("Image Error: {0}")]
-    Image(image::ImageError),
+    Image(#[from] image::ImageError),
+
     #[error("Unknown camera id: {0}")]
     UnknownCameraId(u32),
+
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
+
     #[error("Unknown image file name: {0}")]
     UnknownImageFileName(String),
+
     #[error("UTF-8 Error: {}", ._0.format())]
-    Utf8(std::string::FromUtf8Error),
+    Utf8(#[from] std::string::FromUtf8Error),
 }
 
 trait ErrorDisplay {

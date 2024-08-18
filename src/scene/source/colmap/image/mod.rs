@@ -1,12 +1,10 @@
 pub mod images;
 
+pub use crate::error::Error;
 pub use crate::function::Decoder;
 pub use images::*;
 
-use crate::{
-    error::*,
-    function::{advance, read_slice},
-};
+use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
 use std::io;
 
@@ -81,7 +79,7 @@ impl Decoder for Image {
                 }
                 bytes.push(byte);
             }
-            String::from_utf8(bytes).map_err(Error::Utf8)?
+            String::from_utf8(bytes)?
         };
         let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
         advance(reader, 24 * point_count)?;

@@ -1,14 +1,12 @@
 pub mod cameras;
 pub mod pinhole;
 
+pub use crate::error::Error;
 pub use crate::function::Decoder;
 pub use cameras::*;
 pub use pinhole::*;
 
-use crate::{
-    error::*,
-    function::{advance, read_slice},
-};
+use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
 use std::io;
 

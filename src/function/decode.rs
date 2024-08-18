@@ -17,13 +17,10 @@ pub(crate) fn advance<R: io::Read>(
     const BUFFER_SIZE: usize = 1 << BUFFER_SIZE_LEVEL;
 
     for _ in 0..(byte_count >> BUFFER_SIZE_LEVEL) {
-        reader
-            .read_exact(&mut [0; BUFFER_SIZE])
-            .map_err(Error::Io)?;
+        reader.read_exact(&mut [0; BUFFER_SIZE])?;
     }
-    reader
-        .read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])
-        .map_err(Error::Io)
+
+    Ok(reader.read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])?)
 }
 
 pub(crate) fn read_slice<T, const N: usize>(
@@ -33,11 +30,9 @@ where
     [T; N]: bytemuck::Pod,
 {
     let mut bytes = vec![0; std::mem::size_of::<[T; N]>()];
+    reader.read_exact(&mut bytes)?;
 
-    reader
-        .read_exact(&mut bytes)
-        .map_err(Error::Io)
-        .map(|_| bytemuck::from_bytes::<[T; N]>(&bytes).to_owned())
+    Ok(bytemuck::from_bytes::<[T; N]>(&bytes).to_owned())
 }
 
 #[cfg(test)]

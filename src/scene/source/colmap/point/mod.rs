@@ -1,12 +1,10 @@
 pub mod points;
 
+pub use crate::error::Error;
 pub use crate::function::Decoder;
 pub use points::*;
 
-use crate::{
-    error::*,
-    function::{advance, read_slice},
-};
+use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
 use std::io;
 
