@@ -16,7 +16,7 @@ pub struct View {
     /// The position of the view in world space
     pub view_position: [f64; 3],
 
-    /// The transformation matrix from world space to view space
+    /// The transformation matrix from world space to view space in **column-major** order
     pub view_transform: [[f64; 4]; 4],
 }
 

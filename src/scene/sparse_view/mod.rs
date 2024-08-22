@@ -13,7 +13,6 @@ pub struct SparseViewScene {
     /// The image id is also the view id
     pub images: Images,
     pub points: Points,
-
     /// The view id is also the image id
     pub views: Views,
 }
