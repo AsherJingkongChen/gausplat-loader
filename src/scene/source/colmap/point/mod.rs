@@ -26,8 +26,8 @@ impl Point {
 
 impl Decoder for Point {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        #[derive(Clone, Copy, Pod, Zeroable)]
         #[repr(C)]
+        #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet(f64, [f64; 3]);
 
         let [Packet(_, position)] = read_slice::<Packet, 1>(reader)?;

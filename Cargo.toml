@@ -1,6 +1,6 @@
 [package]
 authors = ["Asher Jingkong Chen"]
-description = "A library to import scenes for `gausplat-renderer`"
+description = "A library to import scenes for `gausplat`"
 edition.workspace = true
 license-file = "LICENSE"
 name = "gausplat-importer"

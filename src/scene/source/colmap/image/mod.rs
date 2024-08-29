@@ -63,8 +63,8 @@ impl Image {
 
 impl Decoder for Image {
     fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        #[derive(Clone, Copy, Pod, Zeroable)]
         #[repr(C)]
+        #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet([f64; 4], [f64; 3]);
 
         let [image_id] = read_slice::<u32, 1>(reader)?;
