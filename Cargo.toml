@@ -13,6 +13,8 @@ version.workspace = true
 bytemuck = {workspace = true, features = ["derive"]}
 dashmap = {workspace = true, features = ["rayon"]}
 image = {workspace = true}
+log = {workspace = true}
+pretty_env_logger = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}
 

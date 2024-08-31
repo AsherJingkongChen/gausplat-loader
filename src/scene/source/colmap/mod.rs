@@ -1,11 +1,10 @@
 pub mod camera;
 pub mod image;
-pub mod image_file;
 pub mod point;
 
+pub use super::file::*;
 pub use camera::*;
 pub use image::*;
-pub use image_file::*;
 pub use point::*;
 
 use crate::scene::sparse_view;
@@ -14,8 +13,8 @@ use std::{fmt, io};
 
 pub struct ColmapSource<R: io::Read + io::Seek> {
     pub cameras: Cameras,
+    pub files: Files<R>,
     pub images: Images,
-    pub image_files: ImageFiles<R>,
     pub points: Points,
 }
 
@@ -34,11 +33,11 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
             })
             .collect();
 
-        let images_encoded = Vec::from_iter(source.image_files.into_values())
+        let images_encoded = Vec::from_iter(source.files.into_values())
             .into_par_iter()
             .map(|mut image_file| {
                 let image_encoded = image_file.read()?;
-                Ok((image_file.file_name, image_encoded))
+                Ok((image_file.name, image_encoded))
             })
             .collect::<Result<dashmap::DashMap<_, _>, Self::Error>>()?;
 
@@ -107,8 +106,8 @@ impl<R: io::Read + io::Seek> fmt::Debug for ColmapSource<R> {
     ) -> fmt::Result {
         f.debug_struct("ColmapSource")
             .field("cameras.len()", &self.cameras.len())
+            .field("files.len()", &self.files.len())
             .field("images.len()", &self.images.len())
-            .field("image_files.len()", &self.image_files.len())
             .field("points.len()", &self.points.len())
             .finish()
     }

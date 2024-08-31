@@ -1,4 +1,4 @@
-pub use crate::scene::source::colmap::Camera;
+pub use crate::scene::colmap::Camera;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -32,6 +32,6 @@ impl ErrorDisplay for std::string::FromUtf8Error {
             ..(utf8_error.valid_up_to() + utf8_error.error_len().unwrap_or(0));
         let bytes = self.as_bytes();
 
-        format!("{}: {:02x?}", self, bytes[invalid_range].to_vec())
+        format!("{}: {:02x?}", self, &bytes[invalid_range])
     }
 }
