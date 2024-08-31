@@ -25,7 +25,7 @@ impl Point {
 }
 
 impl Decoder for Point {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         #[repr(C)]
         #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet(f64, [f64; 3]);

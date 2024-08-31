@@ -36,7 +36,7 @@ impl Camera {
 }
 
 impl Decoder for Camera {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         #[repr(C)]
         #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet(u32, u32, u64, u64);

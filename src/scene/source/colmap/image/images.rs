@@ -6,7 +6,7 @@ use std::io::{BufReader, Read};
 pub type Images = std::collections::HashMap<u32, Image>;
 
 impl Decoder for Images {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
         let image_count = read_slice::<u64, 1>(reader)?[0] as usize;
 
@@ -18,7 +18,7 @@ impl Decoder for Images {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_importer::scene::colmap", "Images::decode");
+        log::debug!(target: "gausplat_importer::scene", "colmap::Images::decode");
 
         images
     }

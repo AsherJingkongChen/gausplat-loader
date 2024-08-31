@@ -6,5 +6,5 @@ pub trait Opener
 where
     Self: Sized,
 {
-    fn open<P: AsRef<path::Path>>(path: P) -> Result<Self, Error>;
+    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error>;
 }

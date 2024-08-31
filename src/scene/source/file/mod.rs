@@ -27,7 +27,7 @@ impl<R: Read> File<R> {
 }
 
 impl Opener for File<fs::File> {
-    fn open<P: AsRef<path::Path>>(path: P) -> Result<Self, Error> {
+    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
         let name = path
             .as_ref()
             .file_name()

@@ -6,11 +6,11 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error>;
+    fn decode(reader: &mut impl Read) -> Result<Self, Error>;
 }
 
-pub(crate) fn advance<R: Read>(
-    reader: &mut R,
+pub(crate) fn advance(
+    reader: &mut impl Read,
     byte_count: usize,
 ) -> Result<(), Error> {
     const BUFFER_SIZE_LEVEL: usize = 3 + 10;

@@ -7,7 +7,7 @@ use std::io::{BufReader, Read};
 pub type Cameras = std::collections::HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
         let camera_count = read_slice::<u64, 1>(reader)?[0] as usize;
 
@@ -19,7 +19,7 @@ impl Decoder for Cameras {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_importer::scene::colmap", "Cameras::decode");
+        log::debug!(target: "gausplat_importer::scene", "colmap::Cameras::decode");
 
         cameras
     }

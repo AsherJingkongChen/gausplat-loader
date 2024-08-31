@@ -1,6 +1,7 @@
 pub mod images;
 
 pub use crate::error::Error;
+pub use image::RgbImage;
 pub use images::*;
 
 use std::fmt;
@@ -12,7 +13,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn decode(&self) -> Result<image::RgbImage, Error> {
+    pub fn decode_rgb(&self) -> Result<image::RgbImage, Error> {
         Ok(image::load_from_memory(&self.image_encoded)?.into())
     }
 }
@@ -23,7 +24,7 @@ impl fmt::Debug for Image {
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         f.debug_struct("Image")
-            .field("size_in_bytes", &self.image_encoded.len())
+            .field("image_encoded.len()", &self.image_encoded.len())
             .field("view_id", &self.view_id)
             .finish()
     }
@@ -32,7 +33,7 @@ impl fmt::Debug for Image {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn decode() {
+    fn decode_rgb() {
         use super::*;
 
         let image = Image {
@@ -60,7 +61,7 @@ mod tests {
 
         // It should be idempotent
         for _ in 0..3 {
-            let image = image.decode();
+            let image = image.decode_rgb();
             assert!(image.is_ok(), "{}", image.unwrap_err());
 
             let image = image.unwrap();

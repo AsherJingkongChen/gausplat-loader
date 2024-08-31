@@ -6,14 +6,14 @@ use std::io::{BufReader, Read};
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {
-    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
         let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
 
         let points = (0..point_count).map(|_| Point::decode(reader)).collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_importer::scene::colmap", "Points::decode");
+        log::debug!(target: "gausplat_importer::scene", "colmap::Points::decode");
 
         points
     }

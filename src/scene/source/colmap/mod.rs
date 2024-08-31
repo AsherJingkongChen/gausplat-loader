@@ -73,7 +73,8 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
                     image_encoded,
                     view_id,
                 };
-                let (image_width, image_height) = image.decode()?.dimensions();
+                let (image_width, image_height) =
+                    image.decode_rgb()?.dimensions();
                 let view = sparse_view::View {
                     field_of_view_x,
                     field_of_view_y,
@@ -91,8 +92,8 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
 
         #[cfg(debug_assertions)]
         log::debug!(
-            target: "gausplat_importer::scene::colmap",
-            "sparse_view::SparseViewScene::try_from",
+            target: "gausplat_importer::scene",
+            "sparse_view::SparseViewScene::try_from(ColmapSource)",
         );
 
         Ok(Self {
