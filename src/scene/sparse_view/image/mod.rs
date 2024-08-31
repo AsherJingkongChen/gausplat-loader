@@ -13,7 +13,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn decode_rgb(&self) -> Result<image::RgbImage, Error> {
+    pub fn decode_rgb(&self) -> Result<RgbImage, Error> {
         Ok(image::load_from_memory(&self.image_encoded)?.into())
     }
 }
