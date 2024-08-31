@@ -10,11 +10,11 @@ repository = "https://github.com/AsherJingkongChen/gausplat-importer"
 version.workspace = true
 
 [dependencies]
-bytemuck = {workspace = true, features = ["derive"]}
+burn-tensor = {workspace = true}
+bytemuck = {workspace = true}
 dashmap = {workspace = true, features = ["rayon"]}
 image = {workspace = true}
 log = {workspace = true}
-pretty_env_logger = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}
 

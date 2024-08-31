@@ -5,7 +5,6 @@ pub use crate::function::Decoder;
 pub use points::*;
 
 use crate::function::{advance, read_slice};
-use bytemuck::{Pod, Zeroable};
 use std::io::Read;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -26,11 +25,8 @@ impl Point {
 
 impl Decoder for Point {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        #[repr(C)]
-        #[derive(Clone, Copy, Pod, Zeroable)]
-        struct Packet(f64, [f64; 3]);
-
-        let [Packet(_, position)] = read_slice::<Packet, 1>(reader)?;
+        advance(reader, 8)?;
+        let position = read_slice::<f64, 3>(reader)?;
         let color_rgb = read_slice::<u8, 3>(reader)?;
         advance(reader, 8)?;
         let track_count = read_slice::<u64, 1>(reader)?[0] as usize;

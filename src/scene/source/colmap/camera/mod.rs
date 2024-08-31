@@ -7,7 +7,6 @@ pub use cameras::*;
 pub use pinhole::*;
 
 use crate::function::{advance, read_slice};
-use bytemuck::{Pod, Zeroable};
 use std::io::Read;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -37,12 +36,8 @@ impl Camera {
 
 impl Decoder for Camera {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        #[repr(C)]
-        #[derive(Clone, Copy, Pod, Zeroable)]
-        struct Packet(u32, u32, u64, u64);
-
-        let [Packet(camera_id, model_id, width, height)] =
-            read_slice::<Packet, 1>(reader)?;
+        let [camera_id, model_id] = read_slice::<u32, 2>(reader)?;
+        let [width, height] = read_slice::<u64, 2>(reader)?;
 
         match model_id {
             0..=1 => {
