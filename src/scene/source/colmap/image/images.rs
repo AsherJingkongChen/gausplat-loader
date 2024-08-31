@@ -1,13 +1,13 @@
 pub use super::Image;
 pub use crate::function::Decoder;
 use crate::{error::Error, function::read_slice};
-use std::io;
+use std::io::{BufReader, Read};
 
 pub type Images = std::collections::HashMap<u32, Image>;
 
 impl Decoder for Images {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let reader = &mut io::BufReader::new(reader);
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        let reader = &mut BufReader::new(reader);
         let image_count = read_slice::<u64, 1>(reader)?[0] as usize;
 
         let images = (0..image_count)

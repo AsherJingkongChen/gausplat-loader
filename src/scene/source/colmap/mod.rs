@@ -9,18 +9,16 @@ pub use point::*;
 
 use crate::scene::sparse_view;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use std::{fmt, io};
+use std::{fmt, io::Read};
 
-pub struct ColmapSource<R: io::Read + io::Seek> {
+pub struct ColmapSource<R> {
     pub cameras: Cameras,
     pub files: Files<R>,
     pub images: Images,
     pub points: Points,
 }
 
-impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
-    for sparse_view::SparseViewScene
-{
+impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
     type Error = Error;
 
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
@@ -99,7 +97,7 @@ impl<R: io::Read + io::Seek + Send + Sync> TryFrom<ColmapSource<R>>
     }
 }
 
-impl<R: io::Read + io::Seek> fmt::Debug for ColmapSource<R> {
+impl<R> fmt::Debug for ColmapSource<R> {
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,

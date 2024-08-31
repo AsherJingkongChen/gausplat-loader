@@ -6,7 +6,7 @@ pub use points::*;
 
 use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
-use std::io;
+use std::io::Read;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Point {
@@ -25,7 +25,7 @@ impl Point {
 }
 
 impl Decoder for Point {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
         #[repr(C)]
         #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet(f64, [f64; 3]);

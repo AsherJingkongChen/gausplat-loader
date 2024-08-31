@@ -1,23 +1,25 @@
 pub mod files;
 
-pub use crate::function::Opener;
 pub use crate::error::Error;
+pub use crate::function::Opener;
 pub use files::*;
 
-use std::{fs, io, path};
+use std::{
+    fs,
+    io::{BufReader, Read},
+    path,
+};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct File<R: io::Read> {
+pub struct File<R> {
     pub name: String,
     pub reader: R,
 }
 
-impl<R: io::Read> File<R> {
+impl<R: Read> File<R> {
     pub fn read(&mut self) -> Result<Vec<u8>, Error> {
-        use io::Read;
-
         let mut bytes = Vec::new();
-        let reader = &mut io::BufReader::new(&mut self.reader);
+        let reader = &mut BufReader::new(&mut self.reader);
         reader.read_to_end(&mut bytes)?;
 
         Ok(bytes)

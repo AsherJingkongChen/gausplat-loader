@@ -8,7 +8,7 @@ pub use pinhole::*;
 
 use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
-use std::io;
+use std::io::Read;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Camera {
@@ -36,7 +36,7 @@ impl Camera {
 }
 
 impl Decoder for Camera {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
         #[repr(C)]
         #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet(u32, u32, u64, u64);

@@ -1,15 +1,15 @@
 pub use crate::error::Error;
 
-use std::io;
+use std::io::Read;
 
 pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error>;
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error>;
 }
 
-pub(crate) fn advance<R: io::Read>(
+pub(crate) fn advance<R: Read>(
     reader: &mut R,
     byte_count: usize,
 ) -> Result<(), Error> {
@@ -24,7 +24,7 @@ pub(crate) fn advance<R: io::Read>(
 }
 
 pub(crate) fn read_slice<T, const N: usize>(
-    reader: &mut impl io::Read
+    reader: &mut impl Read
 ) -> Result<[T; N], Error>
 where
     [T; N]: bytemuck::Pod,

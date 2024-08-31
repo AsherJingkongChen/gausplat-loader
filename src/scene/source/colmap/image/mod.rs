@@ -6,7 +6,7 @@ pub use images::*;
 
 use crate::function::{advance, read_slice};
 use bytemuck::{Pod, Zeroable};
-use std::io;
+use std::io::Read;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Image {
@@ -62,7 +62,7 @@ impl Image {
 }
 
 impl Decoder for Image {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
         #[repr(C)]
         #[derive(Clone, Copy, Pod, Zeroable)]
         struct Packet([f64; 4], [f64; 3]);

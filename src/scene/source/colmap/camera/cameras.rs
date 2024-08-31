@@ -2,13 +2,13 @@ pub use super::Camera;
 pub use crate::function::Decoder;
 
 use crate::{error::Error, function::read_slice};
-use std::io;
+use std::io::{BufReader, Read};
 
 pub type Cameras = std::collections::HashMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode<R: io::Read>(reader: &mut R) -> Result<Self, Error> {
-        let reader = &mut io::BufReader::new(reader);
+    fn decode<R: Read>(reader: &mut R) -> Result<Self, Error> {
+        let reader = &mut BufReader::new(reader);
         let camera_count = read_slice::<u64, 1>(reader)?[0] as usize;
 
         let cameras = (0..camera_count)
