@@ -15,11 +15,11 @@ impl Opener for Files<fs::File> {
 
                 Ok((file.name.to_owned(), file))
             })
-            .collect::<Result<_, Error>>()?;
+            .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!("");
+        log::debug!(target: "gausplat_importer::scene::colmap", "Files::open");
 
-        Ok(files)
+        files
     }
 }

@@ -89,6 +89,12 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
             })
             .collect::<Result<_, Self::Error>>()?;
 
+        #[cfg(debug_assertions)]
+        log::debug!(
+            target: "gausplat_importer::scene::colmap",
+            "sparse_view::SparseViewScene::try_from",
+        );
+
         Ok(Self {
             images,
             points,

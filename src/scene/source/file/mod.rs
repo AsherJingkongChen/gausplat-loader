@@ -28,7 +28,12 @@ impl<R: Read> File<R> {
 
 impl Opener for File<fs::File> {
     fn open<P: AsRef<path::Path>>(path: P) -> Result<Self, Error> {
-        let name = path.as_ref().to_string_lossy().to_string();
+        let name = path
+            .as_ref()
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
         let reader = fs::File::open(path)?;
 
         Ok(Self { name, reader })

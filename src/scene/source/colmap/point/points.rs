@@ -13,7 +13,7 @@ impl Decoder for Points {
         let points = (0..point_count).map(|_| Point::decode(reader)).collect();
 
         #[cfg(debug_assertions)]
-        log::debug!("");
+        log::debug!(target: "gausplat_importer::scene::colmap", "Points::decode");
 
         points
     }
