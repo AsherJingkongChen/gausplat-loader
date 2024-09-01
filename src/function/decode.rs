@@ -38,15 +38,37 @@ where
 #[cfg(test)]
 mod tests {
     #[test]
+    fn advance() {
+        use super::*;
+
+        let reader = &mut std::io::Cursor::new(&[
+            0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
+        ]);
+        let result = advance(reader, 4);
+        assert!(result.is_ok(), "{}", result.unwrap_err());
+
+        let result = read_slice::<u32, 1>(reader);
+        assert!(result.is_ok(), "{}", result.unwrap_err());
+
+        let result = result.unwrap();
+        assert_eq!(result[0], 0x00500004);
+
+        let result = advance(reader, 4);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn read_slice() {
         use super::*;
 
-        let reader = &mut std::io::Cursor::new(&[1, 0, 0, 0, 4, 0, 0, 0]);
+        let reader = &mut std::io::Cursor::new(&[
+            0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
+        ]);
         let result = read_slice::<u32, 2>(reader);
         assert!(result.is_ok(), "{}", result.unwrap_err());
 
         let result = result.unwrap();
-        assert_eq!(result[0], 1);
-        assert_eq!(result[1], 4);
+        assert_eq!(result[0], 0x00000201);
+        assert_eq!(result[1], 0x00500004);
     }
 }

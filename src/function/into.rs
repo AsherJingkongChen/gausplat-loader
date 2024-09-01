@@ -30,8 +30,7 @@ impl IntoRgbImage for TensorData {
 
         let value = self.convert::<u8>().bytes;
 
-        RgbImage::from_raw(width, height, value)
-            .expect("unreachable")
+        RgbImage::from_raw(width, height, value).expect("unreachable")
     }
 }
 
