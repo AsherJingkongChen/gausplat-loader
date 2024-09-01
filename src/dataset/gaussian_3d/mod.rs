@@ -10,7 +10,7 @@ pub use view::*;
 
 use std::fmt;
 
-#[derive(Clone, Default, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Gaussian3dDataset {
     pub cameras: Cameras,
     pub points: Points,
@@ -25,5 +25,14 @@ impl fmt::Debug for Gaussian3dDataset {
             .field("cameras.len()", &self.cameras.len())
             .field("points.len()", &self.points.len())
             .finish()
+    }
+}
+
+impl Default for Gaussian3dDataset {
+    fn default() -> Self {
+        Self {
+            cameras: Default::default(),
+            points: vec![Default::default()],
+        }
     }
 }
