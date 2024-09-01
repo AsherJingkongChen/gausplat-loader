@@ -7,7 +7,7 @@ pub use camera::*;
 pub use image::*;
 pub use point::*;
 
-use crate::scene::data::gaussian_3d;
+use crate::dataset::gaussian_3d;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{fmt, io::Read};
 
@@ -18,7 +18,9 @@ pub struct ColmapSource<R> {
     pub points: Points,
 }
 
-impl<R: Read + Send> TryFrom<ColmapSource<R>> for gaussian_3d::Gaussian3dSceneData {
+impl<R: Read + Send> TryFrom<ColmapSource<R>>
+    for gaussian_3d::Gaussian3dDataset
+{
     type Error = Error;
 
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
@@ -92,8 +94,8 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for gaussian_3d::Gaussian3dSceneDa
 
         #[cfg(debug_assertions)]
         log::debug!(
-            target: "gausplat_importer::scene",
-            "Gaussian3dSceneData::try_from(ColmapSource)",
+            target: "gausplat_importer::source",
+            "Gaussian3dDataset::try_from(ColmapSource)",
         );
 
         Ok(Self {

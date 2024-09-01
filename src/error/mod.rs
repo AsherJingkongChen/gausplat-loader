@@ -1,5 +1,3 @@
-pub use crate::scene::colmap::Camera;
-
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("IO Error: {0}")]

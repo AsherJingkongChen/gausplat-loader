@@ -18,7 +18,7 @@ impl Decoder for Images {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_importer::scene", "colmap::Images::decode");
+        log::debug!(target: "gausplat_importer::source", "colmap::Images::decode");
 
         images
     }
