@@ -9,7 +9,7 @@ pub use view::*;
 use std::fmt;
 
 #[derive(Clone, Default, PartialEq)]
-pub struct SparseViewScene {
+pub struct Gaussian3dSceneData {
     /// The image id is also the view id
     pub images: Images,
     pub points: Points,
@@ -17,12 +17,12 @@ pub struct SparseViewScene {
     pub views: Views,
 }
 
-impl fmt::Debug for SparseViewScene {
+impl fmt::Debug for Gaussian3dSceneData {
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        f.debug_struct("SparseViewScene")
+        f.debug_struct("Gaussian3dSceneData")
             .field("images.len()", &self.images.len())
             .field("points.len()", &self.points.len())
             .field("views.len()", &self.views.len())

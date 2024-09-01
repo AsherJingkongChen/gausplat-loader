@@ -7,7 +7,7 @@ pub use camera::*;
 pub use image::*;
 pub use point::*;
 
-use crate::scene::sparse_view;
+use crate::scene::data::gaussian_3d;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::{fmt, io::Read};
 
@@ -18,14 +18,14 @@ pub struct ColmapSource<R> {
     pub points: Points,
 }
 
-impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
+impl<R: Read + Send> TryFrom<ColmapSource<R>> for gaussian_3d::Gaussian3dSceneData {
     type Error = Error;
 
     fn try_from(source: ColmapSource<R>) -> Result<Self, Self::Error> {
         let points = source
             .points
             .into_iter()
-            .map(|point| sparse_view::Point {
+            .map(|point| gaussian_3d::Point {
                 color_rgb: point.color_rgb_normalized(),
                 position: point.position,
             })
@@ -69,13 +69,13 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
                         image_file_name.to_owned(),
                     ))?
                     .1;
-                let image = sparse_view::Image {
+                let image = gaussian_3d::Image {
                     image_encoded,
                     view_id,
                 };
                 let (image_width, image_height) =
                     image.decode_rgb()?.dimensions();
-                let view = sparse_view::View {
+                let view = gaussian_3d::View {
                     field_of_view_x,
                     field_of_view_y,
                     image_file_name,
@@ -93,7 +93,7 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>> for sparse_view::SparseViewScene {
         #[cfg(debug_assertions)]
         log::debug!(
             target: "gausplat_importer::scene",
-            "sparse_view::SparseViewScene::try_from(ColmapSource)",
+            "Gaussian3dSceneData::try_from(ColmapSource)",
         );
 
         Ok(Self {
