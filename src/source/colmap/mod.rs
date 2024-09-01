@@ -41,14 +41,14 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
             })
             .collect::<Result<dashmap::DashMap<_, _>, Self::Error>>()?;
 
-        let (images, views) = Vec::from_iter(source.images.into_values())
+        let cameras = Vec::from_iter(source.images.into_values())
             .into_par_iter()
             .map(|image| {
                 let view_position = image.view_position();
                 let view_transform = image.view_transform();
                 let camera_id = image.camera_id;
                 let image_file_name = image.file_name;
-                let view_id = image.image_id;
+                let id = image.image_id;
 
                 let camera = source
                     .cameras
@@ -63,8 +63,6 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
                     ),
                 };
 
-                // Using ::remove since
-                // an image and a view should have a 1-to-1 relationship
                 let image_encoded = images_encoded
                     .remove(&image_file_name)
                     .ok_or(Error::UnknownImageFileName(
@@ -73,22 +71,29 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
                     .1;
                 let image = gaussian_3d::Image {
                     image_encoded,
-                    view_id,
+                    image_file_name,
+                    image_id: id,
                 };
                 let (image_width, image_height) =
                     image.decode_rgb()?.dimensions();
+
                 let view = gaussian_3d::View {
                     field_of_view_x,
                     field_of_view_y,
-                    image_file_name,
                     image_height,
                     image_width,
-                    view_id,
+                    view_id: id,
                     view_position,
                     view_transform,
                 };
 
-                Ok(((view_id, image), (view_id, view)))
+                let camera = gaussian_3d::Camera {
+                    camera_id: id,
+                    image,
+                    view,
+                };
+
+                Ok((id, camera))
             })
             .collect::<Result<_, Self::Error>>()?;
 
@@ -98,11 +103,7 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
             "Gaussian3dDataset::try_from(ColmapSource)",
         );
 
-        Ok(Self {
-            images,
-            points,
-            views,
-        })
+        Ok(Self { cameras, points })
     }
 }
 

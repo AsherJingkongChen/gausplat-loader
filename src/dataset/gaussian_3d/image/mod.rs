@@ -9,7 +9,8 @@ use std::fmt;
 #[derive(Clone, Default, PartialEq)]
 pub struct Image {
     pub image_encoded: Vec<u8>,
-    pub view_id: u32,
+    pub image_file_name: String,
+    pub image_id: u32,
 }
 
 impl Image {
@@ -25,7 +26,7 @@ impl fmt::Debug for Image {
     ) -> fmt::Result {
         f.debug_struct("Image")
             .field("image_encoded.len()", &self.image_encoded.len())
-            .field("view_id", &self.view_id)
+            .field("image_id", &self.image_id)
             .finish()
     }
 }
@@ -56,7 +57,8 @@ mod tests {
                 0xd1, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
                 0x42, 0x60, 0x82,
             ],
-            view_id: Default::default(),
+            image_file_name: Default::default(),
+            image_id: Default::default(),
         };
 
         // It should be idempotent
