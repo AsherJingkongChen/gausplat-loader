@@ -13,7 +13,10 @@ version.workspace = true
 burn-tensor = {workspace = true}
 bytemuck = {workspace = true}
 dashmap = {workspace = true, features = ["rayon"]}
-image = {workspace = true}
+image = {workspace = true, features = ["rayon"]}
+indexmap = {workspace = true, features = ["rayon"]}
+rand = {workspace = true}
+rand_distr = {workspace = true}
 log = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}
