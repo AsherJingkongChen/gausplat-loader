@@ -29,6 +29,7 @@ impl fmt::Debug for Gaussian3dDataset {
 }
 
 impl Default for Gaussian3dDataset {
+    #[inline]
     fn default() -> Self {
         Self {
             cameras: Default::default(),
