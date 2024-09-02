@@ -3,7 +3,7 @@ pub use rand::rngs::StdRng;
 
 use rand::{Rng, SeedableRng};
 use std::{
-    hash::{Hash, BuildHasher, RandomState},
+    hash::{BuildHasher, Hash, RandomState},
     ops::{Deref, DerefMut},
 };
 
@@ -14,8 +14,12 @@ pub struct IndexMap<K, V, S = RandomState> {
 }
 
 impl<K, V, S> IndexMap<K, V, S> {
-    pub fn seed(&mut self, seed: u64) {
+    pub fn seed(
+        &mut self,
+        seed: u64,
+    ) -> &mut Self {
         self.rng = StdRng::seed_from_u64(seed);
+        self
     }
 
     pub fn get_random(&mut self) -> Option<(&K, &V)> {
