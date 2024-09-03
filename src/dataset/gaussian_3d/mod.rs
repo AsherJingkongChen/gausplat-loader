@@ -33,7 +33,7 @@ impl Default for Gaussian3dDataset {
     fn default() -> Self {
         Self {
             cameras: Default::default(),
-            points: vec![Default::default()],
+            points: vec![Default::default(); 16],
         }
     }
 }

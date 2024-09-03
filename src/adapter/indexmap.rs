@@ -90,7 +90,7 @@ where
     #[inline]
     fn default() -> Self {
         Self {
-            inner: IndexMapInner::default(),
+            inner: Default::default(),
             rng: StdRng::from_seed(Default::default()),
         }
     }
