@@ -30,12 +30,15 @@ impl IntoRgbImage for TensorData {
 
         let value = self.convert::<u8>().bytes;
 
-        RgbImage::from_raw(width, height, value).expect("unreachable")
+        RgbImage::from_raw(width, height, value)
+            .expect("Unreachable on debug build")
     }
 }
 
 impl IntoTensorData for RgbImage {
-    /// `return.shape` is `[H, W, C]`
+    /// ## Returns
+    /// 
+    /// A tensor data with shape of `[H, W, C]`
     fn into_tensor_data(self) -> TensorData {
         let height = self.height() as usize;
         let width = self.width() as usize;
