@@ -44,10 +44,13 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
         let cameras = Vec::from_iter(source.images.into_values())
             .into_par_iter()
             .map(|image| {
-                let view_rotation = Image::rotation(&image.quaternion);
-                let view_position =
-                    Image::view_position(&view_rotation, &image.translation);
-                let view_transform = Image::transform_to_view(
+                let view_rotation =
+                    gaussian_3d::View::rotation(&image.quaternion);
+                let view_position = gaussian_3d::View::position(
+                    &view_rotation,
+                    &image.translation,
+                );
+                let view_transform = gaussian_3d::View::transform_to_view(
                     &view_rotation,
                     &image.translation,
                 );
