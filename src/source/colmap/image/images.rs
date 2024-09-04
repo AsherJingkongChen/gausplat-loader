@@ -86,7 +86,7 @@ mod tests {
             images.get(&1),
             Some(&Image {
                 image_id: 1,
-                rotation: [
+                quaternion: [
                     0.9682876750848758,
                     -0.022047196832118324,
                     -0.24703142571179165,
@@ -105,7 +105,7 @@ mod tests {
             images.get(&2),
             Some(&Image {
                 image_id: 2,
-                rotation: [
+                quaternion: [
                     0.9736501133826346,
                     -0.022393725914796048,
                     -0.2251696605578724,

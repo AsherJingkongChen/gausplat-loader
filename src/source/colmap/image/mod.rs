@@ -10,52 +10,104 @@ use std::io::Read;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Image {
     pub image_id: u32,
-    pub rotation: [f64; 4],
+    pub quaternion: [f64; 4],
     pub translation: [f64; 3],
     pub camera_id: u32,
     pub file_name: String,
 }
 
 impl Image {
-    /// The transformation matrix computed from the normalized quaternion `self.rotation`
-    pub fn rotation_transform(&self) -> [[f64; 3]; 3] {
-        let [r0, r1, r2, r3] = self.rotation;
-        let r1_r1 = r1 * r1 * 2.0;
-        let r2_r2 = r2 * r2 * 2.0;
-        let r3_r3 = r3 * r3 * 2.0;
-        let r0_r1 = r0 * r1 * 2.0;
-        let r0_r2 = r0 * r2 * 2.0;
-        let r0_r3 = r0 * r3 * 2.0;
-        let r1_r2 = r1 * r2 * 2.0;
-        let r1_r3 = r1 * r3 * 2.0;
-        let r2_r3 = r2 * r3 * 2.0;
+    /// ## Arguments
+    ///
+    /// * `quaternion_normalized` - A normalized quaternion `(x, y, z, w)`.
+    ///
+    /// ## Returns
+    ///
+    /// A 3D rotation matrix **(in column-major order)**.
+    pub fn rotation(quaternion_normalized: &[f64; 4]) -> [[f64; 3]; 3] {
+        let [x, y, z, w] = quaternion_normalized;
+        let y_y = y * y * 2.0;
+        let z_z = z * z * 2.0;
+        let w_w = w * w * 2.0;
+        let x_y = x * y * 2.0;
+        let x_z = x * z * 2.0;
+        let x_w = x * w * 2.0;
+        let y_z = y * z * 2.0;
+        let y_w = y * w * 2.0;
+        let z_w = z * w * 2.0;
         [
-            [1.0 - r2_r2 - r3_r3, r1_r2 - r0_r3, r1_r3 + r0_r2],
-            [r1_r2 + r0_r3, 1.0 - r1_r1 - r3_r3, r2_r3 - r0_r1],
-            [r1_r3 - r0_r2, r2_r3 + r0_r1, 1.0 - r1_r1 - r2_r2],
+            [1.0 - z_z - w_w, y_z + x_w, y_w - x_z],
+            [y_z - x_w, 1.0 - y_y - w_w, z_w + x_y],
+            [y_w + x_z, z_w - x_y, 1.0 - y_y - z_z],
         ]
     }
 
-    /// The position of the camera in world space
-    pub fn view_position(&self) -> [f64; 3] {
-        let r = self.rotation_transform();
-        let t = self.translation;
+    /// ## Arguments
+    ///
+    /// * `rotation_to_view` - A 3D rotation matrix mapping
+    /// from world space to view space **(in column-major order)**.
+    ///
+    /// * `translation_to_view` - A 3D translation vector mapping
+    /// from world space to view space.
+    ///
+    /// ## Returns
+    ///
+    /// A 3D affine transformation matrix mapping
+    /// from world space to view space **(in column-major order)**.
+    ///
+    /// ## Details
+    ///
+    /// ```ignore
+    /// Tr_wv = [R_wv  | T_wv]
+    ///         [0 0 0 | 1   ]
+    /// ```
+    pub fn transform_to_view(
+        rotation_to_view: &[[f64; 3]; 3],
+        translation_to_view: &[f64; 3],
+    ) -> [[f64; 4]; 4] {
+        let r = rotation_to_view;
+        let t = translation_to_view;
         [
-            -r[0][0] * t[0] - r[1][0] * t[1] - r[2][0] * t[2],
-            -r[0][1] * t[0] - r[1][1] * t[1] - r[2][1] * t[2],
-            -r[0][2] * t[0] - r[1][2] * t[1] - r[2][2] * t[2],
-        ]
-    }
-
-    /// The transformation matrix from world space to camera space in **column-major** order
-    pub fn view_transform(&self) -> [[f64; 4]; 4] {
-        let r = self.rotation_transform();
-        let t = self.translation;
-        [
-            [r[0][0], r[1][0], r[2][0], 0.0],
-            [r[0][1], r[1][1], r[2][1], 0.0],
-            [r[0][2], r[1][2], r[2][2], 0.0],
+            [r[0][0], r[0][1], r[0][2], 0.0],
+            [r[1][0], r[1][1], r[1][2], 0.0],
+            [r[2][0], r[2][1], r[2][2], 0.0],
             [t[0], t[1], t[2], 1.0],
+        ]
+    }
+
+    /// ## Arguments
+    ///
+    /// * `rotation_to_view` - A 3D rotation matrix mapping
+    /// from world space to view space **(in column-major order)**.
+    ///
+    /// * `translation_to_view` - A 3D translation vector mapping
+    /// from world space to view space.
+    ///
+    /// ## Returns
+    ///
+    /// A 3D view position in world space **(in column-major order)**.
+    ///
+    /// ## Details
+    ///
+    /// ```ignore
+    /// // P_w is the view position in world space.
+    /// // P_v is the view position in view space, which is the origin.
+    /// // R_v is the rotation matrix mapping from world space to view space.
+    /// // T_v is the translation vector mapping from world space to view space.
+    ///
+    /// P_v = 0 = R_v * P_w + T_v
+    /// P_w = -R_v^t * T_v
+    /// ```
+    pub fn view_position(
+        rotation_to_view: &[[f64; 3]; 3],
+        translation_to_view: &[f64; 3],
+    ) -> [f64; 3] {
+        let r = rotation_to_view;
+        let t = translation_to_view;
+        [
+            -r[0][0] * t[0] - r[0][1] * t[1] - r[0][2] * t[2],
+            -r[1][0] * t[0] - r[1][1] * t[1] - r[1][2] * t[2],
+            -r[2][0] * t[0] - r[2][1] * t[1] - r[2][2] * t[2],
         ]
     }
 }
@@ -63,7 +115,7 @@ impl Image {
 impl Decoder for Image {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let [image_id] = read_slice::<u32, 1>(reader)?;
-        let rotation = read_slice::<f64, 4>(reader)?;
+        let quaternion = read_slice::<f64, 4>(reader)?;
         let translation = read_slice::<f64, 3>(reader)?;
         let [camera_id] = read_slice::<u32, 1>(reader)?;
         let file_name = {
@@ -82,7 +134,7 @@ impl Decoder for Image {
 
         Ok(Self {
             image_id,
-            rotation,
+            quaternion,
             translation,
             camera_id,
             file_name,
@@ -98,7 +150,7 @@ mod tests {
 
         let image = Image {
             image_id: Default::default(),
-            rotation: [
+            quaternion: [
                 0.9928923624805012,
                 0.006208227229002722,
                 -0.11837120574960786,
@@ -113,7 +165,10 @@ mod tests {
             file_name: Default::default(),
         };
 
-        let view_position = image.view_position();
+        let view_position = Image::view_position(
+            &Image::rotation(&image.quaternion),
+            &image.translation,
+        );
         assert_eq!(
             view_position,
             [-3.194916373379071, -0.18378876753171225, -4.087996124741175]
@@ -126,7 +181,7 @@ mod tests {
 
         let image = Image {
             image_id: Default::default(),
-            rotation: [
+            quaternion: [
                 0.9961499472928047,
                 -0.03510862409346388,
                 -0.08026977784966388,
@@ -137,7 +192,10 @@ mod tests {
             file_name: Default::default(),
         };
 
-        let view_transform = image.view_transform();
+        let view_transform = Image::transform_to_view(
+            &Image::rotation(&image.quaternion),
+            &image.translation,
+        );
         assert_eq!(
             view_transform,
             [
@@ -145,21 +203,26 @@ mod tests {
                     0.9870946659543874,
                     0.011754269038001336,
                     0.1597058471183149,
-                    0.0
+                    0.0000000000000000,
                 ],
                 [
                     -0.000481623211642526,
                     0.9975159094549839,
                     -0.07043989227191047,
-                    0.0
+                    0.0000000000000000,
                 ],
                 [
                     -0.1601370927782764,
                     0.0694539238889973,
                     0.9846482945564589,
-                    0.0
+                    0.0000000000000000,
                 ],
-                [0.129242027423, 0.0, -0.3424233862, 1.0],
+                [
+                    0.129242027423,
+                    0.0000000000000000,
+                    -0.3424233862,
+                    1.0000000000000000,
+                ],
             ]
         );
     }

@@ -37,7 +37,7 @@ impl IntoRgbImage for TensorData {
 
 impl IntoTensorData for RgbImage {
     /// ## Returns
-    /// 
+    ///
     /// A tensor data with shape of `[H, W, C]`
     fn into_tensor_data(self) -> TensorData {
         let height = self.height() as usize;

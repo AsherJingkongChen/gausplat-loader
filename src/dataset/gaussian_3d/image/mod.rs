@@ -26,6 +26,7 @@ impl fmt::Debug for Image {
     ) -> fmt::Result {
         f.debug_struct("Image")
             .field("image_encoded.len()", &self.image_encoded.len())
+            .field("image_file_name", &self.image_file_name)
             .field("image_id", &self.image_id)
             .finish()
     }

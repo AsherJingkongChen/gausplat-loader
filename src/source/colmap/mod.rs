@@ -44,8 +44,13 @@ impl<R: Read + Send> TryFrom<ColmapSource<R>>
         let cameras = Vec::from_iter(source.images.into_values())
             .into_par_iter()
             .map(|image| {
-                let view_position = image.view_position();
-                let view_transform = image.view_transform();
+                let view_rotation = Image::rotation(&image.quaternion);
+                let view_position =
+                    Image::view_position(&view_rotation, &image.translation);
+                let view_transform = Image::transform_to_view(
+                    &view_rotation,
+                    &image.translation,
+                );
                 let camera_id = image.camera_id;
                 let image_file_name = image.file_name;
                 let id = image.image_id;

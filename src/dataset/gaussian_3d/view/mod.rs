@@ -10,9 +10,10 @@ pub struct View {
     pub image_width: u32,
     pub view_id: u32,
 
-    /// The position of the view in world space
+    /// The view position in world space.
     pub view_position: [f64; 3],
 
-    /// The transformation matrix from world space to view space in **column-major** order
+    /// The affine transformation matrix mapping
+    /// from world space to view space **(in column-major order)**.
     pub view_transform: [[f64; 4]; 4],
 }
