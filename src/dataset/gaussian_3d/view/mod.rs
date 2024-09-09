@@ -22,10 +22,10 @@ impl View {
     /// ## Arguments
     ///
     /// * `rotation_to_view` - A 3D rotation matrix mapping
-    /// from world space to view space **(in column-major order)**.
+    ///   from world space to view space **(in column-major order)**.
     ///
     /// * `translation_to_view` - A 3D translation vector mapping
-    /// from world space to view space.
+    ///   from world space to view space.
     ///
     /// ## Returns
     ///
@@ -83,15 +83,15 @@ impl View {
     /// ## Arguments
     ///
     /// * `rotation_to_view` - A 3D rotation matrix mapping
-    /// from world space to view space **(in column-major order)**.
+    ///   from world space to view space **(in column-major order)**.
     ///
     /// * `translation_to_view` - A 3D translation vector mapping
-    /// from world space to view space.
+    ///   from world space to view space.
     ///
     /// ## Returns
     ///
     /// A 3D affine transformation matrix mapping
-    /// from world space to view space **(in column-major order)**.
+    ///   from world space to view space **(in column-major order)**.
     ///
     /// ## Details
     ///

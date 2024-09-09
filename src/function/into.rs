@@ -10,7 +10,13 @@ pub trait IntoTensorData {
 }
 
 impl IntoRgbImage for TensorData {
-    /// `self.shape` should be `[H, W, C]`
+    /// ## Arguments
+    /// 
+    /// * `self.shape` should be `[H, W, C]` where `C` is 3.
+    /// 
+    /// ## Returns
+    /// 
+    /// An RGB image with height `H` and width `W`.
     fn into_rgb_image(self) -> RgbImage {
         let dimension_count = self.shape.len();
 
@@ -38,7 +44,7 @@ impl IntoRgbImage for TensorData {
 impl IntoTensorData for RgbImage {
     /// ## Returns
     ///
-    /// A tensor data with shape of `[H, W, C]`
+    /// A tensor data with shape of `[H, W, C]` where `C` is 3.
     fn into_tensor_data(self) -> TensorData {
         let height = self.height() as usize;
         let width = self.width() as usize;

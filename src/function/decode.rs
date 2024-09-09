@@ -9,7 +9,7 @@ where
     fn decode(reader: &mut impl Read) -> Result<Self, Error>;
 }
 
-pub(crate) fn advance(
+pub fn advance(
     reader: &mut impl Read,
     byte_count: usize,
 ) -> Result<(), Error> {
@@ -23,7 +23,7 @@ pub(crate) fn advance(
     Ok(reader.read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])?)
 }
 
-pub(crate) fn read_slice<T, const N: usize>(
+pub fn read_slice<T, const N: usize>(
     reader: &mut impl Read
 ) -> Result<[T; N], Error>
 where
