@@ -40,6 +40,15 @@ impl Opener for File<fs::File> {
     }
 }
 
+impl<R: Default> Default for File<R> {
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            reader: Default::default(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]

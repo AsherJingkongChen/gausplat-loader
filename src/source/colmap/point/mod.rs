@@ -7,7 +7,7 @@ pub use points::*;
 use crate::function::{advance, read_slice};
 use std::io::Read;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point {
     pub position: [f64; 3],
     pub color_rgb: [u8; 3],
@@ -44,7 +44,7 @@ mod tests {
     #[test]
     fn color_rgb_normalized() {
         use super::*;
-        
+
         let point = Point {
             position: [0.0, 0.0, 0.0],
             color_rgb: [255, 0, 0],

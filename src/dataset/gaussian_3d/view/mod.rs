@@ -15,6 +15,13 @@ pub struct View {
 
     /// The affine transformation matrix mapping
     /// from world space to view space **(in column-major order)**.
+    ///
+    /// ## Details
+    ///
+    /// ```ignore
+    /// Tr_v = [R_v   | T_v]
+    ///        [0 0 0 | 1  ]
+    /// ```
     pub view_transform: [[f64; 4]; 4],
 }
 
@@ -96,8 +103,8 @@ impl View {
     /// ## Details
     ///
     /// ```ignore
-    /// Tr_wv = [R_wv  | T_wv]
-    ///         [0 0 0 | 1   ]
+    /// Tr_v = [R_v   | T_v]
+    ///        [0 0 0 | 1  ]
     /// ```
     pub fn transform_to_view(
         rotation_to_view: &[[f64; 3]; 3],

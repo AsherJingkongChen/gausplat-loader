@@ -70,11 +70,4 @@ mod tests {
             assert_eq!(image.get_pixel(0, 0).0, [0xff, 0x00, 0x3d]);
         }
     }
-
-    #[test]
-    fn it_works() {
-        use super::*;
-
-        format!("{:?}", Image::default());
-    }
 }

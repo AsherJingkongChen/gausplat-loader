@@ -40,7 +40,9 @@ mod tests {
     fn utf8_error() {
         use super::*;
 
-        let error = String::from_utf8(vec![0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+        let error = String::from_utf8(vec![
+            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        ]);
         assert!(error.is_err(), "{:?}", error.unwrap());
 
         let text = error.unwrap_err().custom_display();

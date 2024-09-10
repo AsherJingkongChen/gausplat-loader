@@ -48,12 +48,4 @@ mod tests {
         assert!(dataset.cameras.is_empty());
         assert!(!dataset.points.is_empty());
     }
-
-    #[test]
-    fn it_works() {
-        use super::*;
-
-        let dataset = Gaussian3dDataset::default();
-        format!("{:?}", dataset);
-    }
 }

@@ -128,3 +128,30 @@ impl<R> fmt::Debug for ColmapSource<R> {
             .finish()
     }
 }
+
+impl<R: Default> Default for ColmapSource<R> {
+    fn default() -> Self {
+        Self {
+            cameras: Default::default(),
+            files: Default::default(),
+            images: Default::default(),
+            points: Default::default(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn default_try_from_error() {
+        use super::*;
+
+        gaussian_3d::Gaussian3dDataset::try_from(ColmapSource::<&[u8]> {
+            cameras: [Default::default()].into(),
+            files: [Default::default()].into(),
+            images: [Default::default()].into(),
+            points: [Default::default()].into(),
+        })
+        .unwrap_err();
+    }
+}

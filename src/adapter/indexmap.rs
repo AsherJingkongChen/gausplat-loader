@@ -148,10 +148,11 @@ where
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
+    fn seed_and_random_iteration() {
         use super::*;
 
-        let mut map: IndexMap<_, _> = [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
+        let mut map: IndexMap<_, _> =
+            [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
 
         let values_1 = map
             .seed(0)

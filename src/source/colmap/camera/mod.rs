@@ -50,3 +50,9 @@ impl Decoder for Camera {
         }
     }
 }
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self::Pinhole(Default::default())
+    }
+}

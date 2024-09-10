@@ -7,7 +7,7 @@ pub use images::*;
 use crate::function::{advance, read_slice};
 use std::io::Read;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Image {
     pub image_id: u32,
     pub quaternion: [f64; 4],
