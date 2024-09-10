@@ -38,3 +38,19 @@ impl Decoder for Point {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn color_rgb_normalized() {
+        use super::*;
+        
+        let point = Point {
+            position: [0.0, 0.0, 0.0],
+            color_rgb: [255, 0, 0],
+        };
+
+        let color_rgb_normalized = point.color_rgb_normalized();
+        assert_eq!(color_rgb_normalized, [1.0, 0.0, 0.0]);
+    }
+}

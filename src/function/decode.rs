@@ -44,13 +44,10 @@ mod tests {
         let reader = &mut std::io::Cursor::new(&[
             0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
         ]);
-        let result = advance(reader, 4);
-        assert!(result.is_ok(), "{}", result.unwrap_err());
 
-        let result = read_slice::<u32, 1>(reader);
-        assert!(result.is_ok(), "{}", result.unwrap_err());
+        advance(reader, 4).unwrap();
 
-        let result = result.unwrap();
+        let result = read_slice::<u32, 1>(reader).unwrap();
         assert_eq!(result[0], 0x00500004);
 
         let result = advance(reader, 4);
@@ -64,10 +61,8 @@ mod tests {
         let reader = &mut std::io::Cursor::new(&[
             0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
         ]);
-        let result = read_slice::<u32, 2>(reader);
-        assert!(result.is_ok(), "{}", result.unwrap_err());
 
-        let result = result.unwrap();
+        let result = read_slice::<u32, 2>(reader).unwrap();
         assert_eq!(result[0], 0x00000201);
         assert_eq!(result[1], 0x00500004);
     }

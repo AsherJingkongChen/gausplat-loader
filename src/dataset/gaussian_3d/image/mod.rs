@@ -64,13 +64,17 @@ mod tests {
 
         // It should be idempotent
         for _ in 0..3 {
-            let image = image.decode_rgb();
-            assert!(image.is_ok(), "{}", image.unwrap_err());
-
-            let image = image.unwrap();
+            let image = image.decode_rgb().unwrap();
             assert_eq!(image.height(), 1);
             assert_eq!(image.width(), 1);
             assert_eq!(image.get_pixel(0, 0).0, [0xff, 0x00, 0x3d]);
         }
+    }
+
+    #[test]
+    fn it_works() {
+        use super::*;
+
+        format!("{:?}", Image::default());
     }
 }

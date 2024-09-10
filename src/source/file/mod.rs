@@ -39,3 +39,20 @@ impl Opener for File<fs::File> {
         Ok(Self { name, reader })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn read() {
+        use super::*;
+
+        let input = b"Hello, World!";
+        let mut file = File {
+            name: Default::default(),
+            reader: std::io::Cursor::new(input),
+        };
+
+        let output = file.read().unwrap();
+        assert_eq!(output, input);
+    }
+}

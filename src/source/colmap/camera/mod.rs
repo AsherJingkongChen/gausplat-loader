@@ -20,18 +20,6 @@ impl Camera {
             Self::Pinhole(camera) => camera.camera_id,
         }
     }
-
-    pub fn height(&self) -> u64 {
-        match self {
-            Self::Pinhole(camera) => camera.height,
-        }
-    }
-
-    pub fn width(&self) -> u64 {
-        match self {
-            Self::Pinhole(camera) => camera.width,
-        }
-    }
 }
 
 impl Decoder for Camera {

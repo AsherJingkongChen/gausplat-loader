@@ -24,11 +24,17 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     pub fn get_random(&mut self) -> Option<(&K, &V)> {
+        if self.inner.is_empty() {
+            return None;
+        }
         self.inner
             .get_index(self.rng.gen_range(0..self.inner.len()))
     }
 
     pub fn get_random_mut(&mut self) -> Option<(&K, &mut V)> {
+        if self.inner.is_empty() {
+            return None;
+        }
         self.inner
             .get_index_mut(self.rng.gen_range(0..self.inner.len()))
     }
@@ -136,5 +142,66 @@ where
             inner: IndexMapInner::from_iter(iterable),
             rng: StdRng::from_entropy(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        use super::*;
+
+        let mut map: IndexMap<_, _> = [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
+
+        let values_1 = map
+            .seed(0)
+            .random_keys()
+            .map(|c| *c)
+            .take(32)
+            .collect::<Vec<_>>();
+        let values_2 = map
+            .seed(0)
+            .random_keys()
+            .map(|c| *c)
+            .take(32)
+            .collect::<Vec<_>>();
+        assert_eq!(values_1, values_2);
+
+        let values_1 = map
+            .seed(0)
+            .random_values()
+            .map(|c| *c)
+            .take(32)
+            .collect::<Vec<_>>();
+        let values_2 = map
+            .seed(0)
+            .random_values()
+            .map(|c| *c)
+            .take(32)
+            .collect::<Vec<_>>();
+        assert_eq!(values_1, values_2);
+
+        let _ = map.deref();
+    }
+
+    #[test]
+    fn no_panics() {
+        use super::*;
+
+        let mut map = IndexMap::<u8, f32>::default();
+
+        assert!(map.get_random_key().is_none());
+        assert!(map.get_random_value().is_none());
+        assert!(map.get_random_value_mut().is_none());
+
+        let mut map = IndexMap::<u8, f32>::new();
+        assert!(map.get_random_key().is_none());
+
+        let mut map = IndexMap::<u8, f32>::with_capacity(1);
+        map.insert(0, 0.1);
+
+        assert_eq!(map.get_random_key(), Some(&0));
+        assert_eq!(map.get_random_value(), Some(&0.1));
+        assert_eq!(map.get_random_value_mut(), Some(&mut 0.1));
     }
 }

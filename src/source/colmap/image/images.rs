@@ -44,10 +44,7 @@ mod tests {
 
         let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let images = Images::decode(&mut reader);
-        assert!(images.is_ok(), "{}", images.unwrap_err());
-
-        let images = images.unwrap();
+        let images = Images::decode(&mut reader).unwrap();
         assert!(images.is_empty());
     }
 
@@ -77,10 +74,7 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
 
-        let images = Images::decode(&mut reader);
-        assert!(images.is_ok(), "{}", images.unwrap_err());
-
-        let images = images.unwrap();
+        let images = Images::decode(&mut reader).unwrap();
         assert_eq!(images.len(), 2);
         assert_eq!(
             images.get(&1),

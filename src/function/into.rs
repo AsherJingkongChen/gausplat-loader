@@ -11,11 +11,11 @@ pub trait IntoTensorData {
 
 impl IntoRgbImage for TensorData {
     /// ## Arguments
-    /// 
+    ///
     /// * `self.shape` should be `[H, W, C]` where `C` is 3.
-    /// 
+    ///
     /// ## Returns
-    /// 
+    ///
     /// An RGB image with height `H` and width `W`.
     fn into_rgb_image(self) -> RgbImage {
         let dimension_count = self.shape.len();
@@ -52,5 +52,34 @@ impl IntoTensorData for RgbImage {
         let value = self.into_raw();
 
         TensorData::new(value, [height, width, channel_count])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn into_rgb_image() {
+        use super::*;
+
+        let tensor_data = TensorData::new(vec![0.0, 0.0, 0.0], [1, 1, 3]);
+        let rgb_image = tensor_data.into_rgb_image();
+        assert_eq!(rgb_image.get_pixel(0, 0).0, [0, 0, 0]);
+
+        let tensor_data = TensorData::new(vec![255.0, 255.0, 255.0], [1, 1, 3]);
+        let rgb_image = tensor_data.into_rgb_image();
+        assert_eq!(rgb_image.get_pixel(0, 0).0, [255, 255, 255]);
+    }
+
+    #[test]
+    fn into_tensor_data() {
+        use super::*;
+
+        let rgb_image = RgbImage::from_raw(1, 1, vec![0, 0, 0]).unwrap();
+        let tensor_data = rgb_image.into_tensor_data();
+        assert_eq!(tensor_data.shape, [1, 1, 3]);
+
+        let rgb_image = RgbImage::from_raw(1, 1, vec![255, 255, 255]).unwrap();
+        let tensor_data = rgb_image.into_tensor_data();
+        assert_eq!(tensor_data.shape, [1, 1, 3]);
     }
 }
