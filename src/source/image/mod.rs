@@ -22,7 +22,7 @@ impl Image {
 
     /// Decoding to a tensor with shape of `[H, W, C]`,
     /// where `C` is the channel count of RGB image.
-    pub fn decode_rgb_tensor<B: Backend>(
+    pub fn decode_rgb_to_tensor<B: Backend>(
         &self,
         device: &B::Device,
     ) -> Result<Tensor<B, 3>, Error> {
@@ -40,7 +40,7 @@ impl Image {
 
     /// Encoding a tensor with shape of `[H, W, C]` to an image,
     /// where `C` is the channel count of RGB image.
-    pub fn encode_rgb_tensor<B: Backend>(
+    pub fn encode_rgb_from_tensor<B: Backend>(
         &mut self,
         tensor: Tensor<B, 3>,
     ) -> Result<&mut Self, Error> {
@@ -87,7 +87,7 @@ impl fmt::Debug for Image {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn decode_rgb_tensor() {
+    fn decode_rgb_to_tensor() {
         use super::*;
         use burn_ndarray::NdArray;
 
@@ -119,7 +119,7 @@ mod tests {
         for _ in 0..3 {
             assert_eq!(
                 image
-                    .decode_rgb_tensor::<NdArray>(&Default::default())
+                    .decode_rgb_to_tensor::<NdArray>(&Default::default())
                     .unwrap()
                     .into_data()
                     .to_vec::<f32>()
@@ -155,9 +155,9 @@ mod tests {
         };
 
         let image_encoded_output = &image
-            .encode_rgb_tensor(
+            .encode_rgb_from_tensor(
                 image
-                    .decode_rgb_tensor::<NdArray>(&Default::default())
+                    .decode_rgb_to_tensor::<NdArray>(&Default::default())
                     .unwrap(),
             )
             .unwrap()

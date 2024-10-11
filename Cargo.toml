@@ -1,12 +1,12 @@
 [package]
 authors = ["Asher Jingkong Chen"]
-description = "A library to import scenes for `gausplat`"
+description = "A library to load scenes for `gausplat`"
 edition.workspace = true
 license-file = "LICENSE"
-name = "gausplat-importer"
+name = "gausplat-loader"
 publish = false
 readme = "README.md"
-repository = "https://github.com/AsherJingkongChen/gausplat-importer"
+repository = "https://github.com/AsherJingkongChen/gausplat-loader"
 version.workspace = true
 
 [dependencies]

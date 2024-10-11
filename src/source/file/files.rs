@@ -17,7 +17,7 @@ impl Opener for Files<fs::File> {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_importer::source", "colmap::Files::open");
+        log::debug!(target: "gausplat_loader::source", "colmap::Files::open");
 
         files
     }

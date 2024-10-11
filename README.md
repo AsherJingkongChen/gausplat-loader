@@ -1,3 +1,3 @@
-# gausplat-importer
+# gausplat-loader
 
-> A library to import scenes for `gausplat`
+> A library to load scenes for `gausplat`
