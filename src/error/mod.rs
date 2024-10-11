@@ -6,14 +6,8 @@ pub enum Error {
     #[error("Image Error: {0}")]
     Image(#[from] image::ImageError),
 
-    #[error("Unknown camera id: {0}")]
-    UnknownCameraId(u32),
-
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
-
-    #[error("Unknown image file name: {0}")]
-    UnknownImageFileName(String),
 
     #[error("UTF-8 Error: {}", ._0.custom_display())]
     Utf8(#[from] std::string::FromUtf8Error),

@@ -12,7 +12,6 @@ version.workspace = true
 [dependencies]
 burn-tensor = {workspace = true}
 bytemuck = {workspace = true}
-dashmap = {workspace = true, features = ["rayon"]}
 image = {workspace = true, features = ["jpeg", "png", "rayon"]}
 indexmap = {workspace = true, features = ["rayon", "std"]}
 log = {workspace = true}
@@ -20,3 +19,6 @@ rand = {workspace = true, features = ["getrandom", "std_rng"]}
 rand_distr = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}
+
+[dev-dependencies]
+burn-ndarray = {workspace = true}

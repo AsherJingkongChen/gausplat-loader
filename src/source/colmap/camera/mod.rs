@@ -28,7 +28,7 @@ impl Decoder for Camera {
         let [width, height] = read_slice::<u64, 2>(reader)?;
 
         match model_id {
-            0..=1 => {
+            0..2 => {
                 let [focal_length_x, focal_length_y] = match model_id {
                     0 => {
                         let [focal_length] = read_slice::<f64, 1>(reader)?;
