@@ -115,54 +115,54 @@ mod tests {
             image_id: Default::default(),
         };
 
-        // It should be idempotent
-        for _ in 0..3 {
-            assert_eq!(
-                image
-                    .decode_rgb_to_tensor::<NdArray>(&Default::default())
-                    .unwrap()
-                    .into_data()
-                    .to_vec::<f32>()
-                    .unwrap(),
-                vec![1.0, 0.0, 0.23921569]
-            );
-        }
+        assert_eq!(
+            image
+                .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                .unwrap()
+                .into_data()
+                .to_vec::<f32>()
+                .unwrap(),
+            vec![1.0, 0.0, 0.23921569]
+        );
     }
 
     #[test]
-    fn convert_without_loss_between_image_and_tensor() {
+    fn recode_tensor() {
         use super::*;
         use burn_ndarray::NdArray;
+        use std::io::Cursor;
 
-        let image_encoded_target = &[
-            0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00,
-            0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00,
-            0x00, 0x04, 0x08, 0x02, 0x00, 0x00, 0x00, 0xc9, 0x51, 0x62, 0x17,
-            0x00, 0x00, 0x00, 0x4b, 0x49, 0x44, 0x41, 0x54, 0x78, 0x01, 0x01,
-            0x40, 0x00, 0xbf, 0xff, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
-            0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x00, 0x0f,
-            0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a,
-            0x1b, 0x1c, 0x1d, 0x00, 0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24,
-            0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x00, 0x2d, 0x2e,
-            0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39,
-            0x3a, 0x3b, 0x92, 0xd0, 0x06, 0xeb, 0x36, 0xd2, 0x3d, 0x2e, 0x00,
-            0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
-        ];
+        let image_file_name = "example.png";
+        let image_encoded_source = include_bytes!("example.png");
+
+        let mut image_encoded_target = Cursor::new(Vec::new());
+        image::load_from_memory(image_encoded_source)
+            .unwrap()
+            .write_to(
+                &mut image_encoded_target,
+                image::ImageFormat::from_path(image_file_name).unwrap(),
+            )
+            .unwrap();
+        let image_encoded_target = &image_encoded_target.into_inner();
+
         let mut image = Image {
-            image_encoded: image_encoded_target.into(),
-            image_file_name: " .png".into(),
+            image_encoded: image_encoded_target.to_owned(),
+            image_file_name: image_file_name.into(),
             image_id: Default::default(),
         };
 
-        let image_encoded_output = &image
-            .encode_rgb_from_tensor(
-                image
-                    .decode_rgb_to_tensor::<NdArray>(&Default::default())
-                    .unwrap(),
-            )
-            .unwrap()
-            .image_encoded;
+        // It should be idempotent
+        for _ in 0..5 {
+            let image_encoded_output = &image
+                .encode_rgb_from_tensor(
+                    image
+                        .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                        .unwrap(),
+                )
+                .unwrap()
+                .image_encoded;
 
-        assert_eq!(image_encoded_output, image_encoded_target);
+            assert_eq!(image_encoded_output, image_encoded_target);
+        }
     }
 }
