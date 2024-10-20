@@ -1,3 +1,3 @@
 # gausplat-loader
 
-> A library to load scenes for `gausplat`
+> A library to load assets for `gausplat`

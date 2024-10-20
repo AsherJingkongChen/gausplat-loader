@@ -19,7 +19,7 @@ impl Decoder for Cameras {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat_loader::source", "colmap::Cameras::decode");
+        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::decode");
 
         cameras
     }
