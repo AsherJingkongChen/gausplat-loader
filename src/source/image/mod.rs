@@ -64,7 +64,6 @@ impl Image {
             ColorType::Rgb8,
             ImageFormat::from_path(&self.image_file_name)?,
         )?;
-
         self.image_encoded = result.into_inner();
 
         Ok(self)

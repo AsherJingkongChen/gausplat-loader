@@ -6,7 +6,7 @@ pub use files::*;
 
 use std::{
     fs,
-    io::{BufReader, BufWriter, Read, Write},
+    io::{BufReader, BufWriter, Read, Seek, Write},
     path,
 };
 
@@ -35,6 +35,12 @@ impl<W: Write> File<W> {
         writer.write_all(bytes)?;
 
         Ok(())
+    }
+}
+
+impl<S: Seek> File<S> {
+    pub fn rewind(&mut self) -> Result<(), Error> {
+        Ok(self.stream.rewind()?)
     }
 }
 
@@ -93,6 +99,7 @@ mod tests {
         };
 
         file.write(input).unwrap();
+        file.rewind().unwrap();
         let output = file.read().unwrap();
         assert_eq!(output, input);
     }
