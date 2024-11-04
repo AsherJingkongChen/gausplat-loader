@@ -1,15 +1,18 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("IO Error: {0}")]
+    #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Image Error: {0}")]
+    #[error("Image error: {0}")]
     Image(#[from] image::ImageError),
+
+    #[error("Mismatched tensor shape: {0:?}. It should be {1:?}.")]
+    MismatchedTensorShape(Vec<usize>, Vec<usize>),
 
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
 
-    #[error("UTF-8 Error: {}", ._0.custom_display())]
+    #[error("UTF-8 error: {}", ._0.custom_display())]
     Utf8(#[from] std::string::FromUtf8Error),
 }
 

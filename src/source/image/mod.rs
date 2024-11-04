@@ -45,7 +45,12 @@ impl Image {
         tensor: Tensor<B, 3>,
     ) -> Result<&mut Self, Error> {
         let [height, width, channel_count] = tensor.dims();
-        debug_assert_eq!(channel_count, 3);
+        if channel_count != 3 {
+            Err(Error::MismatchedTensorShape(
+                vec![height, width, channel_count],
+                vec![height, width, 3],
+            ))?;
+        }
 
         let mut result = Cursor::new(Vec::new());
         let value = tensor
