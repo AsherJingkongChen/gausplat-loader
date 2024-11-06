@@ -157,13 +157,13 @@ mod tests {
         let values_1 = map
             .seed(0)
             .random_keys()
-            .map(|c| *c)
+            .copied()
             .take(32)
             .collect::<Vec<_>>();
         let values_2 = map
             .seed(0)
             .random_keys()
-            .map(|c| *c)
+            .copied()
             .take(32)
             .collect::<Vec<_>>();
         assert_eq!(values_1, values_2);
@@ -171,13 +171,13 @@ mod tests {
         let values_1 = map
             .seed(0)
             .random_values()
-            .map(|c| *c)
+            .copied()
             .take(32)
             .collect::<Vec<_>>();
         let values_2 = map
             .seed(0)
             .random_values()
-            .map(|c| *c)
+            .copied()
             .take(32)
             .collect::<Vec<_>>();
         assert_eq!(values_1, values_2);
