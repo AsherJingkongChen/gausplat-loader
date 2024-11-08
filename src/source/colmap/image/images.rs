@@ -1,16 +1,19 @@
 pub use super::Image;
-pub use crate::function::Decoder;
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 
-use crate::{error::Error, function::read_any};
-use std::io::{BufReader, Read};
+use crate::function::{read_any, write_any};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub type Images = std::collections::HashMap<u32, Image>;
 
 impl Decoder for Images {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
-        let image_count = read_any::<u64>(reader)? as usize;
 
+        let image_count = read_any::<u64>(reader)? as usize;
         let images = (0..image_count)
             .map(|_| {
                 let image = Image::decode(reader)?;
@@ -22,6 +25,26 @@ impl Decoder for Images {
         log::debug!(target: "gausplat::loader::colmap::image", "Images::decode");
 
         images
+    }
+}
+
+impl Encoder for Images {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        let writer = &mut BufWriter::new(writer);
+
+        write_any(writer, &(self.len() as u64))?;
+        for (image_id, image) in self.iter() {
+            write_any(writer, image_id)?;
+            image.encode(writer)?;
+        }
+
+        #[cfg(debug_assertions)]
+        log::debug!(target: "gausplat::loader::colmap::image", "Images::encode");
+
+        Ok(())
     }
 }
 

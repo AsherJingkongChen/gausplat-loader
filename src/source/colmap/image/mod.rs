@@ -1,11 +1,13 @@
 pub mod images;
 
-pub use crate::error::Error;
-pub use crate::function::Decoder;
+pub use crate::{error::Error, function::{Decoder, Encoder}};
 pub use images::*;
 
-use crate::function::{advance, read_any, read_string_until_zero};
-use std::io::Read;
+use crate::function::{
+    advance, read_any, read_string_until_zero, write_any,
+    write_string_with_zero,
+};
+use std::io::{Read, Write};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Image {
@@ -13,7 +15,7 @@ pub struct Image {
 
     /// A normalized Hamiltonian quaternion
     /// **(in scalar-first order, i.e., `[w, x, y, z]`)**.
-    /// 
+    ///
     /// It represents the rotation from world space to view space.
     pub quaternion: [f64; 4],
     pub translation: [f64; 3],
@@ -38,5 +40,21 @@ impl Decoder for Image {
             camera_id,
             file_name,
         })
+    }
+}
+
+impl Encoder for Image {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        write_any(writer, &self.image_id)?;
+        write_any(writer, &self.quaternion)?;
+        write_any(writer, &self.translation)?;
+        write_any(writer, &self.camera_id)?;
+        write_string_with_zero(writer, &self.file_name)?;
+        write_any(writer, &0u64)?;
+
+        Ok(())
     }
 }

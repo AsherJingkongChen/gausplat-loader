@@ -1,8 +1,11 @@
 pub use super::Camera;
-pub use crate::function::Decoder;
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 
-use crate::{error::Error, function::read_any};
-use std::io::{BufReader, Read};
+use crate::function::{read_any, write_any};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub type Cameras = std::collections::HashMap<u32, Camera>;
 
@@ -22,6 +25,23 @@ impl Decoder for Cameras {
         log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::decode");
 
         cameras
+    }
+}
+
+impl Encoder for Cameras {
+    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+        let writer = &mut BufWriter::new(writer);
+
+        write_any(writer, &(self.len() as u64))?;
+        for (camera_id, camera) in self.iter() {
+            write_any(writer, camera_id)?;
+            camera.encode(writer)?;
+        }
+
+        #[cfg(debug_assertions)]
+        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::encode");
+
+        Ok(())
     }
 }
 

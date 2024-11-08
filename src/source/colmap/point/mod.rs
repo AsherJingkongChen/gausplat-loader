@@ -1,11 +1,10 @@
 pub mod points;
 
-pub use crate::error::Error;
-pub use crate::function::Decoder;
+pub use crate::{error::Error, function::{Decoder, Encoder}};
 pub use points::*;
 
-use crate::function::{advance, read_any};
-use std::io::Read;
+use crate::function::{advance, read_any, write_any};
+use std::io::{Read, Write};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point {
@@ -25,7 +24,6 @@ impl Point {
 
 impl Decoder for Point {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        advance(reader, 8)?;
         let position = read_any::<[f64; 3]>(reader)?;
         let color_rgb = read_any::<[u8; 3]>(reader)?;
         advance(reader, 8)?;
@@ -36,6 +34,19 @@ impl Decoder for Point {
             position,
             color_rgb,
         })
+    }
+}
+
+impl Encoder for Point {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        write_any(writer, &self.position)?;
+        write_any(writer, &self.color_rgb)?;
+        write_any(writer, &0u64)?;
+
+        Ok(())
     }
 }
 

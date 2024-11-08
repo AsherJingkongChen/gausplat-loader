@@ -1,13 +1,15 @@
 pub mod cameras;
 pub mod pinhole;
 
-pub use crate::error::Error;
-pub use crate::function::Decoder;
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 pub use cameras::*;
 pub use pinhole::*;
 
-use crate::function::read_any;
-use std::io::Read;
+use crate::function::{read_any, write_any};
+use std::io::{Read, Write};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Camera {
@@ -22,15 +24,21 @@ impl Camera {
         }
     }
 
-    pub fn height(&self) -> u64 {
+    pub fn model_id(&self) -> u32 {
         match self {
-            Self::Pinhole(camera) => camera.height,
+            Self::Pinhole(_) => 1,
         }
     }
 
     pub fn width(&self) -> u64 {
         match self {
             Self::Pinhole(camera) => camera.width,
+        }
+    }
+
+    pub fn height(&self) -> u64 {
+        match self {
+            Self::Pinhole(camera) => camera.height,
         }
     }
 
@@ -86,6 +94,23 @@ impl Decoder for Camera {
             }),
             _ => return Err(Error::UnknownCameraModelId(model_id)),
         })
+    }
+}
+
+impl Encoder for Camera {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        write_any(writer, &[self.camera_id(), self.model_id()])?;
+        write_any(writer, &[self.width(), self.height()])?;
+        write_any(writer, &[self.focal_length_x(), self.focal_length_y()])?;
+        write_any(
+            writer,
+            &[self.principal_point_x(), self.principal_point_y()],
+        )?;
+
+        Ok(())
     }
 }
 

@@ -1,22 +1,52 @@
 pub use super::Point;
-pub use crate::function::Decoder;
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 
-use crate::{error::Error, function::read_any};
-use std::io::{BufReader, Read};
+use crate::function::{advance, read_any, write_any};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
-        let point_count = read_any::<u64>(reader)? as usize;
 
-        let points = (0..point_count).map(|_| Point::decode(reader)).collect();
+        let point_count = read_any::<u64>(reader)? as usize;
+        let points = (0..point_count)
+            .map(|_| {
+                // Read point id and ignore it.
+                advance(reader, 8)?;
+                Point::decode(reader)
+            })
+            .collect();
 
         #[cfg(debug_assertions)]
         log::debug!(target: "gausplat::loader::colmap::point", "Points::decode");
 
         points
+    }
+}
+
+impl Encoder for Points {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        let writer = &mut BufWriter::new(writer);
+
+        write_any(writer, &(self.len() as u64))?;
+        for (point_id, point) in self.iter().enumerate() {
+            // Write point id.
+            write_any(writer, &(point_id as u64))?;
+            point.encode(writer)?;
+        }
+
+        #[cfg(debug_assertions)]
+        log::debug!(target: "gausplat::loader::colmap::point", "Points::encode");
+
+        Ok(())
     }
 }
 

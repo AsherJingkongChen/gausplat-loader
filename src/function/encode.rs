@@ -8,7 +8,7 @@ where
     Self: Sized,
 {
     fn encode(
-        self,
+        &self,
         writer: &mut impl Write,
     ) -> Result<(), Error>;
 }
@@ -18,6 +18,14 @@ pub fn write_any<T: Pod>(
     value: &T,
 ) -> Result<(), Error> {
     Ok(writer.write_all(bytemuck::bytes_of(value))?)
+}
+
+pub fn write_string_with_zero(
+    writer: &mut impl Write,
+    value: &str,
+) -> Result<(), Error> {
+    writer.write_all(value.as_bytes())?;
+    Ok(writer.write_all(&[0])?)
 }
 
 #[cfg(test)]
