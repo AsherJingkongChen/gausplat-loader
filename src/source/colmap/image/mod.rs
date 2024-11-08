@@ -10,6 +10,11 @@ use std::io::Read;
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Image {
     pub image_id: u32,
+
+    /// A normalized Hamiltonian quaternion
+    /// **(in scalar-first order, i.e., `[w, x, y, z]`)**.
+    /// 
+    /// It represents the rotation from world space to view space.
     pub quaternion: [f64; 4],
     pub translation: [f64; 3],
     pub camera_id: u32,

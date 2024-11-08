@@ -74,8 +74,8 @@ impl Decoder for Camera {
         let [principal_point_x, principal_point_y] =
             read_any::<[f64; 2]>(reader)?;
 
-        match model_id {
-            0 | 1 => Ok(Self::Pinhole(PinholeCamera {
+        Ok(match model_id {
+            0 | 1 => Self::Pinhole(PinholeCamera {
                 camera_id,
                 width,
                 height,
@@ -83,9 +83,9 @@ impl Decoder for Camera {
                 focal_length_y,
                 principal_point_x,
                 principal_point_y,
-            })),
-            _ => Err(Error::UnknownCameraModelId(model_id)),
-        }
+            }),
+            _ => return Err(Error::UnknownCameraModelId(model_id)),
+        })
     }
 }
 
