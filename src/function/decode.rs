@@ -1,4 +1,5 @@
 pub use crate::error::Error;
+pub use bytemuck::Pod;
 
 use std::io::Read;
 
@@ -13,6 +14,7 @@ pub fn advance(
     reader: &mut impl Read,
     byte_count: usize,
 ) -> Result<(), Error> {
+    // Using a buffer size of 8 KiB.
     const BUFFER_SIZE_LEVEL: usize = 3 + 10;
     const BUFFER_SIZE: usize = 1 << BUFFER_SIZE_LEVEL;
 
@@ -23,16 +25,29 @@ pub fn advance(
     Ok(reader.read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])?)
 }
 
-pub fn read_slice<T, const N: usize>(
-    reader: &mut impl Read
-) -> Result<[T; N], Error>
-where
-    [T; N]: bytemuck::Pod,
-{
-    let mut bytes = vec![0; std::mem::size_of::<[T; N]>()];
+pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
+    let mut bytes = vec![0; std::mem::size_of::<T>()];
     reader.read_exact(&mut bytes)?;
 
-    Ok(bytemuck::from_bytes::<[T; N]>(&bytes).to_owned())
+    Ok(*bytemuck::from_bytes::<T>(&bytes))
+}
+
+pub fn read_string_until_zero(
+    reader: &mut impl Read,
+    reserved_size: usize,
+) -> Result<String, Error> {
+    let mut bytes = Vec::with_capacity(reserved_size);
+    loop {
+        let byte = &mut [0];
+        let is_eof = reader.read(byte)? == 0;
+        let byte = byte[0];
+        if byte == 0 || is_eof {
+            break;
+        }
+        bytes.push(byte);
+    }
+
+    Ok(String::from_utf8(bytes)?)
 }
 
 #[cfg(test)]
@@ -46,24 +61,40 @@ mod tests {
         ]);
 
         advance(reader, 4).unwrap();
+        let output = read_any::<u32>(reader).unwrap();
+        let target = 0x00500004;
+        assert_eq!(output, target);
 
-        let result = read_slice::<u32, 1>(reader).unwrap();
-        assert_eq!(result[0], 0x00500004);
-
-        let result = advance(reader, 4);
-        assert!(result.is_err());
+        advance(reader, 4).unwrap_err();
     }
 
     #[test]
-    fn read_slice() {
+    fn read_any() {
         use super::*;
 
         let reader = &mut std::io::Cursor::new(&[
             0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
         ]);
 
-        let result = read_slice::<u32, 2>(reader).unwrap();
-        assert_eq!(result[0], 0x00000201);
-        assert_eq!(result[1], 0x00500004);
+        let output = read_any::<[u32; 2]>(reader).unwrap();
+        let target = [0x00000201, 0x00500004];
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn read_string_until_zero() {
+        use super::*;
+
+        let reader = &mut std::io::Cursor::new(b"Hello\0, World!");
+
+        let output = read_string_until_zero(reader, 16).unwrap();
+        let target = "Hello";
+        assert_eq!(output, target);
+
+        let reader = &mut std::io::Cursor::new(b"Hello, World!");
+
+        let output = read_string_until_zero(reader, 16).unwrap();
+        let target = "Hello, World!";
+        assert_eq!(output, target);
     }
 }

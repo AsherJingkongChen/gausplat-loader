@@ -4,7 +4,7 @@ pub use crate::error::Error;
 pub use crate::function::Decoder;
 pub use points::*;
 
-use crate::function::{advance, read_slice};
+use crate::function::{advance, read_any};
 use std::io::Read;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -26,10 +26,10 @@ impl Point {
 impl Decoder for Point {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         advance(reader, 8)?;
-        let position = read_slice::<f64, 3>(reader)?;
-        let color_rgb = read_slice::<u8, 3>(reader)?;
+        let position = read_any::<[f64; 3]>(reader)?;
+        let color_rgb = read_any::<[u8; 3]>(reader)?;
         advance(reader, 8)?;
-        let track_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        let track_count = read_any::<u64>(reader)? as usize;
         advance(reader, 8 * track_count)?;
 
         Ok(Self {

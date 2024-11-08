@@ -1,6 +1,7 @@
 pub use super::Image;
 pub use crate::function::Decoder;
-use crate::{error::Error, function::read_slice};
+
+use crate::{error::Error, function::read_any};
 use std::io::{BufReader, Read};
 
 pub type Images = std::collections::HashMap<u32, Image>;
@@ -8,7 +9,7 @@ pub type Images = std::collections::HashMap<u32, Image>;
 impl Decoder for Images {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
-        let image_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        let image_count = read_any::<u64>(reader)? as usize;
 
         let images = (0..image_count)
             .map(|_| {
@@ -26,28 +27,6 @@ impl Decoder for Images {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn decode_zero_bytes() {
-        use super::*;
-        use std::io::Cursor;
-
-        let mut reader = Cursor::new(&[]);
-
-        let images = Images::decode(&mut reader);
-        assert!(images.is_err(), "{:#?}", images.unwrap());
-    }
-
-    #[test]
-    fn decode_zero_entries() {
-        use super::*;
-        use std::io::Cursor;
-
-        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
-
-        let images = Images::decode(&mut reader).unwrap();
-        assert!(images.is_empty());
-    }
-
     #[test]
     fn decode() {
         use super::*;
@@ -114,5 +93,27 @@ mod tests {
                 file_name: "00002.jpg".into(),
             })
         );
+    }
+
+    #[test]
+    fn decode_on_zero_bytes() {
+        use super::*;
+        use std::io::Cursor;
+
+        let mut reader = Cursor::new(&[]);
+
+        let images = Images::decode(&mut reader);
+        assert!(images.is_err(), "{:#?}", images.unwrap());
+    }
+
+    #[test]
+    fn decode_on_zero_entries() {
+        use super::*;
+        use std::io::Cursor;
+
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+
+        let images = Images::decode(&mut reader).unwrap();
+        assert!(images.is_empty());
     }
 }

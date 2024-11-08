@@ -1,7 +1,7 @@
 pub use super::Camera;
 pub use crate::function::Decoder;
 
-use crate::{error::Error, function::read_slice};
+use crate::{error::Error, function::read_any};
 use std::io::{BufReader, Read};
 
 pub type Cameras = std::collections::HashMap<u32, Camera>;
@@ -9,7 +9,7 @@ pub type Cameras = std::collections::HashMap<u32, Camera>;
 impl Decoder for Cameras {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
-        let camera_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        let camera_count = read_any::<u64>(reader)? as usize;
 
         let cameras = (0..camera_count)
             .map(|_| {
@@ -27,28 +27,6 @@ impl Decoder for Cameras {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn decode_zero_bytes() {
-        use super::*;
-        use std::io::Cursor;
-
-        let mut reader = Cursor::new(&[]);
-
-        let cameras = Cameras::decode(&mut reader);
-        assert!(cameras.is_err(), "{:#?}", cameras.unwrap());
-    }
-
-    #[test]
-    fn decode_zero_entries() {
-        use super::*;
-        use std::io::Cursor;
-
-        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
-
-        let cameras = Cameras::decode(&mut reader).unwrap();
-        assert!(cameras.is_empty());
-    }
-
     #[test]
     fn decode() {
         use super::super::*;
@@ -78,6 +56,8 @@ mod tests {
                 height: 1090,
                 focal_length_x: 1159.5880733038061,
                 focal_length_y: 1164.6601287484507,
+                principal_point_x: 979.5,
+                principal_point_y: 545.0,
             }))
         );
         assert_eq!(
@@ -88,7 +68,31 @@ mod tests {
                 height: 1091,
                 focal_length_x: 1163.2547280302354,
                 focal_length_y: 1163.2547280302354,
+                principal_point_x: 978.5,
+                principal_point_y: 545.5,
             }))
         );
+    }
+
+    #[test]
+    fn decode_on_zero_bytes() {
+        use super::*;
+        use std::io::Cursor;
+
+        let mut reader = Cursor::new(&[]);
+
+        let cameras = Cameras::decode(&mut reader);
+        assert!(cameras.is_err(), "{:#?}", cameras.unwrap());
+    }
+
+    #[test]
+    fn decode_on_zero_entries() {
+        use super::*;
+        use std::io::Cursor;
+
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+
+        let cameras = Cameras::decode(&mut reader).unwrap();
+        assert!(cameras.is_empty());
     }
 }

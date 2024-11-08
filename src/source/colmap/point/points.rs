@@ -1,6 +1,7 @@
 pub use super::Point;
 pub use crate::function::Decoder;
-use crate::{error::Error, function::read_slice};
+
+use crate::{error::Error, function::read_any};
 use std::io::{BufReader, Read};
 
 pub type Points = Vec<Point>;
@@ -8,7 +9,7 @@ pub type Points = Vec<Point>;
 impl Decoder for Points {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let reader = &mut BufReader::new(reader);
-        let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        let point_count = read_any::<u64>(reader)? as usize;
 
         let points = (0..point_count).map(|_| Point::decode(reader)).collect();
 

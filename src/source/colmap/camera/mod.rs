@@ -6,12 +6,13 @@ pub use crate::function::Decoder;
 pub use cameras::*;
 pub use pinhole::*;
 
-use crate::function::{advance, read_slice};
+use crate::function::read_any;
 use std::io::Read;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Camera {
     Pinhole(PinholeCamera),
+    // TODO: Support more camera models from COLMAP.
 }
 
 impl Camera {
@@ -20,32 +21,69 @@ impl Camera {
             Self::Pinhole(camera) => camera.camera_id,
         }
     }
+
+    pub fn height(&self) -> u64 {
+        match self {
+            Self::Pinhole(camera) => camera.height,
+        }
+    }
+
+    pub fn width(&self) -> u64 {
+        match self {
+            Self::Pinhole(camera) => camera.width,
+        }
+    }
+
+    pub fn focal_length_x(&self) -> f64 {
+        match self {
+            Self::Pinhole(camera) => camera.focal_length_x,
+        }
+    }
+
+    pub fn focal_length_y(&self) -> f64 {
+        match self {
+            Self::Pinhole(camera) => camera.focal_length_y,
+        }
+    }
+
+    pub fn principal_point_x(&self) -> f64 {
+        match self {
+            Self::Pinhole(camera) => camera.principal_point_x,
+        }
+    }
+
+    pub fn principal_point_y(&self) -> f64 {
+        match self {
+            Self::Pinhole(camera) => camera.principal_point_y,
+        }
+    }
 }
 
 impl Decoder for Camera {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let [camera_id, model_id] = read_slice::<u32, 2>(reader)?;
-        let [width, height] = read_slice::<u64, 2>(reader)?;
+        let [camera_id, model_id] = read_any::<[u32; 2]>(reader)?;
+        let [width, height] = read_any::<[u64; 2]>(reader)?;
+        let [focal_length_x, focal_length_y] = match model_id {
+            0 => {
+                let focal_length = read_any::<f64>(reader)?;
+                [focal_length, focal_length]
+            },
+            1 => read_any::<[f64; 2]>(reader)?,
+            _ => return Err(Error::UnknownCameraModelId(model_id)),
+        };
+        let [principal_point_x, principal_point_y] =
+            read_any::<[f64; 2]>(reader)?;
 
         match model_id {
-            0..2 => {
-                let [focal_length_x, focal_length_y] = match model_id {
-                    0 => {
-                        let [focal_length] = read_slice::<f64, 1>(reader)?;
-                        [focal_length, focal_length]
-                    },
-                    1 => read_slice::<f64, 2>(reader)?,
-                    _ => unreachable!(),
-                };
-                advance(reader, 16)?;
-                Ok(Self::Pinhole(PinholeCamera {
-                    camera_id,
-                    width,
-                    height,
-                    focal_length_x,
-                    focal_length_y,
-                }))
-            },
+            0 | 1 => Ok(Self::Pinhole(PinholeCamera {
+                camera_id,
+                width,
+                height,
+                focal_length_x,
+                focal_length_y,
+                principal_point_x,
+                principal_point_y,
+            })),
             _ => Err(Error::UnknownCameraModelId(model_id)),
         }
     }

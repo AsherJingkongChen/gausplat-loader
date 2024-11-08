@@ -4,7 +4,7 @@ pub use crate::error::Error;
 pub use crate::function::Decoder;
 pub use images::*;
 
-use crate::function::{advance, read_slice};
+use crate::function::{advance, read_any, read_string_until_zero};
 use std::io::Read;
 
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -18,22 +18,12 @@ pub struct Image {
 
 impl Decoder for Image {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let [image_id] = read_slice::<u32, 1>(reader)?;
-        let quaternion = read_slice::<f64, 4>(reader)?;
-        let translation = read_slice::<f64, 3>(reader)?;
-        let [camera_id] = read_slice::<u32, 1>(reader)?;
-        let file_name = {
-            let mut bytes = Vec::with_capacity(16);
-            loop {
-                let [byte] = read_slice::<u8, 1>(reader)?;
-                if byte == 0 {
-                    break;
-                }
-                bytes.push(byte);
-            }
-            String::from_utf8(bytes)?
-        };
-        let point_count = read_slice::<u64, 1>(reader)?[0] as usize;
+        let image_id = read_any::<u32>(reader)?;
+        let quaternion = read_any::<[f64; 4]>(reader)?;
+        let translation = read_any::<[f64; 3]>(reader)?;
+        let camera_id = read_any::<u32>(reader)?;
+        let file_name = read_string_until_zero(reader, 64)?;
+        let point_count = read_any::<u64>(reader)? as usize;
         advance(reader, 24 * point_count)?;
 
         Ok(Self {
