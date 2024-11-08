@@ -14,11 +14,11 @@ pub struct Point {
 }
 
 impl Point {
-    pub fn color_rgb_normalized(&self) -> [f64; 3] {
+    pub fn color_rgb_normalized(&self) -> [f32; 3] {
         [
-            self.color_rgb[0] as f64 / 255.0,
-            self.color_rgb[1] as f64 / 255.0,
-            self.color_rgb[2] as f64 / 255.0,
+            self.color_rgb[0] as f32 / 255.0,
+            self.color_rgb[1] as f32 / 255.0,
+            self.color_rgb[2] as f32 / 255.0,
         ]
     }
 }
