@@ -1,6 +1,9 @@
 pub mod images;
 
-pub use crate::{error::Error, function::{Decoder, Encoder}};
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 pub use images::*;
 
 use crate::function::{

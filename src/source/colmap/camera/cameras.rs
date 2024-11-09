@@ -29,7 +29,10 @@ impl Decoder for Cameras {
 }
 
 impl Encoder for Cameras {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
         let writer = &mut BufWriter::new(writer);
 
         write_any(writer, &(self.len() as u64))?;
@@ -50,69 +53,60 @@ mod tests {
     #[test]
     fn decode() {
         use super::super::*;
-        use std::io::Cursor;
 
-        let mut reader = Cursor::new(&[
-            0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-            0x00, 0x01, 0x00, 0x00, 0x00, 0xa7, 0x07, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x42, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xfe,
-            0x5d, 0xe3, 0x2f, 0x5a, 0x1e, 0x92, 0x40, 0xfb, 0x66, 0xca, 0xf8,
-            0xa3, 0x32, 0x92, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9c, 0x8e,
-            0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x81, 0x40, 0x02, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa5, 0x07, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x43, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0xf1, 0xbc, 0x6c, 0xd7, 0x04, 0x2d, 0x92, 0x40, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x94, 0x8e, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0c,
-            0x81, 0x40,
-        ]);
+        let source = include_bytes!("../../../../examples/data/cameras.bin");
+        let mut reader = std::io::Cursor::new(source);
 
-        let cameras = Cameras::decode(&mut reader).unwrap();
-        assert_eq!(cameras.len(), 2);
-        assert_eq!(
-            cameras.get(&1),
-            Some(&Camera::Pinhole(PinholeCamera {
-                camera_id: 1,
-                width: 1959,
-                height: 1090,
-                focal_length_x: 1159.5880733038061,
-                focal_length_y: 1164.6601287484507,
-                principal_point_x: 979.5,
-                principal_point_y: 545.0,
-            }))
-        );
-        assert_eq!(
-            cameras.get(&2),
-            Some(&Camera::Pinhole(PinholeCamera {
-                camera_id: 2,
-                width: 1957,
-                height: 1091,
-                focal_length_x: 1163.2547280302354,
-                focal_length_y: 1163.2547280302354,
-                principal_point_x: 978.5,
-                principal_point_y: 545.5,
-            }))
-        );
+        let target_count = 2;
+        let targets = [
+            (
+                1,
+                Camera::Pinhole(PinholeCamera {
+                    camera_id: 1,
+                    width: 1959,
+                    height: 1090,
+                    focal_length_x: 1159.5880733038061,
+                    focal_length_y: 1164.6601287484507,
+                    principal_point_x: 979.5,
+                    principal_point_y: 545.0,
+                }),
+            ),
+            (
+                2,
+                Camera::Pinhole(PinholeCamera {
+                    camera_id: 2,
+                    width: 1957,
+                    height: 1091,
+                    focal_length_x: 1163.2547280302354,
+                    focal_length_y: 1163.2547280302354,
+                    principal_point_x: 978.5,
+                    principal_point_y: 545.5,
+                }),
+            ),
+        ]
+        .into_iter()
+        .collect();
+        let outputs = Cameras::decode(&mut reader).unwrap();
+        assert_eq!(outputs.len(), target_count);
+        assert_eq!(outputs, targets);
     }
 
     #[test]
     fn decode_on_zero_bytes() {
         use super::*;
-        use std::io::Cursor;
 
-        let mut reader = Cursor::new(&[]);
+        let mut reader = std::io::Cursor::new(&[]);
 
-        let cameras = Cameras::decode(&mut reader);
-        assert!(cameras.is_err(), "{:#?}", cameras.unwrap());
+        Cameras::decode(&mut reader).unwrap_err();
     }
 
     #[test]
     fn decode_on_zero_entries() {
         use super::*;
-        use std::io::Cursor;
 
-        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let cameras = Cameras::decode(&mut reader).unwrap();
-        assert!(cameras.is_empty());
+        let outputs = Cameras::decode(&mut reader).unwrap();
+        assert!(outputs.is_empty());
     }
 }

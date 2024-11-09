@@ -1,6 +1,9 @@
 pub mod points;
 
-pub use crate::{error::Error, function::{Decoder, Encoder}};
+pub use crate::{
+    error::Error,
+    function::{Decoder, Encoder},
+};
 pub use points::*;
 
 use crate::function::{advance, read_any, write_any};
@@ -56,12 +59,13 @@ mod tests {
     fn color_rgb_normalized() {
         use super::*;
 
-        let point = Point {
-            position: [0.0, 0.0, 0.0],
-            color_rgb: [255, 0, 0],
+        let source = Point {
+            position: Default::default(),
+            color_rgb: [255, 128, 0],
         };
 
-        let color_rgb_normalized = point.color_rgb_normalized();
-        assert_eq!(color_rgb_normalized, [1.0, 0.0, 0.0]);
+        let target = [1.0, 0.5019608, 0.0];
+        let output = source.color_rgb_normalized();
+        assert_eq!(output, target);
     }
 }

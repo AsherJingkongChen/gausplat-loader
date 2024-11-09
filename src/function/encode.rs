@@ -34,11 +34,26 @@ mod tests {
     fn write_any() {
         use super::*;
 
+        let source = &[20241109_u32, 131452000];
         let mut writer = std::io::Cursor::new(Vec::new());
 
-        write_any(&mut writer, &[0x00000201, 0x00500004]).unwrap();
+        write_any(&mut writer, source).unwrap();
+        let target =
+            &include_bytes!("../../examples/data/hello-world.dat")[..8];
         let output = writer.into_inner();
-        let target = vec![0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00];
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn write_string_with_zero() {
+        use super::*;
+
+        let source = "Hello, World!";
+        let mut writer = std::io::Cursor::new(Vec::new());
+
+        write_string_with_zero(&mut writer, source).unwrap();
+        let target = &include_bytes!("../../examples/data/hello-world.dat")[8..8 + 13 + 1];
+        let output = writer.into_inner();
         assert_eq!(output, target);
     }
 }

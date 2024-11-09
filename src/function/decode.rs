@@ -72,12 +72,11 @@ mod tests {
     fn read_any() {
         use super::*;
 
-        let reader = &mut std::io::Cursor::new(&[
-            0x01, 0x02, 0x00, 0x00, 0x04, 0x00, 0x50, 0x00,
-        ]);
+        let source = include_bytes!("../../examples/data/hello-world.dat");
+        let reader = &mut std::io::Cursor::new(source);
 
+        let target = [20241109, 131452000];
         let output = read_any::<[u32; 2]>(reader).unwrap();
-        let target = [0x00000201, 0x00500004];
         assert_eq!(output, target);
     }
 
@@ -85,16 +84,16 @@ mod tests {
     fn read_string_until_zero() {
         use super::*;
 
-        let reader = &mut std::io::Cursor::new(b"Hello\0, World!");
+        let source = include_bytes!("../../examples/data/hello-world.dat");
+        let reader = &mut std::io::Cursor::new(source);
 
+        advance(reader, 8).unwrap();
+        let target = "Hello, World!";
         let output = read_string_until_zero(reader, 16).unwrap();
-        let target = "Hello";
         assert_eq!(output, target);
 
-        let reader = &mut std::io::Cursor::new(b"Hello, World!");
-
-        let output = read_string_until_zero(reader, 16).unwrap();
-        let target = "Hello, World!";
+        let target = "Bonjour, le monde!\n";
+        let output = read_string_until_zero(reader, 32).unwrap();
         assert_eq!(output, target);
     }
 }
