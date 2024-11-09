@@ -7,7 +7,7 @@ pub use crate::{
 use crate::function::{read_any, write_any};
 use std::io::{BufReader, BufWriter, Read, Write};
 
-pub type Images = std::collections::BTreeMap<u32, Image>;
+pub type Images = crate::collection::IndexMap<u32, Image>;
 
 impl Decoder for Images {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
@@ -153,7 +153,7 @@ mod tests {
             ),
         ]
         .into_iter()
-        .collect();
+        .collect::<Images>();
         let output = Images::decode(&mut reader).unwrap();
         assert_eq!(output, targets);
     }

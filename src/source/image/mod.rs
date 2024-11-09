@@ -4,8 +4,8 @@ pub use crate::error::Error;
 pub use burn_tensor::{backend::Backend, Tensor};
 pub use images::*;
 
-use crate::image_crate::{ColorType, GenericImageView, ImageFormat};
 use burn_tensor::TensorData;
+use image::{ColorType, GenericImageView, ImageFormat};
 use std::{fmt, io::Cursor};
 
 #[derive(Clone, Default, PartialEq)]

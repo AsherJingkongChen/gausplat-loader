@@ -120,6 +120,20 @@ impl<K, V, S> IndexMap<K, V, S> {
     pub fn random_values(&mut self) -> impl Iterator<Item = &V> {
         self.random_iter().map(|(_, value)| value)
     }
+
+    /// Return an owning iterator over the keys of the map,
+    /// in the order they were inserted.
+    #[inline]
+    pub fn into_keys(self) -> impl Iterator<Item = K> {
+        self.into_iter().map(|(key, _)| key)
+    }
+
+    /// Return an owning iterator over the values of the map,
+    /// in the order they were inserted.
+    #[inline]
+    pub fn into_values(self) -> impl Iterator<Item = V> {
+        self.into_iter().map(|(_, value)| value)
+    }
 }
 
 impl<K, V: Ord, S> IndexMap<K, V, S> {
@@ -231,6 +245,34 @@ where
     }
 }
 
+impl<K, V, S> IntoIterator for IndexMap<K, V, S> {
+    type Item = (K, V);
+    type IntoIter = indexmap::map::IntoIter<K, V>;
+
+    /// Creates an iterator from a value.
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
+    }
+}
+
+impl<K, V1, S1, V2, S2> PartialEq<IndexMap<K, V2, S2>> for IndexMap<K, V1, S1>
+where
+    K: Hash + Eq,
+    V1: PartialEq<V2>,
+    S1: BuildHasher,
+    S2: BuildHasher,
+{
+    /// Return `true` if [`self.inner`](IndexMap::inner) is equal to `other.inner`.
+    #[inline]
+    fn eq(
+        &self,
+        other: &IndexMap<K, V2, S2>,
+    ) -> bool {
+        self.inner == other.inner
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -249,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn from_iter() {
+    fn from_and_into_iter() {
         use super::*;
 
         let map = IndexMap::<u8, f32>::from_iter([
@@ -261,6 +303,14 @@ mod tests {
 
         let target = 4;
         let output = map.len();
+        assert_eq!(output, target);
+
+        let target = vec![0, 3, 1, 4];
+        let output = map.to_owned().into_keys().collect::<Vec<_>>();
+        assert_eq!(output, target);
+
+        let target = vec![0.1, 0.4, 0.2, 0.5];
+        let output = map.into_values().collect::<Vec<_>>();
         assert_eq!(output, target);
     }
 

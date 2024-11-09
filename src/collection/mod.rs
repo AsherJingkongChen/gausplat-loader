@@ -1,3 +1,3 @@
 pub mod indexmap;
 
-pub use indexmap::*;
+pub use indexmap::IndexMap;

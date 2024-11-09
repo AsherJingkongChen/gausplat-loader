@@ -3,7 +3,7 @@ pub use crate::{error::Error, function::Opener};
 
 use std::{fs, path};
 
-pub type Files<S> = std::collections::BTreeMap<String, File<S>>;
+pub type Files<S> = crate::collection::IndexMap<String, File<S>>;
 
 impl Opener for Files<fs::File> {
     fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
