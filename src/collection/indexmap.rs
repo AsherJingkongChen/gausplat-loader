@@ -1,6 +1,8 @@
 pub use indexmap::IndexMap as IndexMapInner;
 pub use rand::rngs::StdRng;
+pub use rayon::iter::{FromParallelIterator, IntoParallelIterator};
 
+use indexmap::map::IntoIter;
 use rand::{Rng, SeedableRng};
 use std::{
     hash::{BuildHasher, Hash, RandomState},
@@ -69,7 +71,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     /// Get a key-value pair by random.
     pub fn get_random(&mut self) -> Option<(&K, &V)> {
         if self.inner.is_empty() {
-            return None;
+            None?;
         }
         self.inner
             .get_index(self.rng.gen_range(0..self.inner.len()))
@@ -78,7 +80,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     /// Get a key-value pair by random.
     pub fn get_random_mut(&mut self) -> Option<(&K, &mut V)> {
         if self.inner.is_empty() {
-            return None;
+            None?;
         }
         self.inner
             .get_index_mut(self.rng.gen_range(0..self.inner.len()))
@@ -138,7 +140,7 @@ impl<K, V, S> IndexMap<K, V, S> {
 
 impl<K, V: Ord, S> IndexMap<K, V, S> {
     /// Sort the map’s key-value pairs by the default ordering of the values,
-    /// while preserving the order of equal elements.
+    /// and preserve the order of equal elements.
     ///
     /// Generally, [`sort_unstable_values`](IndexMap::sort_unstable_values)
     /// is faster than [`sort_values`](IndexMap::sort_values).
@@ -150,11 +152,8 @@ impl<K, V: Ord, S> IndexMap<K, V, S> {
             .sort_by(|_, a_value, _, b_value| a_value.cmp(b_value));
     }
 
-    /// Sort the map's key-value pairs by the default ordering of the keys, but
-    /// may not preserve the order of equal elements.
-    ///
-    /// Generally, [`sort_unstable_values`](IndexMap::sort_unstable_values)
-    /// is faster than [`sort_values`](IndexMap::sort_values).
+    /// Sort the map's key-value pairs by the default ordering of the keys,
+    /// but may not preserve the order of equal elements.
     ///
     /// See [`sort_unstable_by`](IndexMapInner::sort_unstable_by) for details.
     #[inline]
@@ -245,9 +244,27 @@ where
     }
 }
 
+impl<K, V, S> FromParallelIterator<(K, V)> for IndexMap<K, V, S>
+where
+    K: Hash + Eq + Send,
+    V: Send,
+    S: BuildHasher + Default + Send,
+{
+    /// Create an [`IndexMap`] from the sequence of key-value pairs in the parallel iterable.
+    #[inline]
+    fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(
+        iterable: I
+    ) -> Self {
+        Self {
+            inner: IndexMapInner::from_par_iter(iterable),
+            rng: StdRng::from_entropy(),
+        }
+    }
+}
+
 impl<K, V, S> IntoIterator for IndexMap<K, V, S> {
     type Item = (K, V);
-    type IntoIter = indexmap::map::IntoIter<K, V>;
+    type IntoIter = IntoIter<K, V>;
 
     /// Creates an iterator from a value.
     #[inline]
@@ -310,7 +327,31 @@ mod tests {
         assert_eq!(output, target);
 
         let target = vec![0.1, 0.4, 0.2, 0.5];
-        let output = map.into_values().collect::<Vec<_>>();
+        let output = map.to_owned().into_values().collect::<Vec<_>>();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn from_and_into_par_iter() {
+        use super::*;
+
+        let map = IndexMap::<u8, f32>::from_par_iter([
+            (0, 0.1),
+            (3, 0.4),
+            (1, 0.2),
+            (4, 0.5),
+        ]);
+
+        let target = 4;
+        let output = map.len();
+        assert_eq!(output, target);
+
+        let target = vec![0, 3, 1, 4];
+        let output = map.to_owned().into_keys().collect::<Vec<_>>();
+        assert_eq!(output, target);
+
+        let target = vec![0.1, 0.4, 0.2, 0.5];
+        let output = map.to_owned().into_values().collect::<Vec<_>>();
         assert_eq!(output, target);
     }
 
