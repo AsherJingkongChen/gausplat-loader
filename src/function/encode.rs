@@ -37,9 +37,10 @@ mod tests {
         let source = &[20241109_u32, 131452000];
         let mut writer = std::io::Cursor::new(Vec::new());
 
-        write_any(&mut writer, source).unwrap();
         let target =
-            &include_bytes!("../../examples/data/hello-world.dat")[..8];
+            &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")
+                [..8];
+        write_any(&mut writer, source).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
     }
@@ -51,8 +52,10 @@ mod tests {
         let source = "Hello, World!";
         let mut writer = std::io::Cursor::new(Vec::new());
 
+        let target =
+            &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")
+                [8..8 + 13 + 1];
         write_string_with_zero(&mut writer, source).unwrap();
-        let target = &include_bytes!("../../examples/data/hello-world.dat")[8..8 + 13 + 1];
         let output = writer.into_inner();
         assert_eq!(output, target);
     }

@@ -34,6 +34,7 @@ impl Decoder for Image {
         let camera_id = read_any::<u32>(reader)?;
         let file_name = read_string_until_zero(reader, 64)?;
         let point_count = read_any::<u64>(reader)? as usize;
+        // Skip points
         advance(reader, 24 * point_count)?;
 
         Ok(Self {
@@ -56,7 +57,8 @@ impl Encoder for Image {
         write_any(writer, &self.translation)?;
         write_any(writer, &self.camera_id)?;
         write_string_with_zero(writer, &self.file_name)?;
-        write_any(writer, &0u64)?;
+        // Write 0 to point count
+        write_any(writer, &0_u64)?;
 
         Ok(())
     }

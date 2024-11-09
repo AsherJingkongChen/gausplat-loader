@@ -72,7 +72,8 @@ mod tests {
     fn read_any() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world.dat");
+        let source =
+            include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
         let reader = &mut std::io::Cursor::new(source);
 
         let target = [20241109, 131452000];
@@ -84,7 +85,8 @@ mod tests {
     fn read_string_until_zero() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world.dat");
+        let source =
+            include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
         let reader = &mut std::io::Cursor::new(source);
 
         advance(reader, 8).unwrap();

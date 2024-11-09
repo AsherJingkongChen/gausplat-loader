@@ -29,8 +29,10 @@ impl Decoder for Point {
     fn decode(reader: &mut impl Read) -> Result<Self, Error> {
         let position = read_any::<[f64; 3]>(reader)?;
         let color_rgb = read_any::<[u8; 3]>(reader)?;
+        // Skip re-projection error
         advance(reader, 8)?;
         let track_count = read_any::<u64>(reader)? as usize;
+        // Skip tracks
         advance(reader, 8 * track_count)?;
 
         Ok(Self {
@@ -47,7 +49,10 @@ impl Encoder for Point {
     ) -> Result<(), Error> {
         write_any(writer, &self.position)?;
         write_any(writer, &self.color_rgb)?;
-        write_any(writer, &0u64)?;
+        // Write -1.0 to re-projection error
+        write_any(writer, &-1.0_f64)?;
+        // Write 0 to track count
+        write_any(writer, &0_u64)?;
 
         Ok(())
     }

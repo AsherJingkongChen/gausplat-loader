@@ -16,7 +16,7 @@ impl Decoder for Points {
         let point_count = read_any::<u64>(reader)? as usize;
         let points = (0..point_count)
             .map(|_| {
-                // Read point id and ignore it.
+                // Skip point id
                 advance(reader, 8)?;
                 Point::decode(reader)
             })
@@ -37,11 +37,13 @@ impl Encoder for Points {
         let writer = &mut BufWriter::new(writer);
 
         write_any(writer, &(self.len() as u64))?;
-        for (point_index, point) in self.iter().enumerate() {
-            // Write point id from index.
-            write_any(writer, &(point_index as u64))?;
-            point.encode(writer)?;
-        }
+        self.iter()
+            .enumerate()
+            .try_for_each(|(point_index, point)| {
+                // Write point index to point id
+                write_any(writer, &(point_index as u64))?;
+                point.encode(writer)
+            })?;
 
         #[cfg(debug_assertions)]
         log::debug!(target: "gausplat::loader::colmap::point", "Points::encode");
@@ -56,7 +58,8 @@ mod tests {
     fn decode() {
         use super::*;
 
-        let source = include_bytes!("../../../../examples/data/points3D.bin");
+        let source =
+            include_bytes!("../../../../examples/data/colmap/0/points3D.bin");
         let mut reader = std::io::Cursor::new(source);
 
         let target_count = 10;
@@ -157,12 +160,122 @@ mod tests {
     }
 
     #[test]
-    fn decode_on_zero_entries() {
+    fn decode_on_zero_entry() {
         use super::*;
 
         let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
         let outputs = Points::decode(&mut reader).unwrap();
         assert!(outputs.is_empty());
+    }
+
+    #[test]
+    fn encode() {
+        use super::*;
+
+        let source = [
+            Point {
+                position: [
+                    -9.653762040829593,
+                    -4.102401892127109,
+                    9.599685045896118,
+                ],
+                color_rgb: [47, 51, 30],
+            },
+            Point {
+                position: [
+                    5.487944921401847,
+                    0.2107494446297745,
+                    3.114260873278527,
+                ],
+                color_rgb: [165, 169, 126],
+            },
+            Point {
+                position: [
+                    0.1410007471542446,
+                    0.291254708094473,
+                    2.2554270470753965,
+                ],
+                color_rgb: [121, 125, 94],
+            },
+            Point {
+                position: [
+                    -0.970841016641282,
+                    -0.48531157645971296,
+                    2.3516242254018627,
+                ],
+                color_rgb: [96, 96, 91],
+            },
+            Point {
+                position: [
+                    -0.8143227596488996,
+                    3.1710185435453306,
+                    0.3694397529877653,
+                ],
+                color_rgb: [141, 139, 136],
+            },
+            Point {
+                position: [
+                    1.157534330380484,
+                    1.508798212187828,
+                    0.9037922130535186,
+                ],
+                color_rgb: [131, 136, 98],
+            },
+            Point {
+                position: [
+                    5.834357348282835,
+                    1.4493333604378096,
+                    3.1080390945391643,
+                ],
+                color_rgb: [151, 151, 147],
+            },
+            Point {
+                position: [
+                    -0.24065866398375135,
+                    0.1763233421385975,
+                    1.6066914460314323,
+                ],
+                color_rgb: [141, 147, 89],
+            },
+            Point {
+                position: [
+                    0.7556535574483431,
+                    0.6682392592540607,
+                    3.120770469139577,
+                ],
+                color_rgb: [153, 149, 137],
+            },
+            Point {
+                position: [
+                    -1.9299760562484711,
+                    -0.37688731833688194,
+                    0.8368212073339936,
+                ],
+                color_rgb: [84, 88, 78],
+            },
+        ]
+        .into_iter()
+        .collect::<Points>();
+
+        let target =
+            include_bytes!("../../../../examples/data/colmap/1/points3D.bin");
+        let mut writer = std::io::Cursor::new(Vec::new());
+        source.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn encode_on_zero_entry() {
+        use super::*;
+
+        let source = Points::default();
+
+        let target = &[0, 0, 0, 0, 0, 0, 0, 0];
+        let mut writer = std::io::Cursor::new(Vec::new());
+        source.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+        assert_eq!(output, target);
     }
 }
