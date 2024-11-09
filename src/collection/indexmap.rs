@@ -30,7 +30,7 @@ use std::{
 /// ## Examples
 ///
 /// ```rust
-/// use gausplat_loader::container::IndexMap;
+/// use gausplat_loader::collection::IndexMap;
 ///
 /// let mut names = ["X", "X", "O"].into_iter().enumerate().collect::<IndexMap<_, _>>();
 ///
