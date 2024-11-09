@@ -34,13 +34,20 @@ impl CustomDisplay for std::string::FromUtf8Error {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn utf8_error() {
+    fn utf8() {
         use super::*;
 
         let error = String::from_utf8(vec![
             0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
         ]);
-        let message = error.unwrap_err().custom_display();
-        assert!(message.contains("89"));
+
+        let target = true;
+        let output = error
+            .clone()
+            .unwrap_err()
+            .custom_display()
+            .ends_with("[89]");
+        assert_eq!(output, target);
+        println!("{}", error.unwrap_err().custom_display());
     }
 }

@@ -91,82 +91,179 @@ impl fmt::Debug for Image {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn debug_and_default() {
+        use super::*;
+
+        let target = Image {
+            image_encoded: Default::default(),
+            image_file_name: Default::default(),
+            image_id: Default::default(),
+        };
+        let output = Image::default();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = format!("{:?}", Image::default()).starts_with("Image");
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn decode_and_encode_rgb_between_tensor() {
+        use super::*;
+        use burn_ndarray::NdArray;
+
+        let source =
+            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let mut image = Image {
+            image_encoded: source,
+            image_file_name: "example.png".into(),
+            image_id: Default::default(),
+        };
+
+        (0..5).for_each(|_| {
+            let target = image
+                .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                .unwrap();
+            let output = image
+                .encode_rgb_from_tensor(target.to_owned())
+                .unwrap()
+                .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                .unwrap();
+            output.into_data().assert_eq(&target.into_data(), true);
+        });
+    }
+
+    #[test]
+    fn decode_dimensions() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let image = Image {
+            image_encoded: source,
+            image_file_name: "example.png".into(),
+            image_id: Default::default(),
+        };
+
+        let target = (172, 178);
+        let output = image.decode_dimensions().unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
     fn decode_rgb_to_tensor() {
         use super::*;
         use burn_ndarray::NdArray;
 
+        let source =
+            include_bytes!("../../../examples/data/image/rainbow-8x8.png");
         let image = Image {
-            image_encoded: vec![
-                0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00,
-                0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01,
-                0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f,
-                0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x01, 0x73, 0x52, 0x47,
-                0x42, 0x00, 0xae, 0xce, 0x1c, 0xe9, 0x00, 0x00, 0x00, 0x44,
-                0x65, 0x58, 0x49, 0x66, 0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00,
-                0x00, 0x08, 0x00, 0x01, 0x87, 0x69, 0x00, 0x04, 0x00, 0x00,
-                0x00, 0x01, 0x00, 0x00, 0x00, 0x1a, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x03, 0xa0, 0x01, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01,
-                0x00, 0x01, 0x00, 0x00, 0xa0, 0x02, 0x00, 0x04, 0x00, 0x00,
-                0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0xa0, 0x03, 0x00, 0x04,
-                0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
-                0x00, 0x00, 0xf9, 0x22, 0x9d, 0xfe, 0x00, 0x00, 0x00, 0x0d,
-                0x49, 0x44, 0x41, 0x54, 0x08, 0x1d, 0x63, 0xf8, 0xcf, 0x60,
-                0xdb, 0x0d, 0x00, 0x05, 0x06, 0x01, 0xc8, 0x5d, 0xd6, 0x92,
-                0xd1, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
-                0x42, 0x60, 0x82,
-            ],
-            image_file_name: Default::default(),
+            image_encoded: source.to_vec(),
+            image_file_name: "rainbow-8x8.png".into(),
             image_id: Default::default(),
         };
 
-        assert_eq!(
-            image
-                .decode_rgb_to_tensor::<NdArray>(&Default::default())
-                .unwrap()
-                .into_data()
-                .to_vec::<f32>()
-                .unwrap(),
-            vec![1.0, 0.0, 0.23921569]
-        );
+        let target = Tensor::<NdArray, 3>::from([
+            [
+                [1.00000000, 0.87843138, 0.87843138],
+                [1.00000000, 0.96862745, 0.87843138],
+                [0.94117647, 1.00000000, 0.87843138],
+                [0.87843138, 1.00000000, 0.90588236],
+                [0.87843138, 1.00000000, 1.00000000],
+                [0.87843138, 0.90980393, 1.00000000],
+                [0.93725491, 0.87843138, 1.00000000],
+                [1.00000000, 0.87843138, 0.96862745],
+            ],
+            [
+                [1.00000000, 0.75294119, 0.75294119],
+                [1.00000000, 0.93333334, 0.75294119],
+                [0.88235295, 1.00000000, 0.75294119],
+                [0.75294119, 1.00000000, 0.81176472],
+                [0.75294119, 1.00000000, 0.99607843],
+                [0.75294119, 0.81568629, 1.00000000],
+                [0.87450981, 0.75294119, 1.00000000],
+                [1.00000000, 0.75294119, 0.93725491],
+            ],
+            [
+                [1.00000000, 0.62745100, 0.62745100],
+                [1.00000000, 0.89803922, 0.62745100],
+                [0.81960785, 1.00000000, 0.62745100],
+                [0.62745100, 1.00000000, 0.71372551],
+                [0.62745100, 1.00000000, 0.99607843],
+                [0.62745100, 0.72549021, 1.00000000],
+                [0.81176472, 0.62745100, 1.00000000],
+                [1.00000000, 0.62745100, 0.90980393],
+            ],
+            [
+                [1.00000000, 0.50196081, 0.50196081],
+                [1.00000000, 0.86666667, 0.50196081],
+                [0.76078433, 1.00000000, 0.50196081],
+                [0.50196081, 1.00000000, 0.61960787],
+                [0.50196081, 1.00000000, 0.99607843],
+                [0.50196081, 0.63137257, 1.00000000],
+                [0.74901962, 0.50196081, 1.00000000],
+                [1.00000000, 0.50196081, 0.87843138],
+            ],
+            [
+                [1.00000000, 0.37647060, 0.37647060],
+                [1.00000000, 0.83137256, 0.37647060],
+                [0.69803923, 1.00000000, 0.37647060],
+                [0.37647060, 1.00000000, 0.52156866],
+                [0.37647060, 1.00000000, 0.99215686],
+                [0.37647060, 0.53725493, 1.00000000],
+                [0.68627453, 0.37647060, 1.00000000],
+                [1.00000000, 0.37647060, 0.84705883],
+            ],
+            [
+                [1.00000000, 0.25098041, 0.25098041],
+                [1.00000000, 0.79607844, 0.25098041],
+                [0.63921571, 1.00000000, 0.25098041],
+                [0.25098041, 1.00000000, 0.42745098],
+                [0.25098041, 1.00000000, 0.99215686],
+                [0.25098041, 0.44313726, 1.00000000],
+                [0.61960787, 0.25098041, 1.00000000],
+                [1.00000000, 0.25098041, 0.81568629],
+            ],
+            [
+                [1.00000000, 0.12549020, 0.12549020],
+                [1.00000000, 0.76470590, 0.12549020],
+                [0.57647061, 1.00000000, 0.12549020],
+                [0.12549020, 1.00000000, 0.32941177],
+                [0.12549020, 1.00000000, 0.98823529],
+                [0.12549020, 0.35294119, 1.00000000],
+                [0.55686277, 0.12549020, 1.00000000],
+                [1.00000000, 0.12549020, 0.78431374],
+            ],
+            [
+                [1.00000000, 0.00000000, 0.00000000],
+                [1.00000000, 0.72941178, 0.00000000],
+                [0.51764709, 1.00000000, 0.00000000],
+                [0.00000000, 1.00000000, 0.23529412],
+                [0.00000000, 1.00000000, 0.98823529],
+                [0.00000000, 0.25882354, 1.00000000],
+                [0.49411765, 0.00000000, 1.00000000],
+                [1.00000000, 0.00000000, 0.75294119],
+            ],
+        ]);
+        let output = image
+            .decode_rgb_to_tensor::<NdArray>(&Default::default())
+            .unwrap();
+        output.into_data().assert_eq(&target.into_data(), true);
     }
 
     #[test]
-    fn recode_tensor() {
+    fn encode_rgb_from_tensor_on_mismatched_tensor_shape() {
         use super::*;
         use burn_ndarray::NdArray;
-        use std::io::Cursor;
 
-        let image_file_name = "example.png";
-        let image_encoded_source = include_bytes!("example.png");
+        let source = Tensor::<NdArray, 3>::ones([8, 6, 4], &Default::default());
+        let mut image = Image::default();
 
-        let mut image_encoded_target = Cursor::new(Vec::new());
-        image::load_from_memory(image_encoded_source)
-            .unwrap()
-            .write_to(
-                &mut image_encoded_target,
-                image::ImageFormat::from_path(image_file_name).unwrap(),
-            )
-            .unwrap();
-        let image_encoded_target = &image_encoded_target.into_inner();
-
-        let mut image = Image {
-            image_encoded: image_encoded_target.to_owned(),
-            image_file_name: image_file_name.into(),
-            image_id: Default::default(),
+        let target = (vec![8, 6, 4], vec![8, 6, 3]);
+        let output = match image.encode_rgb_from_tensor(source).unwrap_err() {
+            Error::MismatchedTensorShape(output, target) => (output, target),
+            error => panic!("{:?}", error),
         };
-
-        // It should be idempotent
-        for _ in 0..5 {
-            let image_encoded_output = &image
-                .encode_rgb_from_tensor(
-                    image
-                        .decode_rgb_to_tensor::<NdArray>(&Default::default())
-                        .unwrap(),
-                )
-                .unwrap()
-                .image_encoded;
-
-            assert_eq!(image_encoded_output, image_encoded_target);
-        }
+        assert_eq!(output, target);
     }
 }

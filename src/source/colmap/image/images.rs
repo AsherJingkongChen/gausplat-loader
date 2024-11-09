@@ -173,8 +173,9 @@ mod tests {
 
         let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let output = Images::decode(&mut reader).unwrap();
-        assert!(output.is_empty());
+        let target = true;
+        let output = Images::decode(&mut reader).unwrap().is_empty();
+        assert_eq!(output, target);
     }
 
     #[test]

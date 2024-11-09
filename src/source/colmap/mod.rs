@@ -9,6 +9,7 @@ pub use point::*;
 
 use std::fmt;
 
+#[derive(Clone, PartialEq)]
 pub struct ColmapSource<S> {
     pub cameras: Cameras,
     pub images: Images,
@@ -38,5 +39,26 @@ impl<S: Default> Default for ColmapSource<S> {
             images: Default::default(),
             points: Default::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn debug_and_default() {
+        use super::*;
+
+        let target = ColmapSource::<&[u8]> {
+            cameras: Default::default(),
+            images: Default::default(),
+            images_file: Default::default(),
+            points: Default::default(),
+        };
+        let output = ColmapSource::<&[u8]>::default();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = format!("{:?}", output).starts_with("ColmapSource");
+        assert_eq!(output, target);
     }
 }

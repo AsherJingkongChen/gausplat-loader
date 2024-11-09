@@ -88,6 +88,22 @@ mod tests {
     }
 
     #[test]
+    fn decode_on_unknown_camera_model_id() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../../../examples/data/colmap/2/cameras.bin");
+        let mut reader = std::io::Cursor::new(source);
+
+        let target = -1_i32 as u32;
+        let output = match Cameras::decode(&mut reader).unwrap_err() {
+            Error::UnknownCameraModelId(id) => id,
+            error => panic!("{:?}", error),
+        };
+        assert_eq!(output, target);
+    }
+
+    #[test]
     fn decode_on_zero_bytes() {
         use super::*;
 
@@ -102,8 +118,9 @@ mod tests {
 
         let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let output = Cameras::decode(&mut reader).unwrap();
-        assert!(output.is_empty());
+        let target = true;
+        let output = Cameras::decode(&mut reader).unwrap().is_empty();
+        assert_eq!(output, target);
     }
 
     #[test]

@@ -62,7 +62,6 @@ mod tests {
             include_bytes!("../../../../examples/data/colmap/0/points3D.bin");
         let mut reader = std::io::Cursor::new(source);
 
-        let target_count = 10;
         let targets = vec![
             Point {
                 position: [
@@ -145,9 +144,8 @@ mod tests {
                 color_rgb: [58, 67, 50],
             },
         ];
-        let outputs = Points::decode(&mut reader).unwrap();
-        assert_eq!(outputs.len(), target_count);
-        assert_eq!(outputs, targets);
+        let output = Points::decode(&mut reader).unwrap();
+        assert_eq!(output, targets);
     }
 
     #[test]
@@ -165,8 +163,9 @@ mod tests {
 
         let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
 
-        let outputs = Points::decode(&mut reader).unwrap();
-        assert!(outputs.is_empty());
+        let target = true;
+        let output = Points::decode(&mut reader).unwrap().is_empty();
+        assert_eq!(output, target);
     }
 
     #[test]

@@ -3,7 +3,7 @@ pub use crate::{error::Error, function::Opener};
 
 use std::{fs, path};
 
-pub type Files<S> = std::collections::HashMap<String, File<S>>;
+pub type Files<S> = std::collections::BTreeMap<String, File<S>>;
 
 impl Opener for Files<fs::File> {
     fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
@@ -20,5 +20,20 @@ impl Opener for Files<fs::File> {
         log::debug!(target: "gausplat::loader::source::file", "Files::open");
 
         files
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn open() {
+        use super::*;
+
+        let source = "examples/data/hello-world/";
+        let files = Files::open(source).unwrap();
+
+        let target = false;
+        let output = files.is_empty();
+        assert_eq!(output, target);
     }
 }

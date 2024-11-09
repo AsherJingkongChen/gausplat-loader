@@ -75,32 +75,45 @@ impl<R: Default> Default for File<R> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn read() {
+    fn open() {
         use super::*;
 
-        let input = b"Hello, World!";
-        let mut file = File {
-            name: Default::default(),
-            stream: std::io::Cursor::new(input),
-        };
+        let source = "examples/data/hello-world/ascii.txt";
+        let mut file = File::open(source).unwrap();
 
+        let target = b"Hello, World!";
         let output = file.read().unwrap();
-        assert_eq!(output, input);
+        assert_eq!(output, target);
     }
 
     #[test]
-    fn write() {
+    fn read() {
         use super::*;
 
-        let input = b"Hello, World!";
+        let source =
+            include_bytes!("../../../examples/data/hello-world/ascii.txt");
         let mut file = File {
             name: Default::default(),
-            stream: std::io::Cursor::new(Vec::new()),
+            stream: std::io::Cursor::new(source),
         };
 
-        file.write(input).unwrap();
-        file.rewind().unwrap();
+        let target = source;
         let output = file.read().unwrap();
-        assert_eq!(output, input);
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn write_and_rewind() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../../examples/data/hello-world/ascii.txt");
+        let mut file = File::<std::io::Cursor<Vec<u8>>>::default();
+
+        let target = source;
+        file.write(source).unwrap();
+        file.rewind().unwrap();
+        let output = file.stream.into_inner();
+        assert_eq!(output, target);
     }
 }

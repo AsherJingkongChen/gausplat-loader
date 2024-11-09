@@ -92,7 +92,7 @@ impl Decoder for Camera {
                 principal_point_x,
                 principal_point_y,
             }),
-            _ => return Err(Error::UnknownCameraModelId(model_id)),
+            _ => unreachable!(),
         })
     }
 }
@@ -117,5 +117,17 @@ impl Encoder for Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self::Pinhole(Default::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn default() {
+        use super::*;
+
+        let target = Camera::Pinhole(Default::default());
+        let output = Camera::default();
+        assert_eq!(output, target);
     }
 }
