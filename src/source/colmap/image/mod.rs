@@ -7,8 +7,7 @@ pub use crate::{
 pub use images::*;
 
 use crate::function::{
-    advance, read_any, read_string_until_zero, write_any,
-    write_string_with_zero,
+    advance, read_any, read_byte_until, write_any, write_str,
 };
 use std::io::{Read, Write};
 
@@ -32,7 +31,7 @@ impl Decoder for Image {
         let quaternion = read_any::<[f64; 4]>(reader)?;
         let translation = read_any::<[f64; 3]>(reader)?;
         let camera_id = read_any::<u32>(reader)?;
-        let file_name = read_string_until_zero(reader, 64)?;
+        let file_name = String::from_utf8(read_byte_until(reader, b'\0', 64)?)?;
         let point_count = read_any::<u64>(reader)? as usize;
         // Skip points
         advance(reader, 24 * point_count)?;
@@ -56,7 +55,8 @@ impl Encoder for Image {
         write_any(writer, &self.quaternion)?;
         write_any(writer, &self.translation)?;
         write_any(writer, &self.camera_id)?;
-        write_string_with_zero(writer, &self.file_name)?;
+        write_str(writer, &self.file_name)?;
+        write_any(writer, &b'\0')?;
         // Write 0 to point count
         write_any(writer, &0_u64)?;
 

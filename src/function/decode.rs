@@ -10,44 +10,51 @@ where
     fn decode(reader: &mut impl Read) -> Result<Self, Error>;
 }
 
+/// Discarding `byte_count` bytes from the reader.
+#[inline]
 pub fn advance(
     reader: &mut impl Read,
     byte_count: usize,
 ) -> Result<(), Error> {
     // Using a buffer size of 8 KiB.
-    const BUFFER_SIZE_LEVEL: usize = 3 + 10;
     const BUFFER_SIZE: usize = 1 << BUFFER_SIZE_LEVEL;
+    const BUFFER_SIZE_LEVEL: usize = 3 + 10;
+    const BUFFER_SIZE_MASK: usize = BUFFER_SIZE - 1;
 
     for _ in 0..(byte_count >> BUFFER_SIZE_LEVEL) {
         reader.read_exact(&mut [0; BUFFER_SIZE])?;
     }
 
-    Ok(reader.read_exact(&mut vec![0; byte_count & (BUFFER_SIZE - 1)])?)
+    Ok(reader.read_exact(&mut vec![0; byte_count & BUFFER_SIZE_MASK])?)
 }
 
+/// Reading any type of data from the reader.
+#[inline]
 pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
-    let mut bytes = vec![0; std::mem::size_of::<T>()];
-    reader.read_exact(&mut bytes)?;
+    let bytes = &mut vec![0; std::mem::size_of::<T>()];
+    reader.read_exact(bytes)?;
 
-    Ok(*bytemuck::from_bytes::<T>(&bytes))
+    Ok(*bytemuck::from_bytes::<T>(bytes))
 }
 
-pub fn read_string_until_zero(
+/// Reading all bytes until the delimiter byte or EOF is reached.
+pub fn read_byte_until(
     reader: &mut impl Read,
+    delimiter: u8,
     reserved_size: usize,
-) -> Result<String, Error> {
-    let mut bytes = Vec::with_capacity(reserved_size);
+) -> Result<Vec<u8>, Error> {
+    let mut bytes = Vec::with_capacity(reserved_size.next_power_of_two());
     loop {
         let byte = &mut [0];
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
-        if byte == 0 || is_eof {
+        if byte == delimiter || is_eof {
             break;
         }
         bytes.push(byte);
     }
 
-    Ok(String::from_utf8(bytes)?)
+    Ok(bytes)
 }
 
 #[cfg(test)]
@@ -82,7 +89,7 @@ mod tests {
     }
 
     #[test]
-    fn read_string_until_zero() {
+    fn read_byte_until() {
         use super::*;
 
         let source =
@@ -90,12 +97,12 @@ mod tests {
         let reader = &mut std::io::Cursor::new(source);
 
         advance(reader, 8).unwrap();
-        let target = "Hello, World!";
-        let output = read_string_until_zero(reader, 16).unwrap();
+        let target = b"Hello, World!";
+        let output = read_byte_until(reader, b'\0', target.len()).unwrap();
         assert_eq!(output, target);
 
-        let target = "Bonjour, le monde!\n";
-        let output = read_string_until_zero(reader, 32).unwrap();
+        let target = b"Bonjour, le monde!\n";
+        let output = read_byte_until(reader, b'\0', target.len()).unwrap();
         assert_eq!(output, target);
     }
 }

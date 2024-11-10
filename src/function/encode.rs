@@ -20,12 +20,11 @@ pub fn write_any<T: Pod>(
     Ok(writer.write_all(bytemuck::bytes_of(value))?)
 }
 
-pub fn write_string_with_zero(
+pub fn write_str(
     writer: &mut impl Write,
     value: &str,
 ) -> Result<(), Error> {
-    writer.write_all(value.as_bytes())?;
-    Ok(writer.write_all(&[0])?)
+    Ok(writer.write_all(value.as_bytes())?)
 }
 
 #[cfg(test)]
@@ -46,16 +45,15 @@ mod tests {
     }
 
     #[test]
-    fn write_string_with_zero() {
+    fn write_str() {
         use super::*;
 
         let source = "Hello, World!";
         let mut writer = std::io::Cursor::new(Vec::new());
 
         let target =
-            &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")
-                [8..8 + 13 + 1];
-        write_string_with_zero(&mut writer, source).unwrap();
+            include_bytes!("../../examples/data/hello-world/ascii.txt");
+        write_str(&mut writer, source).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
     }
