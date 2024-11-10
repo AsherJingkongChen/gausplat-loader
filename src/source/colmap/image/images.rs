@@ -72,7 +72,7 @@ mod tests {
                         3.02849770919350700,
                     ],
                     camera_id: 1,
-                    file_name: "001.png".into(),
+                    file_name: c"001.png".into(),
                 },
             ),
             (
@@ -91,7 +91,7 @@ mod tests {
                         2.996173726996660000,
                     ],
                     camera_id: 1,
-                    file_name: "002.png".into(),
+                    file_name: c"002.png".into(),
                 },
             ),
             (
@@ -110,7 +110,7 @@ mod tests {
                         2.962536046879310000,
                     ],
                     camera_id: 1,
-                    file_name: "003.png".into(),
+                    file_name: c"003.png".into(),
                 },
             ),
             (
@@ -129,7 +129,7 @@ mod tests {
                         2.929815138064468000,
                     ],
                     camera_id: 1,
-                    file_name: "004.png".into(),
+                    file_name: c"004.png".into(),
                 },
             ),
             (
@@ -148,7 +148,7 @@ mod tests {
                         2.898707117916470700,
                     ],
                     camera_id: 1,
-                    file_name: "005.png".into(),
+                    file_name: c"005.png".into(),
                 },
             ),
         ]
@@ -199,7 +199,7 @@ mod tests {
                         2.841519901424116,
                     ],
                     camera_id: 1,
-                    file_name: "00001.png".into(),
+                    file_name: c"00001.png".into(),
                 },
             ),
             (
@@ -218,7 +218,7 @@ mod tests {
                         2.7869433888185773,
                     ],
                     camera_id: 1,
-                    file_name: "00002.png".into(),
+                    file_name: c"00002.png".into(),
                 },
             ),
             (
@@ -237,7 +237,7 @@ mod tests {
                         2.733216794563995,
                     ],
                     camera_id: 1,
-                    file_name: "00003.png".into(),
+                    file_name: c"00003.png".into(),
                 },
             ),
             (
@@ -256,7 +256,7 @@ mod tests {
                         2.6867445977350486,
                     ],
                     camera_id: 1,
-                    file_name: "00004.png".into(),
+                    file_name: c"00004.png".into(),
                 },
             ),
             (
@@ -275,7 +275,7 @@ mod tests {
                         2.642389506923824,
                     ],
                     camera_id: 1,
-                    file_name: "00005.png".into(),
+                    file_name: c"00005.png".into(),
                 },
             ),
         ]

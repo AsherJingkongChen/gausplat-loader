@@ -7,9 +7,12 @@ pub use crate::{
 pub use images::*;
 
 use crate::function::{
-    advance, read_any, read_byte_until, write_any, write_str,
+    advance, read_any, read_bytes_before, write_any, write_bytes,
 };
-use std::io::{Read, Write};
+use std::{
+    ffi::CString,
+    io::{Read, Write},
+};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Image {
@@ -22,7 +25,7 @@ pub struct Image {
     pub quaternion: [f64; 4],
     pub translation: [f64; 3],
     pub camera_id: u32,
-    pub file_name: String,
+    pub file_name: CString,
 }
 
 impl Decoder for Image {
@@ -31,7 +34,10 @@ impl Decoder for Image {
         let quaternion = read_any::<[f64; 4]>(reader)?;
         let translation = read_any::<[f64; 3]>(reader)?;
         let camera_id = read_any::<u32>(reader)?;
-        let file_name = String::from_utf8(read_byte_until(reader, b'\0', 64)?)?;
+        let file_name = unsafe {
+            // SAFETY: `read_bytes_before` does not include the null terminator.
+            CString::from_vec_unchecked(read_bytes_before(reader, b'\0', 64)?)
+        };
         let point_count = read_any::<u64>(reader)? as usize;
         // Skip points
         advance(reader, 24 * point_count)?;
@@ -55,8 +61,7 @@ impl Encoder for Image {
         write_any(writer, &self.quaternion)?;
         write_any(writer, &self.translation)?;
         write_any(writer, &self.camera_id)?;
-        write_str(writer, &self.file_name)?;
-        write_any(writer, &b'\0')?;
+        write_bytes(writer, &self.file_name.as_bytes_with_nul())?;
         // Write 0 to point count
         write_any(writer, &0_u64)?;
 

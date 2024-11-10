@@ -13,6 +13,8 @@ where
     ) -> Result<(), Error>;
 }
 
+/// Writing any type of data.
+#[inline]
 pub fn write_any<T: Pod>(
     writer: &mut impl Write,
     value: &T,
@@ -20,11 +22,13 @@ pub fn write_any<T: Pod>(
     Ok(writer.write_all(bytemuck::bytes_of(value))?)
 }
 
-pub fn write_str(
+/// Writing all bytes.
+#[inline]
+pub fn write_bytes(
     writer: &mut impl Write,
-    value: &str,
+    bytes: &[u8],
 ) -> Result<(), Error> {
-    Ok(writer.write_all(value.as_bytes())?)
+    Ok(writer.write_all(bytes)?)
 }
 
 #[cfg(test)]
@@ -45,15 +49,15 @@ mod tests {
     }
 
     #[test]
-    fn write_str() {
+    fn write_bytes() {
         use super::*;
 
-        let source = "Hello, World!";
+        let source = b"Hello, World!";
         let mut writer = std::io::Cursor::new(Vec::new());
 
         let target =
             include_bytes!("../../examples/data/hello-world/ascii.txt");
-        write_str(&mut writer, source).unwrap();
+        write_bytes(&mut writer, source).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
     }

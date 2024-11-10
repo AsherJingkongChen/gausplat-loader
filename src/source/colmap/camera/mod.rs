@@ -77,7 +77,7 @@ impl Decoder for Camera {
                 [focal_length, focal_length]
             },
             1 => read_any::<[f64; 2]>(reader)?,
-            _ => return Err(Error::UnknownCameraModelId(model_id)),
+            _ => Err(Error::UnknownCameraModelId(model_id))?,
         };
         let [principal_point_x, principal_point_y] =
             read_any::<[f64; 2]>(reader)?;

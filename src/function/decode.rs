@@ -10,25 +10,25 @@ where
     fn decode(reader: &mut impl Read) -> Result<Self, Error>;
 }
 
-/// Discarding `byte_count` bytes from the reader.
+/// Discarding `size` bytes.
 #[inline]
 pub fn advance(
     reader: &mut impl Read,
-    byte_count: usize,
+    size: usize,
 ) -> Result<(), Error> {
-    // Using a buffer size of 8 KiB.
+    // Using a buffer size of 16 KiB.
     const BUFFER_SIZE: usize = 1 << BUFFER_SIZE_LEVEL;
-    const BUFFER_SIZE_LEVEL: usize = 3 + 10;
+    const BUFFER_SIZE_LEVEL: usize = 4 + 10;
     const BUFFER_SIZE_MASK: usize = BUFFER_SIZE - 1;
 
-    for _ in 0..(byte_count >> BUFFER_SIZE_LEVEL) {
+    for _ in 0..(size >> BUFFER_SIZE_LEVEL) {
         reader.read_exact(&mut [0; BUFFER_SIZE])?;
     }
 
-    Ok(reader.read_exact(&mut vec![0; byte_count & BUFFER_SIZE_MASK])?)
+    Ok(reader.read_exact(&mut vec![0; size & BUFFER_SIZE_MASK])?)
 }
 
-/// Reading any type of data from the reader.
+/// Reading any type of data.
 #[inline]
 pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
     let bytes = &mut vec![0; std::mem::size_of::<T>()];
@@ -37,24 +37,39 @@ pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
     Ok(*bytemuck::from_bytes::<T>(bytes))
 }
 
-/// Reading all bytes until the delimiter byte or EOF is reached.
-pub fn read_byte_until(
+/// Reading a byte after all delimiter bytes or `None` at EOF.
+pub fn read_byte_after(
     reader: &mut impl Read,
     delimiter: u8,
-    reserved_size: usize,
-) -> Result<Vec<u8>, Error> {
-    let mut bytes = Vec::with_capacity(reserved_size.next_power_of_two());
+) -> Result<Option<u8>, Error> {
+    let byte = &mut [0];
     loop {
-        let byte = &mut [0];
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
-        if byte == delimiter || is_eof {
-            break;
+        if byte != delimiter {
+            return Ok(Some(byte));
+        } else if is_eof {
+            return Ok(None);
         }
-        bytes.push(byte);
     }
+}
 
-    Ok(bytes)
+/// Reads all bytes before the delimiter or EOF.
+#[inline]
+pub fn read_bytes_before(
+    reader: &mut impl Read,
+    delimiter: u8,
+    capacity: usize,
+) -> Result<Vec<u8>, Error> {
+    let mut bytes = Vec::with_capacity(capacity);
+    let byte = &mut [0];
+    loop {
+        let is_eof = reader.read(byte)? == 0;
+        if byte[0] == delimiter || is_eof {
+            return Ok(bytes);
+        }
+        bytes.extend_from_slice(byte);
+    }
 }
 
 #[cfg(test)]
@@ -89,7 +104,40 @@ mod tests {
     }
 
     #[test]
-    fn read_byte_until() {
+    fn read_byte_after_and_before() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let reader = &mut std::io::Cursor::new(source);
+
+        let target = Some(b'H');
+        let output = read_byte_after(reader, b' ').unwrap();
+        assert_eq!(output, target);
+
+        let target = b"ello, World!";
+        let output = read_bytes_before(reader, b'\n', 1024).unwrap();
+        assert_eq!(output, target);
+
+        let target = Some(b'B');
+        let output = read_byte_after(reader, b' ').unwrap();
+        assert_eq!(output, target);
+
+        let target = b"onjour, le monde";
+        let output = read_bytes_before(reader, b'!', 1024).unwrap();
+        assert_eq!(output, target);
+
+        let target = Some(b'\n');
+        let output = read_byte_after(reader, b' ').unwrap();
+        assert_eq!(output, target);
+
+        let target = None;
+        let output = read_byte_after(reader, b' ').unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn read_bytes_before() {
         use super::*;
 
         let source =
@@ -98,11 +146,11 @@ mod tests {
 
         advance(reader, 8).unwrap();
         let target = b"Hello, World!";
-        let output = read_byte_until(reader, b'\0', target.len()).unwrap();
+        let output = read_bytes_before(reader, b'\0', 1024).unwrap();
         assert_eq!(output, target);
 
         let target = b"Bonjour, le monde!\n";
-        let output = read_byte_until(reader, b'\0', target.len()).unwrap();
+        let output = read_bytes_before(reader, b'\0', 1024).unwrap();
         assert_eq!(output, target);
     }
 }
