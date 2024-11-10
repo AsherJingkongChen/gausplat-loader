@@ -6,12 +6,12 @@ pub use images::*;
 
 use burn_tensor::TensorData;
 use image::{ColorType, GenericImageView, ImageFormat};
-use std::{fmt, io::Cursor};
+use std::{fmt, io::Cursor, path::PathBuf};
 
 #[derive(Clone, Default, PartialEq)]
 pub struct Image {
     pub image_encoded: Vec<u8>,
-    pub image_file_name: String,
+    pub image_file_path: PathBuf,
     pub image_id: u32,
 }
 
@@ -67,7 +67,7 @@ impl Image {
             width as u32,
             height as u32,
             ColorType::Rgb8,
-            ImageFormat::from_path(&self.image_file_name)?,
+            ImageFormat::from_path(&self.image_file_path)?,
         )?;
         self.image_encoded = result.into_inner();
 
@@ -82,7 +82,7 @@ impl fmt::Debug for Image {
     ) -> fmt::Result {
         f.debug_struct("Image")
             .field("image_encoded.len()", &self.image_encoded.len())
-            .field("image_file_name", &self.image_file_name)
+            .field("image_file_path", &self.image_file_path)
             .field("image_id", &self.image_id)
             .finish()
     }
@@ -96,7 +96,7 @@ mod tests {
 
         let target = Image {
             image_encoded: Default::default(),
-            image_file_name: Default::default(),
+            image_file_path: Default::default(),
             image_id: Default::default(),
         };
         let output = Image::default();
@@ -116,7 +116,7 @@ mod tests {
             include_bytes!("../../../examples/data/image/example.png").to_vec();
         let mut image = Image {
             image_encoded: source,
-            image_file_name: "example.png".into(),
+            image_file_path: "example.png".into(),
             image_id: Default::default(),
         };
 
@@ -141,7 +141,7 @@ mod tests {
             include_bytes!("../../../examples/data/image/example.png").to_vec();
         let image = Image {
             image_encoded: source,
-            image_file_name: "example.png".into(),
+            image_file_path: "example.png".into(),
             image_id: Default::default(),
         };
 
@@ -159,7 +159,7 @@ mod tests {
             include_bytes!("../../../examples/data/image/rainbow-8x8.png");
         let image = Image {
             image_encoded: source.to_vec(),
-            image_file_name: "rainbow-8x8.png".into(),
+            image_file_path: "rainbow-8x8.png".into(),
             image_id: Default::default(),
         };
 

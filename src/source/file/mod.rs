@@ -5,21 +5,22 @@ pub use crate::function::Opener;
 pub use files::*;
 
 use std::{
-    fs,
+    fmt, fs,
     io::{BufReader, BufWriter, Read, Seek, Write},
-    path,
+    path::{Path, PathBuf},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+/// Duplex file stream.
+#[derive(Clone, PartialEq)]
 pub struct File<S> {
-    pub name: String,
-    pub stream: S,
+    pub inner: S,
+    pub path: PathBuf,
 }
 
 impl<R: Read> File<R> {
     pub fn read(&mut self) -> Result<Vec<u8>, Error> {
         let mut bytes = Vec::new();
-        let reader = &mut BufReader::new(&mut self.stream);
+        let reader = &mut BufReader::new(&mut self.inner);
         reader.read_to_end(&mut bytes)?;
 
         Ok(bytes)
@@ -31,7 +32,7 @@ impl<W: Write> File<W> {
         &mut self,
         bytes: &[u8],
     ) -> Result<(), Error> {
-        let writer = &mut BufWriter::new(&mut self.stream);
+        let writer = &mut BufWriter::new(&mut self.inner);
         writer.write_all(bytes)?;
 
         Ok(())
@@ -40,35 +41,70 @@ impl<W: Write> File<W> {
 
 impl<S: Seek> File<S> {
     pub fn rewind(&mut self) -> Result<(), Error> {
-        Ok(self.stream.rewind()?)
+        Ok(self.inner.rewind()?)
     }
 }
 
-impl Opener for File<fs::File> {
-    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
-        let name = path
-            .as_ref()
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let stream = fs::OpenOptions::new()
-            .create(true)
-            .read(true)
-            .truncate(false)
-            .write(true)
-            .open(path)?;
-
-        Ok(Self { name, stream })
+impl fmt::Debug for File<fs::File> {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter,
+    ) -> fmt::Result {
+        write!(f, "{:?}", self.inner)
     }
 }
 
 impl<R: Default> Default for File<R> {
     fn default() -> Self {
         Self {
-            name: Default::default(),
-            stream: Default::default(),
+            inner: Default::default(),
+            path: Default::default(),
         }
+    }
+}
+
+impl Opener for File<fs::File> {
+    fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let inner = fs::OpenOptions::new()
+            .create(true)
+            .read(true)
+            .truncate(false)
+            .write(true)
+            .open(&path)?;
+        let path = path.as_ref().to_owned();
+
+        Ok(Self { inner, path })
+    }
+}
+
+impl<R: Read> Read for File<R> {
+    fn read(
+        &mut self,
+        buf: &mut [u8],
+    ) -> std::io::Result<usize> {
+        self.inner.read(buf)
+    }
+}
+
+impl<S: Seek> Seek for File<S> {
+    fn seek(
+        &mut self,
+        pos: std::io::SeekFrom,
+    ) -> std::io::Result<u64> {
+        self.inner.seek(pos)
+    }
+}
+
+impl<W: Write> Write for File<W> {
+    fn write(
+        &mut self,
+        buf: &[u8],
+    ) -> std::io::Result<usize> {
+        self.inner.write(buf)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        self.inner.flush()
     }
 }
 
@@ -93,8 +129,8 @@ mod tests {
         let source =
             include_bytes!("../../../examples/data/hello-world/ascii.txt");
         let mut file = File {
-            name: Default::default(),
-            stream: std::io::Cursor::new(source),
+            path: Default::default(),
+            inner: std::io::Cursor::new(source),
         };
 
         let target = source;
@@ -113,7 +149,7 @@ mod tests {
         let target = source;
         file.write(source).unwrap();
         file.rewind().unwrap();
-        let output = file.stream.into_inner();
+        let output = file.inner.into_inner();
         assert_eq!(output, target);
     }
 }
