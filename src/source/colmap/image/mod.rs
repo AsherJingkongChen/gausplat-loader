@@ -61,7 +61,7 @@ impl Encoder for Image {
         write_any(writer, &self.quaternion)?;
         write_any(writer, &self.translation)?;
         write_any(writer, &self.camera_id)?;
-        write_bytes(writer, &self.file_name.as_bytes_with_nul())?;
+        write_bytes(writer, self.file_name.as_bytes_with_nul())?;
         // Write 0 to point count
         write_any(writer, &0_u64)?;
 

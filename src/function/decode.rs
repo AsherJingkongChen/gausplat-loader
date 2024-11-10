@@ -65,10 +65,11 @@ pub fn read_bytes_before(
     let byte = &mut [0];
     loop {
         let is_eof = reader.read(byte)? == 0;
-        if byte[0] == delimiter || is_eof {
+        let byte = byte[0];
+        if byte == delimiter || is_eof {
             return Ok(bytes);
         }
-        bytes.extend_from_slice(byte);
+        bytes.push(byte);
     }
 }
 
@@ -116,7 +117,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = b"ello, World!";
-        let output = read_bytes_before(reader, b'\n', 1024).unwrap();
+        let output = read_bytes_before(reader, b'\n', 64).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'B');
@@ -124,7 +125,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = b"onjour, le monde";
-        let output = read_bytes_before(reader, b'!', 1024).unwrap();
+        let output = read_bytes_before(reader, b'!', 64).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'\n');
@@ -146,11 +147,11 @@ mod tests {
 
         advance(reader, 8).unwrap();
         let target = b"Hello, World!";
-        let output = read_bytes_before(reader, b'\0', 1024).unwrap();
+        let output = read_bytes_before(reader, b'\0', 64).unwrap();
         assert_eq!(output, target);
 
         let target = b"Bonjour, le monde!\n";
-        let output = read_bytes_before(reader, b'\0', 1024).unwrap();
+        let output = read_bytes_before(reader, b'\0', 64).unwrap();
         assert_eq!(output, target);
     }
 }

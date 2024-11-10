@@ -22,7 +22,7 @@ impl Decoder for Cameras {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::decode");
+        log::debug!(target: "gausplat-loader::colmap::camera", "Cameras::decode");
 
         cameras
     }
@@ -39,7 +39,7 @@ impl Encoder for Cameras {
         self.values().try_for_each(|camera| camera.encode(writer))?;
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::encode");
+        log::debug!(target: "gausplat-loader::colmap::camera", "Cameras::encode");
 
         Ok(())
     }

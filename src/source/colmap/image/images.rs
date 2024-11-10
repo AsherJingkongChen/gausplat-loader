@@ -22,7 +22,7 @@ impl Decoder for Images {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::image", "Images::decode");
+        log::debug!(target: "gausplat-loader::colmap::image", "Images::decode");
 
         images
     }
@@ -39,7 +39,7 @@ impl Encoder for Images {
         self.values().try_for_each(|image| image.encode(writer))?;
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::image", "Images::encode");
+        log::debug!(target: "gausplat-loader::colmap::image", "Images::encode");
 
         Ok(())
     }

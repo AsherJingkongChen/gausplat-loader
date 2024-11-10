@@ -23,7 +23,7 @@ impl Decoder for Points {
             .collect();
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::point", "Points::decode");
+        log::debug!(target: "gausplat-loader::colmap::point", "Points::decode");
 
         points
     }
@@ -46,7 +46,7 @@ impl Encoder for Points {
             })?;
 
         #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::point", "Points::encode");
+        log::debug!(target: "gausplat-loader::colmap::point", "Points::encode");
 
         Ok(())
     }
