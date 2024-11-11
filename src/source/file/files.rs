@@ -10,12 +10,12 @@ pub type Files<S> = crate::collection::IndexMap<PathBuf, File<S>>;
 
 impl Opener for Files<fs::File> {
     /// Opening all files matching the glob pattern.
-    /// 
+    ///
     /// ## Examples
-    /// 
+    ///
     /// ```rust
     /// use gausplat_loader::source::file::{Files, Opener};
-    /// 
+    ///
     /// let files = Files::open("examples/data/hello-world/*").unwrap();
     /// assert!(!files.is_empty());
     /// ```

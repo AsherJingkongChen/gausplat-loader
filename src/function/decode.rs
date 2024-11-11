@@ -37,12 +37,24 @@ pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
     Ok(*bytemuck::from_bytes::<T>(bytes))
 }
 
+/// Reading `size` bytes.
+#[inline]
+pub fn read_bytes(
+    reader: &mut impl Read,
+    size: usize,
+) -> Result<Vec<u8>, Error> {
+    let mut bytes = vec![0; size];
+    reader.read_exact(&mut bytes)?;
+
+    Ok(bytes)
+}
+
 /// Reading a byte after all delimiter bytes or `None` at EOF.
 pub fn read_byte_after(
     reader: &mut impl Read,
     delimiter: u8,
 ) -> Result<Option<u8>, Error> {
-    let byte = &mut [0];
+    let byte = &mut [0; 1];
     loop {
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
@@ -62,7 +74,7 @@ pub fn read_bytes_before(
     capacity: usize,
 ) -> Result<Vec<u8>, Error> {
     let mut bytes = Vec::with_capacity(capacity);
-    let byte = &mut [0];
+    let byte = &mut [0; 1];
     loop {
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
@@ -102,6 +114,26 @@ mod tests {
         let target = [20241109, 131452000];
         let output = read_any::<[u32; 2]>(reader).unwrap();
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn read_bytes() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
+        let reader = &mut std::io::Cursor::new(source);
+
+        let target = &source[0..24];
+        let output = read_bytes(reader, 24).unwrap();
+        assert_eq!(output, target);
+
+        let target = &source[24..40];
+        let output = read_bytes(reader, 16).unwrap();
+        assert_eq!(output, target);
+
+        read_bytes(reader, 2).unwrap_err();
+        read_bytes(reader, 1).unwrap_err();
     }
 
     #[test]

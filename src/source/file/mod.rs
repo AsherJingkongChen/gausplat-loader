@@ -19,8 +19,9 @@ pub struct File<F> {
 }
 
 impl<R: Read> File<R> {
+    #[inline]
     pub fn read(&mut self) -> Result<Vec<u8>, Error> {
-        let mut bytes = Vec::new();
+        let mut bytes = vec![];
         let reader = &mut BufReader::new(&mut self.inner);
         reader.read_to_end(&mut bytes)?;
 
@@ -29,6 +30,7 @@ impl<R: Read> File<R> {
 }
 
 impl<W: Write> File<W> {
+    #[inline]
     pub fn write(
         &mut self,
         bytes: &[u8],
@@ -41,12 +43,14 @@ impl<W: Write> File<W> {
 }
 
 impl<S: Seek> File<S> {
+    #[inline]
     pub fn rewind(&mut self) -> Result<(), Error> {
         Ok(self.inner.rewind()?)
     }
 }
 
 impl<F: Default> Default for File<F> {
+    #[inline]
     fn default() -> Self {
         Self {
             inner: Default::default(),
@@ -58,18 +62,21 @@ impl<F: Default> Default for File<F> {
 impl<F> Deref for File<F> {
     type Target = F;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
 impl<F> DerefMut for File<F> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
 impl Opener for File<fs::File> {
+    #[inline]
     fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
         let inner = fs::OpenOptions::new()
             .create(true)
