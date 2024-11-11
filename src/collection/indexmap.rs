@@ -302,8 +302,7 @@ mod tests {
         let output = map.is_empty();
         assert_eq!(output, target);
 
-        let target = &IndexMapInner::<u8, f32>::default();
-        let output = map.deref();
+        let output = (*map).is_empty();
         assert_eq!(output, target);
     }
 

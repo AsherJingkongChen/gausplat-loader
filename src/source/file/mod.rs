@@ -5,15 +5,16 @@ pub use crate::function::Opener;
 pub use files::*;
 
 use std::{
-    fmt, fs,
+    fs,
     io::{BufReader, BufWriter, Read, Seek, Write},
+    ops::{Deref, DerefMut},
     path::{Path, PathBuf},
 };
 
 /// Duplex file stream.
-#[derive(Clone, PartialEq)]
-pub struct File<S> {
-    pub inner: S,
+#[derive(Clone, Debug, PartialEq)]
+pub struct File<F> {
+    pub inner: F,
     pub path: PathBuf,
 }
 
@@ -45,21 +46,26 @@ impl<S: Seek> File<S> {
     }
 }
 
-impl fmt::Debug for File<fs::File> {
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
-        write!(f, "{:?}", self.inner)
-    }
-}
-
-impl<R: Default> Default for File<R> {
+impl<F: Default> Default for File<F> {
     fn default() -> Self {
         Self {
             inner: Default::default(),
             path: Default::default(),
         }
+    }
+}
+
+impl<F> Deref for File<F> {
+    type Target = F;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<F> DerefMut for File<F> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
@@ -77,37 +83,6 @@ impl Opener for File<fs::File> {
     }
 }
 
-impl<R: Read> Read for File<R> {
-    fn read(
-        &mut self,
-        buf: &mut [u8],
-    ) -> std::io::Result<usize> {
-        self.inner.read(buf)
-    }
-}
-
-impl<S: Seek> Seek for File<S> {
-    fn seek(
-        &mut self,
-        pos: std::io::SeekFrom,
-    ) -> std::io::Result<u64> {
-        self.inner.seek(pos)
-    }
-}
-
-impl<W: Write> Write for File<W> {
-    fn write(
-        &mut self,
-        buf: &[u8],
-    ) -> std::io::Result<usize> {
-        self.inner.write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.inner.flush()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
@@ -120,6 +95,26 @@ mod tests {
         let target = b"Hello, World!";
         let output = file.read().unwrap();
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn open_on_symlink() {
+        use super::*;
+
+        let source = "examples/data/hello-world.symlink/ascii.symlink.txt";
+        let mut file = File::open(source).unwrap();
+
+        let target = b"Hello, World!";
+        let output = file.read().unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn open_on_directory() {
+        use super::*;
+
+        let source = "examples/data/hello-world/";
+        File::open(source).unwrap_err();
     }
 
     #[test]
@@ -149,7 +144,9 @@ mod tests {
         let target = source;
         file.write(source).unwrap();
         file.rewind().unwrap();
-        let output = file.inner.into_inner();
+        let output = (*file).to_owned().into_inner();
+        assert_eq!(output, target);
+        let output = (&mut *file).to_owned().into_inner();
         assert_eq!(output, target);
     }
 }

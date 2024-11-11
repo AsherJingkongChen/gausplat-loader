@@ -12,6 +12,7 @@ version.workspace = true
 [dependencies]
 burn-tensor = {workspace = true}
 bytemuck = {workspace = true}
+globset = {workspace = true}
 image = {workspace = true, features = ["jpeg", "png", "rayon"]}
 indexmap = {workspace = true, features = ["rayon", "std"]}
 log = {workspace = true}
@@ -19,6 +20,7 @@ rand = {workspace = true, features = ["getrandom", "std_rng"]}
 rand_distr = {workspace = true}
 rayon = {workspace = true}
 thiserror = {workspace = true}
+walkdir = {workspace = true}
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
