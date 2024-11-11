@@ -233,7 +233,7 @@ where
 {
     /// Create an [`IndexMap`] from the sequence of key-value pairs in the iterable.
     ///
-    /// `from_iter` uses the same logic as [`extend`].
+    /// `from_iter` uses the same logic as `extend`.
     /// See [`extend`][IndexMapInner::extend] for more details.
     #[inline]
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {

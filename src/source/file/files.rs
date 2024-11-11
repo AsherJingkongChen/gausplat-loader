@@ -113,7 +113,7 @@ mod tests {
     fn open_on_invalid_utf8() {
         use super::*;
 
-        // SAFETY: The sequence is deliberately invalid UTF-8.
+        // SAFETY: The string is deliberately invalid UTF-8.
         let source = unsafe {
             std::ffi::OsStr::from_encoded_bytes_unchecked(
                 b"examples/data/hello-world/\x8e\xcd*",
