@@ -31,7 +31,7 @@ impl Opener for Files<fs::File> {
         let rootdir = pattern
             .ancestors()
             .find(|path| path.is_dir())
-            .unwrap_or(&Path::new("."));
+            .unwrap_or(Path::new("."));
         let files = walkdir::WalkDir::new(rootdir)
             .contents_first(true)
             .follow_links(true)
