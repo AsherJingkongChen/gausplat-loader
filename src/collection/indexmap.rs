@@ -123,6 +123,15 @@ impl<K, V, S> IndexMap<K, V, S> {
         self.random_iter().map(|(_, value)| value)
     }
 
+    /// Shuffle the map’s key-value pairs in place.
+    #[inline]
+    pub fn shuffle(&mut self) -> &mut Self {
+        for i in (1..self.inner.len()).rev() {
+            self.inner.swap_indices(i, self.rng.gen_range(0..i));
+        }
+        self
+    }
+
     /// Return an owning iterator over the keys of the map,
     /// in the order they were inserted.
     #[inline]
@@ -365,11 +374,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = None;
-        let output = map.get_random_value().cloned();
+        let output = map.get_random_value().copied();
         assert_eq!(output, target);
 
         let target = output;
-        let output = map.get_random_value_mut().cloned();
+        let output = map.get_random_value_mut().copied();
         assert_eq!(output, target);
 
         let mut map = IndexMap::<i16, f32>::with_capacity(1);
@@ -385,7 +394,7 @@ mod tests {
 
         let target = Some(67.8);
         map.insert(-123, 67.8);
-        let output = map.get_random_value_mut().cloned();
+        let output = map.get_random_value_mut().copied();
         assert_eq!(output, target);
     }
 
@@ -434,6 +443,25 @@ mod tests {
             .take(256)
             .collect::<Vec<_>>();
         assert_eq!(values_1, values_2);
+    }
+
+    #[test]
+    fn shuffle() {
+        use super::*;
+
+        let mut map = (0..=255)
+            .zip(0..=255)
+            .into_iter()
+            .collect::<IndexMap<u8, u8>>();
+
+        map.seed(0);
+
+        let keys_1 = map.shuffle().keys().copied().collect::<Vec<_>>();
+        let keys_2 = map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
+        let values =
+            map.to_owned().shuffle().values().copied().collect::<Vec<_>>();
+        assert_ne!(keys_1, keys_2);
+        assert_eq!(keys_2, values);
     }
 
     #[test]
