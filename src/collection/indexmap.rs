@@ -457,9 +457,14 @@ mod tests {
         map.seed(0);
 
         let keys_1 = map.shuffle().keys().copied().collect::<Vec<_>>();
-        let keys_2 = map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
-        let values =
-            map.to_owned().shuffle().values().copied().collect::<Vec<_>>();
+        let keys_2 =
+            map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
+        let values = map
+            .to_owned()
+            .shuffle()
+            .values()
+            .copied()
+            .collect::<Vec<_>>();
         assert_ne!(keys_1, keys_2);
         assert_eq!(keys_2, values);
     }
