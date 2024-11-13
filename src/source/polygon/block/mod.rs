@@ -14,21 +14,6 @@ pub struct Block {
     pub variant: BlockVariant,
 }
 
-impl Block {
-    #[inline]
-    pub const fn key(&self) -> &str {
-        match &self.variant {
-            BlockVariant::Ply => "ply",
-            BlockVariant::Format(_) => "format",
-            BlockVariant::Element(_) => "element",
-            BlockVariant::Property(_) => "property",
-            BlockVariant::Comment(_) => "comment",
-            BlockVariant::EndHeader => "end_header",
-            BlockVariant::Data(_) => "",
-        }
-    }
-}
-
 pub enum BlockVariant {
     Ply,
     Format(FormatBlock),
@@ -37,4 +22,21 @@ pub enum BlockVariant {
     Comment(CommentBlock),
     EndHeader,
     Data(DataBlock),
+}
+
+impl Block {
+    #[inline]
+    pub const fn key(&self) -> &str {
+        use BlockVariant::*;
+
+        match &self.variant {
+            Property(_) => "property",
+            Element(_) => "element",
+            Data(_) => "",
+            Ply => "ply",
+            Format(_) => "format",
+            EndHeader => "end_header",
+            Comment(comment) => comment.key(),
+        }
+    }
 }
