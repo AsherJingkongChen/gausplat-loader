@@ -56,14 +56,14 @@ pub fn read_byte_after<DF: Fn(u8) -> bool>(
     reader: &mut impl Read,
     delimiter: DF,
 ) -> Result<Option<u8>, Error> {
-    let byte = &mut [0; 1];
     loop {
+        let byte = &mut [0; 1];
         let is_eof = reader.read(byte)? == 0;
-        let byte = byte[0];
-        if !delimiter(byte) {
-            return Ok(Some(byte));
-        } else if is_eof {
+        if is_eof {
             return Ok(None);
+        }
+        if !delimiter(byte[0]) {
+            return Ok(Some(byte[0]));
         }
     }
 }
@@ -76,14 +76,37 @@ pub fn read_bytes_before<DF: Fn(u8) -> bool>(
     capacity: usize,
 ) -> Result<Vec<u8>, Error> {
     let mut bytes = Vec::with_capacity(capacity);
-    let byte = &mut [0; 1];
     loop {
+        let byte = &mut [0; 1];
         let is_eof = reader.read(byte)? == 0;
-        let byte = byte[0];
-        if delimiter(byte) || is_eof {
+        if is_eof || delimiter(byte[0]) {
             return Ok(bytes);
         }
-        bytes.push(byte);
+        bytes.push(byte[0]);
+    }
+}
+
+/// Reads all bytes before the CRLF, LF, or EOF.
+#[inline]
+pub fn read_bytes_before_newline(
+    reader: &mut impl Read,
+    capacity: usize,
+) -> Result<Vec<u8>, Error> {
+    let mut bytes = Vec::with_capacity(capacity);
+    loop {
+        let byte = &mut [0; 1];
+        let is_eof = reader.read(byte)? == 0;
+        if is_eof || byte[0] == b'\n' {
+            return Ok(bytes);
+        }
+        if byte[0] == b'\r' {
+            let is_eof = reader.read(byte)? == 0;
+            if is_eof || byte[0] == b'\n' {
+                return Ok(bytes);
+            }
+            bytes.push(b'\r');
+        }
+        bytes.push(byte[0]);
     }
 }
 
@@ -135,7 +158,26 @@ mod tests {
         assert_eq!(output, target);
 
         read_bytes(reader, 2).unwrap_err();
+
+        let target = std::io::ErrorKind::UnexpectedEof;
+        let output = reader.read_exact(&mut [0; 1]).unwrap_err().kind();
+        assert_eq!(output, target);
+
         read_bytes(reader, 1).unwrap_err();
+    }
+
+    #[test]
+    fn read_byte_after() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let reader = &mut std::io::Cursor::new(source);
+
+        let target = Some(b',');
+        let output =
+            read_byte_after(reader, |b| b" Helo".contains(&b)).unwrap();
+        assert_eq!(output, target);
     }
 
     #[test]
@@ -151,7 +193,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = b"ello, World!";
-        let output = read_bytes_before(reader, |b| b == b'\n', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'\n', 16).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'B');
@@ -159,7 +201,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = b"onjour, le monde";
-        let output = read_bytes_before(reader, |b| b == b'!', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'!', 16).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'\n');
@@ -181,11 +223,52 @@ mod tests {
 
         advance(reader, 8).unwrap();
         let target = b"Hello, World!";
-        let output = read_bytes_before(reader, |b| b == 0, 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
         assert_eq!(output, target);
 
         let target = b"Bonjour, le monde!\n";
-        let output = read_bytes_before(reader, |b| b == 0, 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn read_bytes_before_newline() {
+        use super::*;
+
+        let source =
+            include_bytes!("../../examples/data/hello-world/utf8+newline.txt");
+        let reader = &mut std::io::Cursor::new(source);
+
+        let target = b"Hello, World!";
+        let output = read_bytes_before_newline(reader, 16).unwrap();
+        assert_eq!(output, target);
+
+        let target = "\u{4f60}\u{597d}\u{ff0c}".as_bytes();
+        let output = read_bytes_before_newline(reader, 8).unwrap();
+        assert_eq!(output, target);
+
+        let target = "\u{4e16}\u{754c}\u{ff01} ".as_bytes();
+        let output = read_bytes_before_newline(reader, 8).unwrap();
+        assert_eq!(output, target);
+
+        // NOTE: In some viewers, a carriage return (CR) is displayed as a newline.
+        // However, it is not considered a newline in this function.
+        let target = b"";
+        let output = read_bytes_before_newline(reader, 4).unwrap();
+        assert_eq!(output, target);
+        let output = read_bytes_before_newline(reader, 4).unwrap();
+        assert_eq!(output, target);
+
+        let target = b"\rBonjour, le monde!  ";
+        let output = read_bytes_before_newline(reader, 20).unwrap();
+        assert_eq!(output, target);
+
+        let target = std::io::ErrorKind::UnexpectedEof;
+        let output = reader.read_exact(&mut [0; 1]).unwrap_err().kind();
+        assert_eq!(output, target);
+
+        let target = b"";
+        let output = read_bytes_before_newline(reader, 4).unwrap();
         assert_eq!(output, target);
     }
 }
