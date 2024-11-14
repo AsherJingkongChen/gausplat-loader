@@ -1,3 +1,7 @@
+pub mod id;
+
+pub use id::*;
+
 pub struct Group {
-    pub ids: Vec<u32>,
+    pub ids: Vec<Id>,
 }

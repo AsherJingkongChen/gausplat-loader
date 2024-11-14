@@ -10,6 +10,8 @@ pub use element::*;
 pub use format::*;
 pub use property::*;
 
+use super::group::Id;
+
 pub struct Block {
     pub variant: BlockVariant,
 }

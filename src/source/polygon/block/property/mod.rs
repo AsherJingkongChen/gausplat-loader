@@ -9,6 +9,7 @@ pub use ascii::{AsAsciiStr, AsciiString, IntoAsciiString};
 pub use list::*;
 pub use scalar::*;
 
+use super::Id;
 use crate::function::{read_byte_after, read_bytes_before_newline};
 use std::io::Read;
 
@@ -20,7 +21,7 @@ use std::io::Read;
 /// ```
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct PropertyBlock {
-    pub id: u64,
+    pub id: Id,
     pub name: AsciiString,
     pub variant: PropertyVariant,
 }
@@ -55,7 +56,7 @@ impl Decoder for PropertyBlock {
         })?;
 
         Ok(Self {
-            id: 0, // TODO: Implement auto-incremental id.
+            id: Default::default(),
             name,
             variant,
         })
