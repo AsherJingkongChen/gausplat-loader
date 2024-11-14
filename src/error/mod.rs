@@ -18,6 +18,9 @@ pub enum Error {
     #[error("Mismatched tensor shape: {0:?}. It should be {1:?}.")]
     MismatchedTensorShape(Vec<usize>, Vec<usize>),
 
+    #[error("Missing token: {0:?}")]
+    MissingToken(String),
+
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
 

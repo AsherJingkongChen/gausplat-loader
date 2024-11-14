@@ -1,7 +1,6 @@
 pub use super::*;
-pub use ascii::{AsAsciiStr, AsciiString};
 
-use crate::function::read_bytes_before;
+use crate::function::{read_byte_after, read_bytes_before};
 use std::{
     collections::HashMap,
     fmt,
@@ -9,6 +8,7 @@ use std::{
     sync::{LazyLock, RwLock},
 };
 
+define_scalar_property!(LIST, 0);
 define_scalar_property!(CHAR, 1);
 define_scalar_property!(INT8, 1);
 define_scalar_property!(UCHAR, 1);
@@ -36,9 +36,9 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
     RwLock<HashMap<AsciiString, ScalarProperty>>,
 > = LazyLock::new(|| {
     [
-        &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT, &UINT16,
-        &USHORT, &FLOAT, &FLOAT32, &INT, &INT32, &UINT, &UINT32, &DOUBLE,
-        &FLOAT64, &INT64, &LONG, &UINT64, &ULONG,
+        &LIST, &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT,
+        &UINT16, &USHORT, &FLOAT, &FLOAT32, &INT, &INT32, &UINT, &UINT32,
+        &DOUBLE, &FLOAT64, &INT64, &LONG, &UINT64, &ULONG,
     ]
     .into_iter()
     .map(|p| (p.kind.to_owned(), (*p).to_owned()))
@@ -50,9 +50,14 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///
 /// ```plaintext
 /// <scalar-property> :=
-///     | float | int | uchar
-///     | ...
-///     | <kind>
+///     [{" "}]
+///     (
+///         | "float" | "int" | "uchar"
+///         | "float32" | "int32" | "uint8"
+///         | ...
+///         | <kind>
+///     )
+///     " "
 /// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScalarProperty {
@@ -62,11 +67,11 @@ pub struct ScalarProperty {
 
 impl ScalarProperty {
     #[inline]
-    pub fn try_new<S: AsAsciiStr>(
+    pub fn try_new<S: IntoAsciiString>(
         kind: S,
         size: u32,
     ) -> Option<Self> {
-        let kind = kind.as_ascii_str().ok()?.to_owned();
+        let kind = kind.into_ascii_string().ok()?;
         Some(Self { kind, size })
     }
 
@@ -89,18 +94,15 @@ impl ScalarProperty {
     }
 
     pub fn unregister<S: AsAsciiStr>(kind: S) -> Option<ScalarProperty> {
+        let kind = kind.as_ascii_str().ok()?;
+
         #[cfg(debug_assertions)]
-        if let Ok(kind) = kind.as_ascii_str() {
-            log::info!(
-                target: "polygon::property::scalar",
-                "unregister ({kind})",
-            );
-        }
+        log::info!(target: "polygon::property::scalar", "unregister ({kind})");
 
         SCALAR_PROPERTY_DOMAIN
             .write()
             .expect("Poisoned")
-            .remove(kind.as_ascii_str().ok()?)
+            .remove(kind)
     }
 }
 
@@ -108,7 +110,10 @@ impl Decoder for ScalarProperty {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let kind = read_bytes_before(reader, |b| b == b' ', 8)?;
+        let mut kind = vec![read_byte_after(reader, |b| b == b' ')?
+            .ok_or_else(|| Error::MissingToken("<kind>".into()))?];
+        kind.extend(read_bytes_before(reader, |b| b == b' ', 8)?);
+
         Self::search(kind.as_slice()).ok_or_else(|| {
             Error::UnknownPropertyKind(
                 String::from_utf8_lossy(&kind).into_owned(),
@@ -153,31 +158,35 @@ mod tests {
     #[test]
     fn decode() {
         use super::*;
+        use std::io::Cursor;
 
-        let source = &mut std::io::Cursor::new(b"float ");
+        let source = &mut Cursor::new(b"float ");
         let target = FLOAT.to_owned();
         let output = ScalarProperty::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut std::io::Cursor::new(b"float64 ");
+        let source = &mut Cursor::new(b"float64 ");
         let target = FLOAT64.to_owned();
         let output = ScalarProperty::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut std::io::Cursor::new(b"int");
+        let source = &mut Cursor::new(b"  int ");
         let target = INT.to_owned();
         let output = ScalarProperty::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut std::io::Cursor::new(b"uchar ");
+        let source = &mut Cursor::new(b"uchar ");
         let target = UCHAR.to_owned();
         let output = ScalarProperty::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut std::io::Cursor::new(b"uchar\n");
+        let source = &mut Cursor::new(b"uchar\n");
         ScalarProperty::decode(source).unwrap_err();
 
-        let source = &mut std::io::Cursor::new(b"example ");
+        let source = &mut Cursor::new(b"example ");
+        ScalarProperty::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"");
         ScalarProperty::decode(source).unwrap_err();
     }
 
@@ -237,7 +246,7 @@ mod tests {
     }
 
     #[test]
-    fn search_on_kind_invalid_ascii() {
+    fn search_on_invalid_ascii_kind() {
         use super::*;
 
         let target = None;
@@ -246,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn try_new_on_kind_invalid_ascii() {
+    fn try_new_on_invalid_ascii_kind() {
         use super::*;
 
         let target = None;
@@ -255,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn unregister_on_kind_invalid_ascii() {
+    fn unregister_on_invalid_ascii_kind() {
         use super::*;
 
         let target = None;

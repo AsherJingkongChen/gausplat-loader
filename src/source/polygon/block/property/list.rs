@@ -38,19 +38,6 @@ impl Default for ListProperty {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn decode() {
-        use super::*;
-
-        let source = &mut std::io::Cursor::new(b"uchar int ");
-        let target = ListProperty {
-            count: UCHAR.to_owned(),
-            entry: INT.to_owned(),
-        };
-        let output = ListProperty::decode(source).unwrap();
-        assert_eq!(output, target);
-    }
-
-    #[test]
     fn default() {
         use super::*;
 

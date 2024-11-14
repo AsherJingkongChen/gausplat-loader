@@ -262,7 +262,7 @@ mod tests {
         let target = (vec![8, 6, 4], vec![8, 6, 3]);
         let output = match image.encode_rgb_from_tensor(source).unwrap_err() {
             Error::MismatchedTensorShape(output, target) => (output, target),
-            error => panic!("{:?}", error),
+            error => panic!("{error:?}"),
         };
         assert_eq!(output, target);
     }
