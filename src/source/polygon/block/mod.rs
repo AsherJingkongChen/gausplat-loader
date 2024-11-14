@@ -38,7 +38,7 @@ impl Block {
             Ply => "ply",
             Format(_) => "format",
             EndHeader => "end_header",
-            Comment(comment) => comment.key(),
+            Comment(_) => "comment",
         }
     }
 }

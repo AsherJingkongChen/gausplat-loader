@@ -8,7 +8,7 @@ use std::io::Read;
 /// <list-property> :=
 ///     | <scalar-property> <scalar-property>
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListProperty {
     pub count: ScalarProperty,
     pub entry: ScalarProperty,

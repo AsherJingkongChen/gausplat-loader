@@ -19,7 +19,7 @@ use std::io::Read;
 /// <property-block> :=
 ///     | <property-variant> [{" "}] <name> ["\r"] "\n"
 /// ```
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PropertyBlock {
     pub id: Id,
     pub name: AsciiString,
@@ -33,7 +33,7 @@ pub struct PropertyBlock {
 ///     | [{" "}] "list" " " <list-property>
 ///     | <scalar-property>
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum PropertyVariant {
     List(ListProperty),
     Scalar(ScalarProperty),
@@ -75,6 +75,19 @@ impl Decoder for PropertyVariant {
     }
 }
 
+impl Default for PropertyBlock {
+    #[inline]
+    fn default() -> Self {
+        // SAFETY: This is an ASCII string literal.
+        let name = unsafe { "default".into_ascii_string_unchecked() };
+        Self {
+            id: Default::default(),
+            name,
+            variant: Default::default(),
+        }
+    }
+}
+
 impl Default for PropertyVariant {
     #[inline]
     fn default() -> Self {
@@ -91,7 +104,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"list uchar int vertex_indices\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "vertex_indices".as_ascii_str().unwrap();
+        let target = "vertex_indices";
         assert_eq!(output.name, target);
         let target = PropertyVariant::List(ListProperty {
             count: UCHAR.to_owned(),
@@ -101,7 +114,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"list ushort uint    point_indices\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "point_indices".as_ascii_str().unwrap();
+        let target = "point_indices";
         assert_eq!(output.name, target);
         let target = PropertyVariant::List(ListProperty {
             count: USHORT.to_owned(),
@@ -120,48 +133,48 @@ mod tests {
 
         let source = &mut Cursor::new(b"float 32x\r\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "32x".as_ascii_str().unwrap();
+        let target = "32x";
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(FLOAT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"float32 x\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "x".as_ascii_str().unwrap();
+        let target = "x";
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(FLOAT32.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "y".as_ascii_str().unwrap();
+        let target = "y";
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y\n");
         let output = PropertyBlock::decode(source).unwrap();
-        let target = "y".as_ascii_str().unwrap();
+        let target = "y";
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y    \r\n");
-        let target = "y    ".as_ascii_str().unwrap();
+        let target = "y    ";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"         int y\n");
-        let target = "y".as_ascii_str().unwrap();
+        let target = "y";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"uchar  \n");
-        let target = "\n".as_ascii_str().unwrap();
+        let target = "\n";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = PropertyVariant::Scalar(UCHAR.to_owned());
@@ -198,6 +211,10 @@ mod tests {
     #[test]
     fn default() {
         use super::*;
+
+        let target = "default";
+        let output = PropertyBlock::default().name;
+        assert_eq!(output, target);
 
         let target = PropertyVariant::Scalar(ScalarProperty::default());
         let output = PropertyVariant::default();

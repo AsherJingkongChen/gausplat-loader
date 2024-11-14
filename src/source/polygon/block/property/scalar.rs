@@ -59,7 +59,7 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///     )
 ///     " "
 /// ```
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarProperty {
     pub kind: AsciiString,
     pub size: u32,

@@ -1,6 +1,6 @@
 use std::{fmt, ops::Deref};
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Id(u64);
 
 impl Id {
