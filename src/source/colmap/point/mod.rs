@@ -26,7 +26,9 @@ impl Point {
 }
 
 impl Decoder for Point {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let position = read_any::<[f64; 3]>(reader)?;
         let color_rgb = read_any::<[u8; 3]>(reader)?;
         // Skip re-projection error
@@ -43,10 +45,12 @@ impl Decoder for Point {
 }
 
 impl Encoder for Point {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         write_any(writer, &self.position)?;
         write_any(writer, &self.color_rgb)?;
         // Write -1.0 to re-projection error

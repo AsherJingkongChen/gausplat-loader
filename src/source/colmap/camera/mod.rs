@@ -64,7 +64,9 @@ impl Camera {
 }
 
 impl Decoder for Camera {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use CameraVariant::*;
 
         let [camera_id, model_id] = read_any::<[u32; 2]>(reader)?;
@@ -99,10 +101,12 @@ impl Decoder for Camera {
 }
 
 impl Encoder for Camera {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         use CameraVariant::*;
 
         write_any(writer, &[self.camera_id, self.model_id()])?;

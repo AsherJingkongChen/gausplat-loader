@@ -7,10 +7,12 @@ pub trait Encoder
 where
     Self: Sized,
 {
+    type Err;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Self::Err>;
 }
 
 /// Writing any type of data.

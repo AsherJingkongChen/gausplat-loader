@@ -10,7 +10,9 @@ use std::io::{BufReader, BufWriter, Read, Write};
 pub type Cameras = crate::collection::IndexMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
         let camera_count = read_any::<u64>(reader)? as usize;
 
@@ -29,10 +31,12 @@ impl Decoder for Cameras {
 }
 
 impl Encoder for Cameras {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
         write_any(writer, &(self.len() as u64))?;

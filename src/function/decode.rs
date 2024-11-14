@@ -7,7 +7,9 @@ pub trait Decoder
 where
     Self: Sized,
 {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error>;
+    type Err;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err>;
 }
 
 /// Discarding `size` bytes.
@@ -50,15 +52,15 @@ pub fn read_bytes(
 }
 
 /// Reading a byte after all delimiter bytes or `None` at EOF.
-pub fn read_byte_after(
+pub fn read_byte_after<DF: Fn(u8) -> bool>(
     reader: &mut impl Read,
-    delimiter: u8,
+    delimiter: DF,
 ) -> Result<Option<u8>, Error> {
     let byte = &mut [0; 1];
     loop {
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
-        if byte != delimiter {
+        if !delimiter(byte) {
             return Ok(Some(byte));
         } else if is_eof {
             return Ok(None);
@@ -68,9 +70,9 @@ pub fn read_byte_after(
 
 /// Reads all bytes before the delimiter or EOF.
 #[inline]
-pub fn read_bytes_before(
+pub fn read_bytes_before<DF: Fn(u8) -> bool>(
     reader: &mut impl Read,
-    delimiter: u8,
+    delimiter: DF,
     capacity: usize,
 ) -> Result<Vec<u8>, Error> {
     let mut bytes = Vec::with_capacity(capacity);
@@ -78,7 +80,7 @@ pub fn read_bytes_before(
     loop {
         let is_eof = reader.read(byte)? == 0;
         let byte = byte[0];
-        if byte == delimiter || is_eof {
+        if delimiter(byte) || is_eof {
             return Ok(bytes);
         }
         bytes.push(byte);
@@ -145,27 +147,27 @@ mod tests {
         let reader = &mut std::io::Cursor::new(source);
 
         let target = Some(b'H');
-        let output = read_byte_after(reader, b' ').unwrap();
+        let output = read_byte_after(reader, |b| b == b' ').unwrap();
         assert_eq!(output, target);
 
         let target = b"ello, World!";
-        let output = read_bytes_before(reader, b'\n', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'\n', 64).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'B');
-        let output = read_byte_after(reader, b' ').unwrap();
+        let output = read_byte_after(reader, |b| b == b' ').unwrap();
         assert_eq!(output, target);
 
         let target = b"onjour, le monde";
-        let output = read_bytes_before(reader, b'!', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'!', 64).unwrap();
         assert_eq!(output, target);
 
         let target = Some(b'\n');
-        let output = read_byte_after(reader, b' ').unwrap();
+        let output = read_byte_after(reader, |b| b == b' ').unwrap();
         assert_eq!(output, target);
 
         let target = None;
-        let output = read_byte_after(reader, b' ').unwrap();
+        let output = read_byte_after(reader, |b| b == b' ').unwrap();
         assert_eq!(output, target);
     }
 
@@ -179,11 +181,11 @@ mod tests {
 
         advance(reader, 8).unwrap();
         let target = b"Hello, World!";
-        let output = read_bytes_before(reader, b'\0', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'\0', 64).unwrap();
         assert_eq!(output, target);
 
         let target = b"Bonjour, le monde!\n";
-        let output = read_bytes_before(reader, b'\0', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == b'\0', 64).unwrap();
         assert_eq!(output, target);
     }
 }

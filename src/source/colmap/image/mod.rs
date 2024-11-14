@@ -29,14 +29,17 @@ pub struct Image {
 }
 
 impl Decoder for Image {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let image_id = read_any::<u32>(reader)?;
         let quaternion = read_any::<[f64; 4]>(reader)?;
         let translation = read_any::<[f64; 3]>(reader)?;
         let camera_id = read_any::<u32>(reader)?;
+        let file_name = read_bytes_before(reader, |b| b == b'\0', 64)?;
+        // SAFETY: The result of `read_bytes_before` does not include the null terminator.
         let file_name = unsafe {
-            // SAFETY: The result of `read_bytes_before` does not include the null terminator.
-            CString::from_vec_unchecked(read_bytes_before(reader, b'\0', 64)?)
+            CString::from_vec_unchecked(file_name)
         };
         let point_count = read_any::<u64>(reader)? as usize;
         // Skip points
@@ -53,10 +56,12 @@ impl Decoder for Image {
 }
 
 impl Encoder for Image {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         write_any(writer, &self.image_id)?;
         write_any(writer, &self.quaternion)?;
         write_any(writer, &self.translation)?;
