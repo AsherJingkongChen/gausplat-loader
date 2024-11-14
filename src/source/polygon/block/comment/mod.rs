@@ -1,18 +1,21 @@
+pub mod obj_info;
+
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
 pub use ascii::{AsAsciiStr, AsciiString, IntoAsciiString};
+pub use obj_info::*;
 
 use crate::function::{read_byte_after, read_bytes_before_newline};
-use std::{io::Read, ops::Deref};
+use std::{io::Read, ops::{Deref, DerefMut}};
 
 /// ## Syntax
 ///
 /// ```plaintext
 /// <comment-block> :=
 ///    | [{" "}] <message> ["\r"] "\n"
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CommentBlock {
     pub message: AsciiString,
 }
@@ -34,11 +37,28 @@ impl Decoder for CommentBlock {
     }
 }
 
+impl Default for CommentBlock {
+    #[inline]
+    fn default() -> Self {
+        // SAFETY: This is an ASCII string literal.
+        let message = unsafe { "default".into_ascii_string_unchecked() };
+        Self { message }
+    }
+}
+
 impl Deref for CommentBlock {
     type Target = AsciiString;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.message
+    }
+}
+
+impl DerefMut for CommentBlock {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.message
     }
 }
 
@@ -68,5 +88,24 @@ mod tests {
 
         let source = &mut Cursor::new("\u{ae}");
         CommentBlock::decode(source).unwrap_err();
+    }
+
+    #[test]
+    fn default() {
+        use super::*;
+
+        let target = "default";
+        let output = CommentBlock::default().message;
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn deref_mut() {
+        use super::*;
+
+        let target = "Hello, World!";
+        let mut output = CommentBlock::default();
+        *output = target.into_ascii_string().unwrap();
+        assert_eq!(output.message, target);
     }
 }

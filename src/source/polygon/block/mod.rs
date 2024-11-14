@@ -22,6 +22,7 @@ pub enum BlockVariant {
     Element(ElementBlock),
     Property(PropertyBlock),
     Comment(CommentBlock),
+    ObjInfo(ObjInfoBlock),
     EndHeader,
     Data(DataBlock),
 }
@@ -39,6 +40,7 @@ impl Block {
             Format(_) => "format",
             EndHeader => "end_header",
             Comment(_) => "comment",
+            ObjInfo(_) => "obj_info",
         }
     }
 }
