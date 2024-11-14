@@ -1,9 +1,9 @@
 pub struct CommentBlock {
     pub message: String,
-    pub variant: CommentBlockVariant,
+    pub variant: CommentVariant,
 }
 
-pub enum CommentBlockVariant {
+pub enum CommentVariant {
     Comment,
     ObjInfo,
 }
@@ -11,7 +11,7 @@ pub enum CommentBlockVariant {
 impl CommentBlock {
     #[inline]
     pub const fn key(&self) -> &str {
-        use CommentBlockVariant::*;
+        use CommentVariant::*;
 
         match self.variant {
             Comment => "comment",

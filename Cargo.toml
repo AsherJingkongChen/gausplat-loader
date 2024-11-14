@@ -10,6 +10,7 @@ repository = "https://github.com/AsherJingkongChen/gausplat-loader"
 version.workspace = true
 
 [dependencies]
+ascii = {workspace = true, features = ["std"]}
 burn-tensor = {workspace = true}
 bytemuck = {workspace = true}
 globset = {workspace = true}
@@ -25,3 +26,9 @@ walkdir = {workspace = true}
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
+divan = {workspace = true}
+
+[[bench]]
+harness = false
+name = "decode"
+path = "benches/decode.rs"

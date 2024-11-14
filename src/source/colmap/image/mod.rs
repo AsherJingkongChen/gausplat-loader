@@ -36,11 +36,9 @@ impl Decoder for Image {
         let quaternion = read_any::<[f64; 4]>(reader)?;
         let translation = read_any::<[f64; 3]>(reader)?;
         let camera_id = read_any::<u32>(reader)?;
-        let file_name = read_bytes_before(reader, |b| b == b'\0', 64)?;
+        let file_name = read_bytes_before(reader, |b| b == 0, 64)?;
         // SAFETY: The result of `read_bytes_before` does not include the null terminator.
-        let file_name = unsafe {
-            CString::from_vec_unchecked(file_name)
-        };
+        let file_name = unsafe { CString::from_vec_unchecked(file_name) };
         let point_count = read_any::<u64>(reader)? as usize;
         // Skip points
         advance(reader, 24 * point_count)?;

@@ -23,7 +23,7 @@ impl Opener for Files<fs::File> {
         let pattern = pattern.as_ref();
         let matcher =
             globset::GlobBuilder::new(pattern.to_str().ok_or_else(|| {
-                Error::InvalidUtf8(pattern.to_string_lossy().to_string())
+                Error::InvalidUtf8(pattern.to_string_lossy().into_owned())
             })?)
             .literal_separator(true)
             .build()?

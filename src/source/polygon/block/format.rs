@@ -1,9 +1,9 @@
 pub struct FormatBlock {
+    pub variant: FormatVariant,
     pub version: String,
-    pub variant: FormatBlockVariant,
 }
 
-pub enum FormatBlockVariant {
+pub enum FormatVariant {
     Ascii,
     BinaryBigEndian,
     BinaryLittleEndian,
@@ -13,9 +13,9 @@ impl FormatBlock {
     #[inline]
     pub const fn kind(&self) -> &str {
         match self.variant {
-            FormatBlockVariant::BinaryLittleEndian => "binary_little_endian",
-            FormatBlockVariant::Ascii => "ascii",
-            FormatBlockVariant::BinaryBigEndian => "binary_big_endian",
+            FormatVariant::BinaryLittleEndian => "binary_little_endian",
+            FormatVariant::Ascii => "ascii",
+            FormatVariant::BinaryBigEndian => "binary_big_endian",
         }
     }
 }

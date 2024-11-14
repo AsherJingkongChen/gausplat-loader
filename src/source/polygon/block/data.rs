@@ -1,9 +1,9 @@
 pub struct DataBlock {
     pub id: u32,
-    pub variant: DataBlockVariant,
+    pub variant: DataVariant,
 }
 
-pub enum DataBlockVariant {
+pub enum DataVariant {
     Packed(DataPacked),
     Planar(DataPlanar),
 }

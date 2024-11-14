@@ -1,13 +1,16 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Globset error: {0}")]
-    Globset(#[from] globset::Error),
+    #[error("Glob error: {0}")]
+    Glob(#[from] globset::Error),
 
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
     #[error("Image error: {0}")]
     Image(#[from] image::ImageError),
+
+    #[error("Invalid ASCII string: {0:?}")]
+    InvalidAscii(String),
 
     #[error("Invalid UTF-8 string: {0:?}")]
     InvalidUtf8(String),

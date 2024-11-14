@@ -181,11 +181,11 @@ mod tests {
 
         advance(reader, 8).unwrap();
         let target = b"Hello, World!";
-        let output = read_bytes_before(reader, |b| b == b'\0', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == 0, 64).unwrap();
         assert_eq!(output, target);
 
         let target = b"Bonjour, le monde!\n";
-        let output = read_bytes_before(reader, |b| b == b'\0', 64).unwrap();
+        let output = read_bytes_before(reader, |b| b == 0, 64).unwrap();
         assert_eq!(output, target);
     }
 }
