@@ -42,7 +42,7 @@ mod tests {
         use super::*;
 
         let property = ListProperty::default();
-        ScalarProperty::search(property.count.kind.as_slice()).unwrap();
-        ScalarProperty::search(property.entry.kind.as_slice()).unwrap();
+        ScalarProperty::search(property.count.kind).unwrap();
+        ScalarProperty::search(property.entry.kind).unwrap();
     }
 }

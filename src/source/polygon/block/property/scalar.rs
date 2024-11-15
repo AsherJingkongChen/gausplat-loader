@@ -32,8 +32,10 @@ define_scalar_property!(LONG, 8);
 define_scalar_property!(UINT64, 8);
 define_scalar_property!(ULONG, 8);
 
+/// A hash map whose key is the kind of scalar property,
+/// which is guaranteed to be an ASCII string.
 static SCALAR_PROPERTY_DOMAIN: LazyLock<
-    RwLock<HashMap<AsciiString, ScalarProperty>>,
+    RwLock<HashMap<Box<[u8]>, ScalarProperty>>,
 > = LazyLock::new(|| {
     [
         &LIST, &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT,
@@ -41,7 +43,7 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
         &DOUBLE, &FLOAT64, &INT64, &LONG, &UINT64, &ULONG,
     ]
     .into_iter()
-    .map(|p| (p.kind.to_owned(), (*p).to_owned()))
+    .map(|p| (p.kind.as_bytes().into(), (*p).to_owned()))
     .collect::<HashMap<_, _>>()
     .into()
 });
@@ -50,54 +52,77 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///
 /// ```plaintext
 /// <scalar-property> :=
-///     [{" "}]
-///     (
-///         | "float" | "int" | "uchar"
-///         | "float32" | "int32" | "uint8"
-///         | ...
-///         | <kind>
-///     )
-///     " "
+///     | [{" "}] <kind> " "
+///
+/// <kind> :=
+///     | "float" | "int" | "uchar"
+///     | "float32" | "int32" | "uint8"
+///     | ...
+///     | <ascii-string>
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarProperty {
     pub kind: AsciiString,
-    pub size: u32,
+    pub size: u64,
 }
 
 impl ScalarProperty {
     #[inline]
-    pub fn try_new<S: IntoAsciiString>(
-        kind: S,
-        size: u32,
-    ) -> Option<Self> {
-        let kind = kind.into_ascii_string().ok()?;
-        Some(Self { kind, size })
+    pub fn try_new<K: AsRef<[u8]>>(
+        kind: K,
+        size: u64,
+    ) -> Result<Self, Error> {
+        let kind = kind.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(
+                String::from_utf8_lossy(&err.into_source()).into_owned(),
+            )
+        })?;
+        Ok(Self { kind, size })
     }
 
-    pub fn register(self) -> Option<ScalarProperty> {
-        #[cfg(debug_assertions)]
-        log::info!(target: "polygon::property::scalar", "register ({self})");
+    pub fn register<K: AsRef<[u8]>>(
+        kind: K,
+        size: u64,
+    ) -> Result<Option<ScalarProperty>, Error> {
+        let kind = kind.as_ref();
 
-        SCALAR_PROPERTY_DOMAIN
+        #[cfg(debug_assertions)]
+        log::info!(
+            target: "polygon::property::scalar",
+            "register ({})",
+            String::from_utf8_lossy(kind),
+        );
+
+        let property = ScalarProperty::try_new(kind, size)?;
+
+        Ok(SCALAR_PROPERTY_DOMAIN
             .write()
             .expect("Poisoned")
-            .insert(self.kind.to_owned(), self)
+            .insert(kind.into(), property))
     }
 
-    pub fn search<S: AsAsciiStr>(kind: S) -> Option<ScalarProperty> {
+    pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
         SCALAR_PROPERTY_DOMAIN
             .read()
             .expect("Poisoned")
-            .get(kind.as_ascii_str().ok()?)
+            .get(kind.as_ref())
             .cloned()
     }
 
-    pub fn unregister<S: AsAsciiStr>(kind: S) -> Option<ScalarProperty> {
-        let kind = kind.as_ascii_str().ok()?;
+    pub fn unregister<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
+        let kind = kind.as_ref();
 
         #[cfg(debug_assertions)]
-        log::info!(target: "polygon::property::scalar", "unregister ({kind})");
+        log::info!(
+            target: "polygon::property::scalar",
+            "unregister ({})",
+            String::from_utf8_lossy(kind),
+        );
+
+        // Keep the "list" property in the domain.
+        if kind == LIST.kind.as_bytes() {
+            return Some(LIST.to_owned());
+        }
 
         SCALAR_PROPERTY_DOMAIN
             .write()
@@ -194,8 +219,7 @@ mod tests {
     fn default() {
         use super::*;
 
-        ScalarProperty::search(ScalarProperty::default().kind.as_slice())
-            .unwrap();
+        ScalarProperty::search(ScalarProperty::default().kind).unwrap();
     }
 
     #[test]
@@ -218,7 +242,7 @@ mod tests {
         ScalarProperty::search("uint").unwrap();
 
         let target = UINT.to_owned();
-        let output = target.to_owned().register().unwrap();
+        let output = ScalarProperty::register("uint", 4).unwrap().unwrap();
         assert_eq!(output, target);
 
         let output = ScalarProperty::search("uint").unwrap();
@@ -228,12 +252,11 @@ mod tests {
         let output = ScalarProperty::search("example");
         assert_eq!(output, target);
 
-        let source = ScalarProperty::try_new("example", 1).unwrap();
         let target = None;
-        let output = source.to_owned().register();
+        let output = ScalarProperty::register("example", 1).unwrap();
         assert_eq!(output, target);
 
-        let target = source;
+        let target = ScalarProperty::try_new("example", 1).unwrap();
         let output = ScalarProperty::search("example").unwrap();
         assert_eq!(output, target);
 
@@ -258,9 +281,7 @@ mod tests {
     fn try_new_on_invalid_ascii_kind() {
         use super::*;
 
-        let target = None;
-        let output = ScalarProperty::try_new("\u{ae}", 1);
-        assert_eq!(output, target);
+        ScalarProperty::try_new("\u{ae}", 1).unwrap_err();
     }
 
     #[test]
@@ -269,6 +290,18 @@ mod tests {
 
         let target = None;
         let output = ScalarProperty::unregister("\u{ae}");
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn unregister_list_no_effect() {
+        use super::*;
+
+        let target = LIST.to_owned();
+        let output = ScalarProperty::unregister(&LIST.kind).unwrap();
+        assert_eq!(output, target);
+
+        let output = ScalarProperty::search(&LIST.kind).unwrap();
         assert_eq!(output, target);
     }
 }

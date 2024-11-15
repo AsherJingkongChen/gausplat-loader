@@ -10,6 +10,9 @@ use std::io::Read;
 /// ```plaintext
 /// <format-block> :=
 ///     | <format-variant> [{" "}] <version> ["\r"] "\n"
+///
+/// <version> :=
+///     | <ascii-string>
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FormatBlock {
@@ -21,13 +24,12 @@ pub struct FormatBlock {
 ///
 /// ```plaintext
 /// <format-variant> :=
-///    [{" "}]
-///    (
-///         | "ascii"
-///         | "binary_big_endian"
-///         | "binary_little_endian"
-///    )
-///    " "
+///     | [{" "}] <format> " "
+///
+/// <format> :=
+///     | "ascii"
+///     | "binary_big_endian"
+///     | "binary_little_endian"
 /// ```
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum FormatVariant {
@@ -141,49 +143,3 @@ mod tests {
         assert_eq!(output.version, target);
     }
 }
-
-// // NOTE: This impl is for constant-time encoding.
-// impl FormatVariant {
-//     #[inline]
-//     pub fn as_ascii_str(&self) -> &AsciiStr {
-//         // SAFETY: They are ASCII string literals.
-//         unsafe { self.as_bytes().as_ascii_str_unchecked() }
-//     }
-
-//     #[inline]
-//     pub const fn as_bytes(&self) -> &[u8] {
-//         self.as_str().as_bytes()
-//     }
-
-//     #[inline]
-//     pub const fn as_str(&self) -> &str {
-//         use FormatVariant::*;
-
-//         match self {
-//             BinaryLittleEndian => "binary_little_endian",
-//             Ascii => "ascii",
-//             BinaryBigEndian => "binary_big_endian",
-//         }
-//     }
-// }
-
-// impl AsRef<AsciiStr> for FormatVariant {
-//     #[inline]
-//     fn as_ref(&self) -> &AsciiStr {
-//         self.as_ascii_str()
-//     }
-// }
-
-// impl AsRef<str> for FormatVariant {
-//     #[inline]
-//     fn as_ref(&self) -> &str {
-//         self.as_str()
-//     }
-// }
-
-// impl AsRef<[u8]> for FormatVariant {
-//     #[inline]
-//     fn as_ref(&self) -> &[u8] {
-//         self.as_bytes()
-//     }
-// }

@@ -9,7 +9,7 @@ pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
-pub use ascii::{AsAsciiStr, AsciiStr, AsciiString, IntoAsciiString};
+pub use ascii::{AsAsciiStr, AsciiString, IntoAsciiString};
 pub use comment::*;
 pub use data::*;
 pub use element::*;
@@ -22,7 +22,7 @@ pub struct Block {
 
 pub enum BlockVariant {
     Ply,
-    Format(FormatBlock),
+    Format(FormatBlock), // NOTE: Ok
     Element(ElementBlock),
     Property(PropertyBlock), // NOTE: Ok
     Comment(CommentBlock),   // NOTE: Ok

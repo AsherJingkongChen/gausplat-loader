@@ -13,7 +13,10 @@ use std::{
 ///
 /// ```plaintext
 /// <comment-block> :=
-///    | [{" "}] <message> ["\r"] "\n"
+///     | [{" "}] <message> ["\r"] "\n"
+///
+/// <message> :=
+///     | <ascii-string>
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CommentBlock {
     pub message: AsciiString,
