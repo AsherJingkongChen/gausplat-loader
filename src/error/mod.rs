@@ -21,6 +21,9 @@ pub enum Error {
     #[error("Missing token: {0:?}")]
     MissingToken(String),
 
+    #[error("Parse int error: {0}")]
+    ParseIntError(#[from] std::num::ParseIntError),
+
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
 
