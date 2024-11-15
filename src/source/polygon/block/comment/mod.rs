@@ -3,11 +3,7 @@ pub mod obj_info;
 pub use super::*;
 pub use obj_info::*;
 
-use crate::function::{read_byte_after, read_bytes_before_newline};
-use std::{
-    io::Read,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 /// ## Syntax
 ///
@@ -26,7 +22,7 @@ impl Decoder for CommentBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut message = vec![read_byte_after(reader, |b| b == b' ')?
+        let mut message = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<message>".into()))?];
         message.extend(read_bytes_before_newline(reader, 64)?);
         let message = message.into_ascii_string().map_err(|err| {

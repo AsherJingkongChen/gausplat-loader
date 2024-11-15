@@ -1,7 +1,5 @@
 pub use super::*;
 
-use std::io::Read;
-
 /// ## Syntax
 ///
 /// ```plaintext

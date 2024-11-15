@@ -5,9 +5,6 @@ pub use super::*;
 pub use list::*;
 pub use scalar::*;
 
-use crate::function::{read_byte_after, read_bytes_before_newline};
-use std::io::Read;
-
 /// ## Syntax
 ///
 /// ```plaintext
@@ -43,7 +40,7 @@ impl Decoder for PropertyBlock {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let variant = PropertyVariant::decode(reader)?;
 
-        let mut name = vec![read_byte_after(reader, |b| b == b' ')?
+        let mut name = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<name>".into()))?];
         name.extend(read_bytes_before_newline(reader, 16)?);
         let name = name.into_ascii_string().map_err(|err| {

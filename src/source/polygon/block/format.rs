@@ -1,9 +1,4 @@
-use crate::function::{
-    read_byte_after, read_bytes_before, read_bytes_before_newline,
-};
-
 pub use super::*;
-use std::io::Read;
 
 /// ## Syntax
 ///
@@ -45,9 +40,9 @@ impl Decoder for FormatBlock {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let variant = FormatVariant::decode(reader)?;
 
-        let mut version = vec![read_byte_after(reader, |b| b == b' ')?
+        let mut version = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<version>".into()))?];
-        version.extend(read_bytes_before_newline(reader, 8)?);
+        version.extend(read_bytes_before_newline(reader, 16)?);
         let version = version.into_ascii_string().map_err(|err| {
             Error::InvalidAscii(
                 String::from_utf8_lossy(&err.into_source()).into_owned(),
@@ -62,9 +57,9 @@ impl Decoder for FormatVariant {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut variant = vec![read_byte_after(reader, |b| b == b' ')?
+        let mut variant = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<format-variant>".into()))?];
-        variant.extend(read_bytes_before(reader, |b| b == b' ', 20)?);
+        variant.extend(read_bytes_before(reader, is_space, 20)?);
 
         Ok(match variant.as_slice() {
             b"binary_little_endian" => Self::BinaryLittleEndian,

@@ -16,6 +16,11 @@ pub use element::*;
 pub use format::*;
 pub use property::*;
 
+use crate::function::{
+    is_space, read_byte_after, read_bytes_before, read_bytes_before_newline,
+};
+use std::io::Read;
+
 pub struct Block {
     pub variant: BlockVariant,
 }

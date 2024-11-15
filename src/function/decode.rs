@@ -30,6 +30,11 @@ pub fn advance(
     Ok(reader.read_exact(&mut vec![0; size & BUFFER_SIZE_MASK])?)
 }
 
+#[inline]
+pub const fn is_space(byte: u8) -> bool {
+    byte == b' '
+}
+
 /// Reading any type of data.
 #[inline]
 pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
@@ -189,7 +194,7 @@ mod tests {
         let reader = &mut std::io::Cursor::new(source);
 
         let target = Some(b'H');
-        let output = read_byte_after(reader, |b| b == b' ').unwrap();
+        let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
         let target = b"ello, World!";
@@ -197,7 +202,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = Some(b'B');
-        let output = read_byte_after(reader, |b| b == b' ').unwrap();
+        let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
         let target = b"onjour, le monde";
@@ -205,11 +210,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = Some(b'\n');
-        let output = read_byte_after(reader, |b| b == b' ').unwrap();
+        let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
         let target = None;
-        let output = read_byte_after(reader, |b| b == b' ').unwrap();
+        let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
     }
 

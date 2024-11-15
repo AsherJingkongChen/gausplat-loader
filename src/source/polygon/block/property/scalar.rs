@@ -1,10 +1,8 @@
 pub use super::*;
 
-use crate::function::{read_byte_after, read_bytes_before};
 use std::{
     collections::HashMap,
     fmt,
-    io::Read,
     sync::{LazyLock, RwLock},
 };
 
@@ -135,9 +133,9 @@ impl Decoder for ScalarProperty {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut kind = vec![read_byte_after(reader, |b| b == b' ')?
+        let mut kind = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<kind>".into()))?];
-        kind.extend(read_bytes_before(reader, |b| b == b' ', 8)?);
+        kind.extend(read_bytes_before(reader, is_space, 8)?);
 
         Self::search(kind.as_slice()).ok_or_else(|| {
             Error::UnknownPolygonPropertyKind(
