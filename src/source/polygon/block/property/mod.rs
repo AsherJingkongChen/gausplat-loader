@@ -1,15 +1,10 @@
 pub mod list;
 pub mod scalar;
 
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-pub use ascii::{AsAsciiStr, AsciiString, IntoAsciiString};
+pub use super::*;
 pub use list::*;
 pub use scalar::*;
 
-use super::Id;
 use crate::function::{read_byte_after, read_bytes_before_newline};
 use std::io::Read;
 
@@ -30,8 +25,11 @@ pub struct PropertyBlock {
 ///
 /// ```plaintext
 /// <property-variant> :=
-///     | [{" "}] "list" " " <list-property>
+///     | <list-scalar-property> <list-property>
 ///     | <scalar-property>
+///
+/// <list-scalar-property> :=
+///     | [{" "}] "list" " "
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum PropertyVariant {
@@ -42,7 +40,6 @@ pub enum PropertyVariant {
 impl Decoder for PropertyBlock {
     type Err = Error;
 
-    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let variant = PropertyVariant::decode(reader)?;
 
@@ -55,17 +52,16 @@ impl Decoder for PropertyBlock {
             )
         })?;
 
-        Ok(Self {
-            id: Default::default(),
-            name,
-            variant,
-        })
+        let id = Default::default();
+
+        Ok(Self { id, name, variant })
     }
 }
 
 impl Decoder for PropertyVariant {
     type Err = Error;
 
+    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let list_or_scalar = ScalarProperty::decode(reader)?;
         Ok(match list_or_scalar.kind.as_bytes() {
@@ -78,13 +74,11 @@ impl Decoder for PropertyVariant {
 impl Default for PropertyBlock {
     #[inline]
     fn default() -> Self {
+        let id = Default::default();
         // SAFETY: This is an ASCII string literal.
         let name = unsafe { "default".into_ascii_string_unchecked() };
-        Self {
-            id: Default::default(),
-            name,
-            variant: Default::default(),
-        }
+        let variant = Default::default();
+        Self { id, name, variant }
     }
 }
 

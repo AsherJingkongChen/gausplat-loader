@@ -115,7 +115,7 @@ impl Decoder for ScalarProperty {
         kind.extend(read_bytes_before(reader, |b| b == b' ', 8)?);
 
         Self::search(kind.as_slice()).ok_or_else(|| {
-            Error::UnknownPropertyKind(
+            Error::UnknownPolygonPropertyKind(
                 String::from_utf8_lossy(&kind).into_owned(),
             )
         })

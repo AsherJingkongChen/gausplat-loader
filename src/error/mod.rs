@@ -24,6 +24,9 @@ pub enum Error {
     #[error("Unknown camera model id: {0}")]
     UnknownCameraModelId(u32),
 
-    #[error("Unknown property kind: {0:?}")]
-    UnknownPropertyKind(String),
+    #[error("Unknown polygon format variant: {0:?}")]
+    UnknownPolygonFormatVariant(String),
+
+    #[error("Unknown polygon property kind: {0:?}")]
+    UnknownPolygonPropertyKind(String),
 }
