@@ -74,7 +74,7 @@ impl ScalarProperty {
     ) -> Result<Self, Error> {
         let kind = kind.as_ref().into_ascii_string().map_err(|err| {
             Error::InvalidAscii(
-                String::from_utf8_lossy(&err.into_source()).into_owned(),
+                String::from_utf8_lossy(err.into_source()).into_owned(),
             )
         })?;
         Ok(Self { kind, size })

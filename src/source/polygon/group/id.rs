@@ -37,31 +37,15 @@ impl fmt::Display for Id {
     }
 }
 
-impl Into<u64> for Id {
-    #[inline]
-    fn into(self) -> u64 {
-        self.0
-    }
-}
-
-impl Into<usize> for Id {
-    #[inline]
-    fn into(self) -> usize {
-        self.0 as usize
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
-    fn default_and_deref_and_into() {
+    fn default_and_deref() {
         use super::*;
 
-        let _: u64 = Id::default().into();
-
-        let target: u64 = (*Id::new() + 1).into();
-        let output: usize = Id::default().into();
-        assert_eq!(output as u64, target);
+        let target: u64 = *Id::new() + 1;
+        let output: u64 = *Id::default();
+        assert_eq!(output, target);
     }
 
     #[test]
