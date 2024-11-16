@@ -15,7 +15,8 @@
 #![doc = include_str!("SUPPLEMENT.md")]
 #![doc = include_str!("LICENSE.md")]
 
-pub mod block;
+pub mod body;
+pub mod head;
 pub mod group;
 
 // TODO: Use AsciiStr internally and str externally.
