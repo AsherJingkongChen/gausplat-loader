@@ -22,10 +22,10 @@ pub struct PropertyBlock {
 ///
 /// ```plaintext
 /// <property-variant> :=
-///     | <list-scalar-property> <list-property>
+///     | <scalar-property.list> <list-property>
 ///     | <scalar-property>
 ///
-/// <list-scalar-property> :=
+/// <scalar-property.list> :=
 ///     | [{" "}] "list" " "
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

@@ -12,6 +12,9 @@ pub enum Error {
     #[error("Invalid ASCII string: {0:?}")]
     InvalidAscii(String),
 
+    #[error("Invalid polygon property kind: {0:?}")]
+    InvalidPolygonPropertyKind(String),
+
     #[error("Invalid UTF-8 string: {0:?}")]
     InvalidUtf8(String),
 

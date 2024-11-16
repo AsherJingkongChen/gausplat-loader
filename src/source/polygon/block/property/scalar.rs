@@ -6,6 +6,7 @@ use std::{
     sync::{LazyLock, RwLock},
 };
 
+// NOTE: "list" is a specialized scalar property.
 define_scalar_property!(LIST, 0);
 define_scalar_property!(CHAR, 1);
 define_scalar_property!(INT8, 1);
@@ -91,12 +92,17 @@ impl ScalarProperty {
             String::from_utf8_lossy(kind),
         );
 
-        let property = ScalarProperty::try_new(kind, size)?;
+        // NOTE: Retain the "list" property.
+        if kind == b"list" {
+            Err(Error::InvalidPolygonPropertyKind(
+                String::from_utf8_lossy(kind).into_owned(),
+            ))?;
+        }
 
         Ok(SCALAR_PROPERTY_DOMAIN
             .write()
             .expect("Poisoned")
-            .insert(kind.into(), property))
+            .insert(kind.into(), ScalarProperty::try_new(kind, size)?))
     }
 
     pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
@@ -117,9 +123,9 @@ impl ScalarProperty {
             String::from_utf8_lossy(kind),
         );
 
-        // Keep the "list" property in the domain.
-        if kind == LIST.kind.as_bytes() {
-            return Some(LIST.to_owned());
+        // NOTE: Retain the "list" property.
+        if kind == b"list" {
+            None?;
         }
 
         SCALAR_PROPERTY_DOMAIN
@@ -267,6 +273,14 @@ mod tests {
     }
 
     #[test]
+    fn register_on_list() {
+        use super::*;
+
+        ScalarProperty::search("list").unwrap();
+        ScalarProperty::register("list", 0).unwrap_err();
+    }
+
+    #[test]
     fn search_on_invalid_ascii_kind() {
         use super::*;
 
@@ -292,14 +306,15 @@ mod tests {
     }
 
     #[test]
-    fn unregister_list_no_effect() {
+    fn unregister_on_list() {
         use super::*;
 
-        let target = LIST.to_owned();
-        let output = ScalarProperty::unregister(&LIST.kind).unwrap();
+        let target = None;
+        let output = ScalarProperty::unregister("list");
         assert_eq!(output, target);
 
-        let output = ScalarProperty::search(&LIST.kind).unwrap();
+        let target = LIST.to_owned();
+        let output = ScalarProperty::search("list").unwrap();
         assert_eq!(output, target);
     }
 }

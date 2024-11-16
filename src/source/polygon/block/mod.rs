@@ -28,7 +28,7 @@ pub struct Block {
 pub enum BlockVariant {
     Ply,
     Format(FormatBlock), // NOTE: Ok
-    Element(ElementBlock),
+    Element(ElementBlock), // NOTE: Ok
     Property(PropertyBlock), // NOTE: Ok
     Comment(CommentBlock),   // NOTE: Ok
     ObjInfo(ObjInfoBlock),   // NOTE: Ok
