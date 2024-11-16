@@ -97,7 +97,7 @@ impl ScalarProperty {
             String::from_utf8_lossy(kind),
         );
 
-        // NOTE: Retain the "list" property.
+        // Retain the special properties.
         if kind == b"list" {
             Err(Error::InvalidPolygonPropertyKind(
                 String::from_utf8_lossy(kind).into_owned(),
@@ -130,7 +130,7 @@ impl ScalarProperty {
             String::from_utf8_lossy(kind),
         );
 
-        // NOTE: Retain the "list" property.
+        // Retain the special properties.
         if kind == b"list" {
             None?;
         }

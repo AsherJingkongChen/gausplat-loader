@@ -17,7 +17,6 @@ pub enum Error {
     #[error("Invalid camera model id: {0}")]
     InvalidCameraModelId(u32),
 
-    // TODO: try this
     #[error(
         "Invalid polygon keyword: {0:?}. It should be one of {:?}.",
         Head::KEYWORD_DOMAIN

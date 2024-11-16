@@ -9,7 +9,7 @@ pub use block::*;
 pub use indexmap::IndexMap;
 
 use crate::function::{
-    is_space, read_any, read_byte_after, read_bytes, read_bytes_before,
+    is_space, read_any, read_byte_after, read_bytes_before,
     read_bytes_before_newline,
 };
 use std::io::Read;
@@ -59,7 +59,7 @@ impl Decoder for Head {
         if &read_any::<[u8; 3]>(reader)? != b"ply" {
             Err(Error::MissingToken("ply".into()))?;
         }
-        if read_bytes_before_newline(reader, 0)?.len() != 0 {
+        if !read_bytes_before_newline(reader, 0)?.is_empty() {
             Err(Error::MissingToken("<newline>".into()))?;
         }
 
@@ -67,63 +67,65 @@ impl Decoder for Head {
 
         let mut blocks = IndexMap::default();
         loop {
-            let mut keyword = read_bytes(reader, 2)?;
-            let variant = match keyword.as_slice() {
+            let keyword_prefix = &read_any::<[u8; 2]>(reader)?;
+            let variant = match keyword_prefix {
                 b"en" => {
-                    let mut keyword_suffix = read_bytes(reader, 8)?;
-                    match keyword_suffix.as_slice() {
+                    let keyword_suffix = &read_any::<[u8; 8]>(reader)?;
+                    match keyword_suffix {
                         b"d_header" => {
                             match read_bytes_before_newline(reader, 0)?
                                 .as_slice()
                             {
                                 b"" => break,
                                 keyword_suffix_rest => {
-                                    keyword_suffix.extend(keyword_suffix_rest);
-                                    Err(keyword_suffix)
+                                    Err([keyword_suffix, keyword_suffix_rest]
+                                        .concat()
+                                        .to_vec())
                                 },
                             }
                         },
-                        _ => Err(keyword_suffix),
+                        _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"co" => {
-                    let keyword_suffix = read_bytes(reader, 6)?;
-                    match keyword_suffix.as_slice() {
+                    let keyword_suffix = &read_any::<[u8; 6]>(reader)?;
+                    match keyword_suffix {
                         b"mment " => Ok(Comment(CommentBlock::decode(reader)?)),
-                        _ => Err(keyword_suffix),
+                        _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"el" => {
-                    let keyword_suffix = read_bytes(reader, 6)?;
-                    match keyword_suffix.as_slice() {
+                    let keyword_suffix = &read_any::<[u8; 6]>(reader)?;
+                    match keyword_suffix {
                         b"ement " => Ok(Element(ElementBlock::decode(reader)?)),
-                        _ => Err(keyword_suffix),
+                        _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"pr" => {
-                    let keyword_suffix = read_bytes(reader, 7)?;
-                    match keyword_suffix.as_slice() {
+                    let keyword_suffix = &read_any::<[u8; 7]>(reader)?;
+                    match keyword_suffix {
                         b"operty " => {
                             Ok(Property(PropertyBlock::decode(reader)?))
                         },
-                        _ => Err(keyword_suffix),
+                        _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"ob" => {
-                    let keyword_suffix = read_bytes(reader, 7)?;
-                    match keyword_suffix.as_slice() {
+                    let keyword_suffix = &read_any::<[u8; 7]>(reader)?;
+                    match keyword_suffix {
                         b"j_info " => {
                             Ok(ObjInfo(ObjInfoBlock::decode(reader)?))
                         },
-                        _ => Err(keyword_suffix),
+                        _ => Err(keyword_suffix.into()),
                     }
                 },
                 _ => Err(Default::default()),
             }
             .map_err(|keyword_suffix| {
-                keyword.extend(keyword_suffix);
+                let keyword =
+                    &[keyword_prefix, keyword_suffix.as_slice()].concat();
                 Error::InvalidPolygonKeyword(
-                    String::from_utf8_lossy(&keyword).into_owned(),
+                    String::from_utf8_lossy(keyword).into_owned(),
                 )
             })?;
 

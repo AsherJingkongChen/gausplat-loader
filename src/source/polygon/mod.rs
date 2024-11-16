@@ -19,9 +19,5 @@ pub mod body;
 pub mod group;
 pub mod head;
 
-// TODO: Use AsciiStr internally and str externally.
 // TODO: Philosphy:
-// - A polygon file is an ordered sequence of blocks.
-// - Everything is a decoder and encoder.
-// - Enum follows partial variant pattern.
 // - Relations should be tracked.
