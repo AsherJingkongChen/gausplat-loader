@@ -9,8 +9,19 @@ pub use scalar::*;
 ///
 /// ```plaintext
 /// <property-block> :=
-///     | <property-variant> [{" "}] <name> ["\r"] "\n"
+///     | <property-variant> [{" "}] <name> <newline>
+/// 
+/// <name> :=
+///     | <ascii-string>
+/// 
+/// <newline> :=
+///     | ["\r"] "\n"
 /// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`AsciiString`]
+/// - [`PropertyVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PropertyBlock {
     pub name: AsciiString,
@@ -21,12 +32,14 @@ pub struct PropertyBlock {
 ///
 /// ```plaintext
 /// <property-variant> :=
-///     | <scalar-property.list> <list-property>
+///     | [{" "}] "list" " " <list-property>
 ///     | <scalar-property>
-///
-/// <scalar-property.list> :=
-///     | [{" "}] "list" " "
 /// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`ListProperty`]
+/// - [`ScalarProperty`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum PropertyVariant {
     List(ListProperty),

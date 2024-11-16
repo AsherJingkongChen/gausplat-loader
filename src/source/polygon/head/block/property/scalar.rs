@@ -59,6 +59,10 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///     | ...
 ///     | <ascii-string>
 /// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarProperty {
     pub kind: AsciiString,
@@ -79,13 +83,14 @@ impl ScalarProperty {
         Ok(Self { kind, size })
     }
 
+    #[inline]
     pub fn register<K: AsRef<[u8]>>(
         kind: K,
         size: u64,
     ) -> Result<Option<ScalarProperty>, Error> {
         let kind = kind.as_ref();
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(test)))]
         log::info!(
             target: "polygon::property::scalar",
             "register ({})",
@@ -105,6 +110,7 @@ impl ScalarProperty {
             .insert(kind.into(), ScalarProperty::try_new(kind, size)?))
     }
 
+    #[inline]
     pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
         SCALAR_PROPERTY_DOMAIN
             .read()
@@ -113,10 +119,11 @@ impl ScalarProperty {
             .cloned()
     }
 
+    #[inline]
     pub fn unregister<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
         let kind = kind.as_ref();
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(test)))]
         log::info!(
             target: "polygon::property::scalar",
             "unregister ({})",
@@ -144,7 +151,7 @@ impl Decoder for ScalarProperty {
         kind.extend(read_bytes_before(reader, is_space, 8)?);
 
         Self::search(kind.as_slice()).ok_or_else(|| {
-            Error::UnknownPolygonPropertyKind(
+            Error::InvalidPolygonPropertyKind(
                 String::from_utf8_lossy(&kind).into_owned(),
             )
         })

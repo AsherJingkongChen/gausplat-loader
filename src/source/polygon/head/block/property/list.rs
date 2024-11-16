@@ -6,6 +6,10 @@ pub use super::*;
 /// <list-property> :=
 ///     | <scalar-property> <scalar-property>
 /// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`ScalarProperty`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListProperty {
     pub count: ScalarProperty,

@@ -1,3 +1,5 @@
+use crate::source::polygon::head::{FormatVariant, Head};
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Glob error: {0}")]
@@ -11,6 +13,22 @@ pub enum Error {
 
     #[error("Invalid ASCII string: {0:?}")]
     InvalidAscii(String),
+
+    #[error("Invalid camera model id: {0}")]
+    InvalidCameraModelId(u32),
+
+    // TODO: try this
+    #[error(
+        "Invalid polygon keyword: {0:?}. It should be one of {:?}.",
+        Head::KEYWORD_DOMAIN
+    )]
+    InvalidPolygonKeyword(String),
+
+    #[error(
+        "Invalid polygon format variant: {0:?}. It should be one of {:?}.",
+        FormatVariant::DOMAIN
+    )]
+    InvalidPolygonFormatVariant(String),
 
     #[error("Invalid polygon property kind: {0:?}")]
     InvalidPolygonPropertyKind(String),
@@ -26,13 +44,4 @@ pub enum Error {
 
     #[error("Parse int error: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
-
-    #[error("Unknown camera model id: {0}")]
-    UnknownCameraModelId(u32),
-
-    #[error("Unknown polygon format variant: {0:?}")]
-    UnknownPolygonFormatVariant(String),
-
-    #[error("Unknown polygon property kind: {0:?}")]
-    UnknownPolygonPropertyKind(String),
 }

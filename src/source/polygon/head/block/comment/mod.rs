@@ -9,10 +9,18 @@ use std::ops::{Deref, DerefMut};
 ///
 /// ```plaintext
 /// <comment-block> :=
-///     | [{" "}] <message> ["\r"] "\n"
+///     | [{" "}] <message> <newline>
 ///
 /// <message> :=
 ///     | <ascii-string>
+/// 
+/// <newline> :=
+///     | ["\r"] "\n"
+/// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CommentBlock {
     pub message: AsciiString,

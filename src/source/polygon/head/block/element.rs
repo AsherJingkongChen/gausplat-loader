@@ -4,14 +4,22 @@ pub use super::*;
 ///
 /// ```plaintext
 /// <element-block> :=
-///     | [{" "}] <name> [{" "}] <size> ["\r"] "\n"
+///     | [{" "}] <name> [{" "}] <size> <newline>
 ///
 /// <name> :=
 ///     | <ascii-string>
 ///
 /// <size> :=
 ///     | <u64>
+/// 
+/// <newline> :=
+///     | ["\r"] "\n"
 /// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`AsciiString`]
+/// - [`u64`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ElementBlock {
     pub name: AsciiString,

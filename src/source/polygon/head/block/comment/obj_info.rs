@@ -1,6 +1,13 @@
+use super::CommentBlock;
+
 /// ## Syntax
 ///
 /// ```plaintext
 /// <obj_info-block> :=
-///    | [{" "}] <message> ["\r"] "\n"
-pub type ObjInfoBlock = super::CommentBlock;
+///     | <comment-block>
+/// ```
+/// 
+/// ### Syntax Reference
+/// 
+/// - [`CommentBlock`]
+pub type ObjInfoBlock = CommentBlock;

@@ -109,7 +109,7 @@ mod tests {
 
         let target = -1_i32 as u32;
         let output = match Cameras::decode(&mut reader).unwrap_err() {
-            Error::UnknownCameraModelId(id) => id,
+            Error::InvalidCameraModelId(id) => id,
             error => panic!("{error:?}"),
         };
         assert_eq!(output, target);

@@ -1,4 +1,4 @@
-//! This module provides functionality for reading and writing polygon files (PLY).
+//! `polygon` can read and write polygon files (PLY).
 //!
 //! # Examples
 //!

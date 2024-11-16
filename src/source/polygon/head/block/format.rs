@@ -4,11 +4,19 @@ pub use super::*;
 ///
 /// ```plaintext
 /// <format-block> :=
-///     | <format-variant> [{" "}] <version> ["\r"] "\n"
+///     | "format " <format-variant> [{" "}] <version> <newline>
 ///
 /// <version> :=
 ///     | <ascii-string>
+/// 
+/// <newline> :=
+///     | ["\r"] "\n"
 /// ```
+///
+/// ### Syntax Reference
+/// 
+/// - [`AsciiString`]
+/// - [`FormatVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FormatBlock {
     pub variant: FormatVariant,
@@ -34,10 +42,19 @@ pub enum FormatVariant {
     BinaryLittleEndian,
 }
 
+impl FormatVariant {
+    pub const DOMAIN: [&str; 3] =
+        ["ascii", "binary_big_endian", "binary_little_endian"];
+}
+
 impl Decoder for FormatBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        if &read_any::<[u8; 7]>(reader)? != b"format " {
+            Err(Error::MissingToken("format ".into()))?;
+        }
+
         let variant = FormatVariant::decode(reader)?;
 
         let mut version = vec![read_byte_after(reader, is_space)?
@@ -65,7 +82,7 @@ impl Decoder for FormatVariant {
             b"binary_little_endian" => Self::BinaryLittleEndian,
             b"ascii" => Self::Ascii,
             b"binary_big_endian" => Self::BinaryBigEndian,
-            _ => Err(Error::UnknownPolygonPropertyKind(
+            _ => Err(Error::InvalidPolygonFormatVariant(
                 String::from_utf8_lossy(&variant).into_owned(),
             ))?,
         })
@@ -89,7 +106,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = &mut Cursor::new(b"ascii 1.0\n");
+        let source = &mut Cursor::new(b"format ascii 1.0\n");
         let target = FormatBlock {
             variant: FormatVariant::Ascii,
             version: "1.0".into_ascii_string().unwrap(),
@@ -97,7 +114,7 @@ mod tests {
         let output = FormatBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut Cursor::new(b"binary_little_endian 1.0.1\n");
+        let source = &mut Cursor::new(b"format binary_little_endian 1.0.1\n");
         let target = FormatBlock {
             variant: FormatVariant::BinaryLittleEndian,
             version: "1.0.1".into_ascii_string().unwrap(),
@@ -105,21 +122,39 @@ mod tests {
         let output = FormatBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut Cursor::new(b"    binary_big_endian private    \n");
+        let source = &mut Cursor::new(b"format    binary_big_endian private    \n");
         let target = FormatBlock {
             variant: FormatVariant::BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
         };
         let output = FormatBlock::decode(source).unwrap();
         assert_eq!(output, target);
+    }
 
-        let source = &mut Cursor::new(b"binary_big_endian     ");
+    #[test]
+    fn decode_on_invalid_block() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = &mut Cursor::new(b"format binary_big_endian     ");
         FormatBlock::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(b"binary_middle_endian\n");
+        let source = &mut Cursor::new(b"format binary_middle_endian 1.0\n");
         FormatBlock::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new("ascii 1.0+\u{ae}\n".as_bytes());
+        let source = &mut Cursor::new("format ascii 1.0+\u{ae}\n".as_bytes());
+        FormatBlock::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"formatascii 1.0\n");
+        FormatBlock::decode(source).unwrap_err();
+        
+        let source = &mut Cursor::new(b"format ascii");
+        FormatBlock::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"format ");
+        FormatBlock::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"form");
         FormatBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
