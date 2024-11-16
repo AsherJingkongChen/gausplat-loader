@@ -3,6 +3,11 @@ pub use bytemuck::Pod;
 
 use std::io::Write;
 
+/// Platform-specific newline. That is, CRLF on Windows and LF on others.
+pub const NEWLINE: &[u8] = if cfg!(windows) { b"\r\n" } else { b"\n" };
+/// Space.
+pub const SPACE: &[u8; 1] = b" ";
+
 pub trait Encoder
 where
     Self: Sized,

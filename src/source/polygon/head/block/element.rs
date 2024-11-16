@@ -7,17 +7,17 @@ pub use super::*;
 ///     | [{" "}] <name> [{" "}] <size> <newline>
 ///
 /// <name> :=
-///     | <ascii-string>
+///     | <ascii-string> " "
 ///
 /// <size> :=
 ///     | <u64>
-/// 
+///
 /// <newline> :=
 ///     | ["\r"] "\n"
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`AsciiString`]
 /// - [`u64`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -62,6 +62,22 @@ impl Default for ElementBlock {
     }
 }
 
+impl Encoder for ElementBlock {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        write_bytes(writer, self.name.as_bytes())?;
+        write_bytes(writer, SPACE)?;
+
+        write_bytes(writer, self.size.to_string().as_bytes())?;
+        write_bytes(writer, NEWLINE)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -74,6 +90,13 @@ mod tests {
         let output = ElementBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = 7;
+        assert_eq!(output.size, target);
+
+        let source = &mut Cursor::new(b"rgb 888 100\n");
+        let target = "rgb";
+        let output = ElementBlock::decode(source).unwrap();
+        assert_eq!(output.name, target);
+        let target = 888;
         assert_eq!(output.size, target);
 
         let source = &mut Cursor::new(b"     point    ");

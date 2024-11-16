@@ -6,8 +6,8 @@ use super::CommentBlock;
 /// <obj_info-block> :=
 ///     | <comment-block>
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`CommentBlock`]
 pub type ObjInfoBlock = CommentBlock;

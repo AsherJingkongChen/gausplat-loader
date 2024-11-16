@@ -2,7 +2,6 @@ pub use super::*;
 
 use std::{
     collections::HashMap,
-    fmt,
     sync::{LazyLock, RwLock},
 };
 
@@ -59,9 +58,9 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///     | ...
 ///     | <ascii-string>
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarProperty {
@@ -165,13 +164,16 @@ impl Default for ScalarProperty {
     }
 }
 
-impl fmt::Display for ScalarProperty {
+impl Encoder for ScalarProperty {
+    type Err = Error;
+
     #[inline]
-    fn fmt(
+    fn encode(
         &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
-        write!(f, "{}", self.kind)
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        write_bytes(writer, self.kind.as_bytes())?;
+        write_bytes(writer, SPACE)
     }
 }
 
@@ -231,19 +233,6 @@ mod tests {
         use super::*;
 
         ScalarProperty::search(ScalarProperty::default().kind).unwrap();
-    }
-
-    #[test]
-    fn display() {
-        use super::*;
-
-        let target = "float";
-        let output = format!("{}", *FLOAT);
-        assert_eq!(output, target);
-
-        let target = "float32";
-        let output = format!("{}", *FLOAT32);
-        assert_eq!(output, target);
     }
 
     #[test]

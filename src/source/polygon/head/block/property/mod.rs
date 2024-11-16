@@ -10,16 +10,16 @@ pub use scalar::*;
 /// ```plaintext
 /// <property-block> :=
 ///     | <property-variant> [{" "}] <name> <newline>
-/// 
+///
 /// <name> :=
 ///     | <ascii-string>
-/// 
+///
 /// <newline> :=
 ///     | ["\r"] "\n"
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`AsciiString`]
 /// - [`PropertyVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -35,9 +35,9 @@ pub struct PropertyBlock {
 ///     | [{" "}] "list" " " <list-property>
 ///     | <scalar-property>
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`ListProperty`]
 /// - [`ScalarProperty`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -92,6 +92,38 @@ impl Default for PropertyVariant {
     #[inline]
     fn default() -> Self {
         Self::Scalar(Default::default())
+    }
+}
+
+impl Encoder for PropertyBlock {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        self.variant.encode(writer)?;
+        write_bytes(writer, self.name.as_bytes())?;
+        write_bytes(writer, NEWLINE)
+    }
+}
+
+impl Encoder for PropertyVariant {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        match self {
+            Self::List(list) => {
+                write_bytes(writer, b"list ")?;
+                list.encode(writer)
+            },
+            Self::Scalar(scalar) => scalar.encode(writer),
+        }
     }
 }
 

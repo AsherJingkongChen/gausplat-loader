@@ -9,10 +9,13 @@ pub use block::*;
 pub use indexmap::IndexMap;
 
 use crate::function::{
-    is_space, read_any, read_byte_after, read_bytes_before,
-    read_bytes_before_newline,
+    decode::{
+        is_space, read_any, read_byte_after, read_bytes_before,
+        read_bytes_before_newline,
+    },
+    encode::{write_bytes, NEWLINE, SPACE},
 };
-use std::io::Read;
+use std::io::{Read, Write};
 
 /// ## Syntax
 ///
@@ -48,6 +51,8 @@ pub struct Head {
 impl Head {
     pub const KEYWORD_DOMAIN: [&str; 5] =
         ["element", "property", "comment", "obj_info", "end_header"];
+
+    pub const SIGNATURE: &[u8; 3] = b"ply";
 }
 
 impl Decoder for Head {
@@ -56,7 +61,7 @@ impl Decoder for Head {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use HeadBlockVariant::*;
 
-        if &read_any::<[u8; 3]>(reader)? != b"ply" {
+        if &read_any::<[u8; 3]>(reader)? != Self::SIGNATURE {
             Err(Error::MissingToken("ply".into()))?;
         }
         if !read_bytes_before_newline(reader, 0)?.is_empty() {
@@ -138,8 +143,63 @@ impl Decoder for Head {
     }
 }
 
+impl Encoder for Head {
+    type Err = Error;
+
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        use HeadBlockVariant::*;
+
+        write_bytes(writer, b"ply")?;
+        write_bytes(writer, NEWLINE)?;
+
+        self.format.encode(writer)?;
+
+        self.blocks
+            .values()
+            .try_for_each(|block| match &block.variant {
+                Comment(block) => {
+                    write_bytes(writer, b"comment ")?;
+                    block.encode(writer)
+                },
+                Element(block) => {
+                    write_bytes(writer, b"element ")?;
+                    block.encode(writer)
+                },
+                Property(block) => {
+                    write_bytes(writer, b"property ")?;
+                    block.encode(writer)
+                },
+                ObjInfo(block) => {
+                    write_bytes(writer, b"obj_info ")?;
+                    block.encode(writer)
+                },
+            })?;
+
+        write_bytes(writer, b"end_header")?;
+        write_bytes(writer, NEWLINE)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn decode() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/valid-block-ascii.ply"
+        );
+
+        let reader = &mut Cursor::new(source);
+        // let target = todo!();
+        let output = Head::decode(reader).unwrap();
+        println!("{:#?}", output);
+    }
+
     #[test]
     fn decode_on_empty_head() {
         use super::*;

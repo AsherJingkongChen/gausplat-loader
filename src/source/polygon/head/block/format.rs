@@ -8,13 +8,13 @@ pub use super::*;
 ///
 /// <version> :=
 ///     | <ascii-string>
-/// 
+///
 /// <newline> :=
 ///     | ["\r"] "\n"
 /// ```
 ///
 /// ### Syntax Reference
-/// 
+///
 /// - [`AsciiString`]
 /// - [`FormatVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -42,6 +42,10 @@ pub enum FormatVariant {
     BinaryLittleEndian,
 }
 
+impl FormatBlock {
+    pub const KEYWORD: &[u8; 7] = b"format ";
+}
+
 impl FormatVariant {
     pub const DOMAIN: [&str; 3] =
         ["ascii", "binary_big_endian", "binary_little_endian"];
@@ -51,7 +55,7 @@ impl Decoder for FormatBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        if &read_any::<[u8; 7]>(reader)? != b"format " {
+        if &read_any::<[u8; 7]>(reader)? != Self::KEYWORD {
             Err(Error::MissingToken("format ".into()))?;
         }
 
@@ -99,6 +103,44 @@ impl Default for FormatBlock {
     }
 }
 
+impl Encoder for FormatBlock {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        write_bytes(writer, Self::KEYWORD)?;
+
+        self.variant.encode(writer)?;
+
+        write_bytes(writer, self.version.as_bytes())?;
+        write_bytes(writer, NEWLINE)
+    }
+}
+
+impl Encoder for FormatVariant {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        write_bytes(
+            writer,
+            match self {
+                Self::Ascii => b"ascii",
+                Self::BinaryBigEndian => b"binary_big_endian",
+                Self::BinaryLittleEndian => b"binary_little_endian",
+            },
+        )?;
+        write_bytes(writer, SPACE)?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -122,7 +164,8 @@ mod tests {
         let output = FormatBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source = &mut Cursor::new(b"format    binary_big_endian private    \n");
+        let source =
+            &mut Cursor::new(b"format    binary_big_endian private    \n");
         let target = FormatBlock {
             variant: FormatVariant::BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
@@ -147,7 +190,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"formatascii 1.0\n");
         FormatBlock::decode(source).unwrap_err();
-        
+
         let source = &mut Cursor::new(b"format ascii");
         FormatBlock::decode(source).unwrap_err();
 

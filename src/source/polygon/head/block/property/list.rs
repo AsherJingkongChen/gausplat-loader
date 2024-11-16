@@ -6,9 +6,9 @@ pub use super::*;
 /// <list-property> :=
 ///     | <scalar-property> <scalar-property>
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`ScalarProperty`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListProperty {
@@ -34,6 +34,19 @@ impl Default for ListProperty {
             count: UCHAR.to_owned(),
             entry: INT.to_owned(),
         }
+    }
+}
+
+impl Encoder for ListProperty {
+    type Err = Error;
+
+    #[inline]
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        self.count.encode(writer)?;
+        self.entry.encode(writer)
     }
 }
 

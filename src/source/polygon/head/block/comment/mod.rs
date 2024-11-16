@@ -3,8 +3,6 @@ pub mod obj_info;
 pub use super::*;
 pub use obj_info::*;
 
-use std::ops::{Deref, DerefMut};
-
 /// ## Syntax
 ///
 /// ```plaintext
@@ -13,13 +11,13 @@ use std::ops::{Deref, DerefMut};
 ///
 /// <message> :=
 ///     | <ascii-string>
-/// 
+///
 /// <newline> :=
 ///     | ["\r"] "\n"
 /// ```
-/// 
+///
 /// ### Syntax Reference
-/// 
+///
 /// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CommentBlock {
@@ -52,21 +50,20 @@ impl Default for CommentBlock {
     }
 }
 
-impl Deref for CommentBlock {
-    type Target = AsciiString;
+impl Encoder for CommentBlock {
+    type Err = Error;
 
     #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.message
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        write_bytes(writer, self.message.as_bytes())?;
+        write_bytes(writer, NEWLINE)
     }
 }
 
-impl DerefMut for CommentBlock {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.message
-    }
-}
+// TODO: encode -> fmt
 
 #[cfg(test)]
 mod tests {
@@ -79,7 +76,7 @@ mod tests {
         let reader = &mut Cursor::new(source);
 
         let target = source.len() - 1;
-        let output = CommentBlock::decode(reader).unwrap().len();
+        let output = CommentBlock::decode(reader).unwrap().message.len();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"    ");
@@ -103,15 +100,5 @@ mod tests {
         let target = "default";
         let output = CommentBlock::default().message;
         assert_eq!(output, target);
-    }
-
-    #[test]
-    fn deref_mut() {
-        use super::*;
-
-        let target = "Hello, World!";
-        let mut output = CommentBlock::default();
-        *output = target.into_ascii_string().unwrap();
-        assert_eq!(output.message, target);
     }
 }

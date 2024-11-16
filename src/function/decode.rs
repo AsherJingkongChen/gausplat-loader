@@ -1,6 +1,7 @@
 pub use crate::error::Error;
 pub use bytemuck::Pod;
 
+use super::SPACE;
 use std::io::Read;
 
 pub trait Decoder
@@ -32,7 +33,7 @@ pub fn advance(
 
 #[inline]
 pub const fn is_space(byte: u8) -> bool {
-    byte == b' '
+    byte == SPACE[0]
 }
 
 /// Reading any type of data.

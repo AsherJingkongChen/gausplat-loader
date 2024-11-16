@@ -31,7 +31,7 @@ This is the structure of a supplemented PLY file:
 
 ##### 3. Keyword `format`:
 
-- Following the start of the header is the keyword <ins>"format"</ins> and a specification of either ASCII or binary format, followed by a <ins class=sup-add>"version identifier"</ins>.
+- Following <ins>the start of the header</ins> is the keyword <ins>"format"</ins> and a specification of either ASCII or binary format, followed by a <ins class=sup-add>"version identifier"</ins>.
 - The header of a binary version of the same object would differ only in substituting the word <ins>"binary_little_endian"</ins> or <ins>"binary_big_endian"</ins> for the word <ins>"ascii"</ins>.
 - <span class=sup-add>In <ins>"ascii"</ins> format, each element is a <ins>"newline-terminated ASCII string"</ins> composed of <ins>"space-separated"</ins> data values.</span>
 - <span class=sup-add>In <ins>"binary_little_endian"</ins> and <ins>"binary_big_endian"</ins> formats, the data is stored in corresponding byte order, with <ins>"neither whitespace nor newline"</ins> between the data values.</span>
