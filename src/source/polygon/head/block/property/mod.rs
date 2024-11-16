@@ -13,7 +13,6 @@ pub use scalar::*;
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PropertyBlock {
-    pub id: Id,
     pub name: AsciiString,
     pub variant: PropertyVariant,
 }
@@ -49,9 +48,7 @@ impl Decoder for PropertyBlock {
             )
         })?;
 
-        let id = Default::default();
-
-        Ok(Self { id, name, variant })
+        Ok(Self { name, variant })
     }
 }
 
@@ -71,11 +68,10 @@ impl Decoder for PropertyVariant {
 impl Default for PropertyBlock {
     #[inline]
     fn default() -> Self {
-        let id = Default::default();
         // SAFETY: This is an ASCII string literal.
         let name = unsafe { "default".into_ascii_string_unchecked() };
         let variant = Default::default();
-        Self { id, name, variant }
+        Self { name, variant }
     }
 }
 

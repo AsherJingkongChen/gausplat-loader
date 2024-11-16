@@ -14,7 +14,6 @@ pub use super::*;
 /// ```
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ElementBlock {
-    pub id: Id,
     pub name: AsciiString,
     pub size: u64,
 }
@@ -41,20 +40,17 @@ impl Decoder for ElementBlock {
             })?
             .parse()?;
 
-        let id = Default::default();
-
-        Ok(Self { id, name, size })
+        Ok(Self { name, size })
     }
 }
 
 impl Default for ElementBlock {
     #[inline]
     fn default() -> Self {
-        let id = Default::default();
         // SAFETY: This is an ASCII string literal.
         let name = unsafe { "default".into_ascii_string_unchecked() };
         let size = Default::default();
-        Self { id, name, size }
+        Self { name, size }
     }
 }
 

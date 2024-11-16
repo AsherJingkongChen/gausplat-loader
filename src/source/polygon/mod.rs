@@ -16,8 +16,8 @@
 #![doc = include_str!("LICENSE.md")]
 
 pub mod body;
-pub mod head;
 pub mod group;
+pub mod head;
 
 // TODO: Use AsciiStr internally and str externally.
 // TODO: Philosphy:

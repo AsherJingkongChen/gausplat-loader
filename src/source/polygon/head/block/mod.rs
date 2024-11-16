@@ -3,7 +3,7 @@ pub mod element;
 pub mod format;
 pub mod property;
 
-pub use super::*;
+pub use super::Id;
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
@@ -19,16 +19,17 @@ use crate::function::{
 };
 use std::io::Read;
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct HeadBlock {
+    pub id: Id,
     pub variant: HeadBlockVariant,
 }
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum HeadBlockVariant {
-    Ply,
-    Format(FormatBlock), // NOTE: Ok
-    Element(ElementBlock), // NOTE: Ok
-    Property(PropertyBlock), // NOTE: Ok
-    Comment(CommentBlock),   // NOTE: Ok
-    ObjInfo(ObjInfoBlock),   // NOTE: Ok
-    EndHeader,
+    Format(FormatBlock),
+    Element(ElementBlock),
+    Property(PropertyBlock),
+    Comment(CommentBlock),
+    ObjInfo(ObjInfoBlock),
 }
