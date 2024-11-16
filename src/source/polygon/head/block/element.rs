@@ -93,11 +93,7 @@ mod tests {
         assert_eq!(output.size, target);
 
         let source = &mut Cursor::new(b"rgb 888 100\n");
-        let target = "rgb";
-        let output = ElementBlock::decode(source).unwrap();
-        assert_eq!(output.name, target);
-        let target = 888;
-        assert_eq!(output.size, target);
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"     point    ");
         ElementBlock::decode(source).unwrap_err();

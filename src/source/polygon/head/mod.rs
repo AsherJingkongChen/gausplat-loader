@@ -186,7 +186,7 @@ impl Encoder for Head {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn decode() {
+    fn decode_and_encode() {
         use super::*;
         use std::io::Cursor;
 
@@ -195,9 +195,14 @@ mod tests {
         );
 
         let reader = &mut Cursor::new(source);
-        // let target = todo!();
         let output = Head::decode(reader).unwrap();
-        println!("{:#?}", output);
+        
+        let mut writer = Cursor::new(vec![]);
+        let target = source;
+        output.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+
+        assert_eq!(output, target);
     }
 
     #[test]
