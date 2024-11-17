@@ -61,7 +61,7 @@ impl Decoder for Head {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use HeadBlockVariant::*;
 
-        if &read_any::<[u8; 3]>(reader)? != Self::SIGNATURE {
+        if read_any::<[u8; 3]>(reader)? != *Self::SIGNATURE {
             Err(Error::MissingToken("ply".into()))?;
         }
         if !read_bytes_before_newline(reader, 0)?.is_empty() {
@@ -72,20 +72,20 @@ impl Decoder for Head {
 
         let mut blocks = IndexMap::default();
         loop {
-            let keyword_prefix = &read_any::<[u8; 2]>(reader)?;
-            let variant = match keyword_prefix {
+            let keyword_prefix = read_any::<[u8; 2]>(reader)?;
+            let variant = match &keyword_prefix {
                 b"en" => {
-                    let keyword_suffix = &read_any::<[u8; 8]>(reader)?;
-                    match keyword_suffix {
+                    let keyword_suffix = read_any::<[u8; 8]>(reader)?;
+                    match &keyword_suffix {
                         b"d_header" => {
                             match read_bytes_before_newline(reader, 0)?
                                 .as_slice()
                             {
                                 b"" => break,
                                 keyword_suffix_rest => {
-                                    Err([keyword_suffix, keyword_suffix_rest]
+                                    Err([&keyword_suffix, keyword_suffix_rest]
                                         .concat()
-                                        .to_vec())
+                                        .into())
                                 },
                             }
                         },
@@ -93,22 +93,22 @@ impl Decoder for Head {
                     }
                 },
                 b"co" => {
-                    let keyword_suffix = &read_any::<[u8; 6]>(reader)?;
-                    match keyword_suffix {
+                    let keyword_suffix = read_any::<[u8; 6]>(reader)?;
+                    match &keyword_suffix {
                         b"mment " => Ok(Comment(CommentBlock::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"el" => {
-                    let keyword_suffix = &read_any::<[u8; 6]>(reader)?;
-                    match keyword_suffix {
+                    let keyword_suffix = read_any::<[u8; 6]>(reader)?;
+                    match &keyword_suffix {
                         b"ement " => Ok(Element(ElementBlock::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"pr" => {
-                    let keyword_suffix = &read_any::<[u8; 7]>(reader)?;
-                    match keyword_suffix {
+                    let keyword_suffix = read_any::<[u8; 7]>(reader)?;
+                    match &keyword_suffix {
                         b"operty " => {
                             Ok(Property(PropertyBlock::decode(reader)?))
                         },
@@ -116,8 +116,8 @@ impl Decoder for Head {
                     }
                 },
                 b"ob" => {
-                    let keyword_suffix = &read_any::<[u8; 7]>(reader)?;
-                    match keyword_suffix {
+                    let keyword_suffix = read_any::<[u8; 7]>(reader)?;
+                    match &keyword_suffix {
                         b"j_info " => {
                             Ok(ObjInfo(ObjInfoBlock::decode(reader)?))
                         },
@@ -126,9 +126,8 @@ impl Decoder for Head {
                 },
                 _ => Err(Default::default()),
             }
-            .map_err(|keyword_suffix| {
-                let keyword =
-                    &[keyword_prefix, keyword_suffix.as_slice()].concat();
+            .map_err(|keyword_suffix: Box<[u8]>| {
+                let keyword = &[&keyword_prefix[..], &keyword_suffix].concat();
                 Error::InvalidPolygonKeyword(
                     String::from_utf8_lossy(keyword).into_owned(),
                 )
@@ -196,7 +195,7 @@ mod tests {
 
         let reader = &mut Cursor::new(source);
         let output = Head::decode(reader).unwrap();
-        
+
         let mut writer = Cursor::new(vec![]);
         let target = source;
         output.encode(&mut writer).unwrap();

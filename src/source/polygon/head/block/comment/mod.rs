@@ -63,8 +63,6 @@ impl Encoder for CommentBlock {
     }
 }
 
-// TODO: encode -> fmt
-
 #[cfg(test)]
 mod tests {
     #[test]

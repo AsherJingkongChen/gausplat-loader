@@ -12,7 +12,7 @@ version.workspace = true
 [dependencies]
 ascii = {workspace = true, features = ["std"]}
 burn-tensor = {workspace = true}
-bytemuck = {workspace = true}
+bytemuck = {workspace = true, features = ["extern_crate_std"]}
 globset = {workspace = true}
 image = {workspace = true, features = ["jpeg", "png", "rayon"]}
 indexmap = {workspace = true, features = ["rayon", "std"]}

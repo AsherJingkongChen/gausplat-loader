@@ -55,7 +55,7 @@ impl Decoder for FormatBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        if &read_any::<[u8; 7]>(reader)? != Self::KEYWORD {
+        if read_any::<[u8; 7]>(reader)? != *Self::KEYWORD {
             Err(Error::MissingToken("format ".into()))?;
         }
 
@@ -136,8 +136,7 @@ impl Encoder for FormatVariant {
                 Self::BinaryLittleEndian => b"binary_little_endian",
             },
         )?;
-        write_bytes(writer, SPACE)?;
-        Ok(())
+        write_bytes(writer, SPACE)
     }
 }
 
