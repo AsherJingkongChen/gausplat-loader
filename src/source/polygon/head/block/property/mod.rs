@@ -9,7 +9,7 @@ pub use scalar::*;
 ///
 /// ```plaintext
 /// <property-block> :=
-///     | <property-variant> [{" "}] <name> <newline>
+///     | <property-block-variant> [{" "}] <name> <newline>
 ///
 /// <name> :=
 ///     | <ascii-string>
@@ -21,36 +21,36 @@ pub use scalar::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`PropertyVariant`]
+/// - [`PropertyBlockVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PropertyBlock {
     pub name: AsciiString,
-    pub variant: PropertyVariant,
+    pub variant: PropertyBlockVariant,
 }
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <property-variant> :=
-///     | [{" "}] "list" " " <list-property>
-///     | <scalar-property>
+/// <property-block-variant> :=
+///     | [{" "}] "list" " " <list-property-block>
+///     | <scalar-property-block>
 /// ```
 ///
 /// ### Syntax Reference
 ///
-/// - [`ListProperty`]
-/// - [`ScalarProperty`]
+/// - [`ListPropertyBlock`]
+/// - [`ScalarPropertyBlock`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum PropertyVariant {
-    List(ListProperty),
-    Scalar(ScalarProperty),
+pub enum PropertyBlockVariant {
+    List(ListPropertyBlock),
+    Scalar(ScalarPropertyBlock),
 }
 
 impl Decoder for PropertyBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let variant = PropertyVariant::decode(reader)?;
+        let variant = PropertyBlockVariant::decode(reader)?;
 
         let mut name = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<name>".into()))?];
@@ -65,14 +65,14 @@ impl Decoder for PropertyBlock {
     }
 }
 
-impl Decoder for PropertyVariant {
+impl Decoder for PropertyBlockVariant {
     type Err = Error;
 
     #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let list_or_scalar = ScalarProperty::decode(reader)?;
+        let list_or_scalar = ScalarPropertyBlock::decode(reader)?;
         Ok(match list_or_scalar.kind.as_bytes() {
-            b"list" => Self::List(ListProperty::decode(reader)?),
+            b"list" => Self::List(ListPropertyBlock::decode(reader)?),
             _ => Self::Scalar(list_or_scalar),
         })
     }
@@ -87,7 +87,7 @@ impl Default for PropertyBlock {
     }
 }
 
-impl Default for PropertyVariant {
+impl Default for PropertyBlockVariant {
     #[inline]
     fn default() -> Self {
         Self::Scalar(Default::default())
@@ -108,7 +108,7 @@ impl Encoder for PropertyBlock {
     }
 }
 
-impl Encoder for PropertyVariant {
+impl Encoder for PropertyBlockVariant {
     type Err = Error;
 
     #[inline]
@@ -137,7 +137,7 @@ mod tests {
         let output = PropertyBlock::decode(source).unwrap();
         let target = "vertex_indices";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::List(ListProperty {
+        let target = PropertyBlockVariant::List(ListPropertyBlock {
             count: UCHAR.to_owned(),
             entry: INT.to_owned(),
         });
@@ -147,7 +147,7 @@ mod tests {
         let output = PropertyBlock::decode(source).unwrap();
         let target = "point_indices";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::List(ListProperty {
+        let target = PropertyBlockVariant::List(ListPropertyBlock {
             count: USHORT.to_owned(),
             entry: UINT.to_owned(),
         });
@@ -166,49 +166,49 @@ mod tests {
         let output = PropertyBlock::decode(source).unwrap();
         let target = "32x";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(FLOAT.to_owned());
+        let target = PropertyBlockVariant::Scalar(FLOAT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"float32 x\n");
         let output = PropertyBlock::decode(source).unwrap();
         let target = "x";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(FLOAT32.to_owned());
+        let target = PropertyBlockVariant::Scalar(FLOAT32.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y\n");
         let output = PropertyBlock::decode(source).unwrap();
         let target = "y";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(INT.to_owned());
+        let target = PropertyBlockVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y\n");
         let output = PropertyBlock::decode(source).unwrap();
         let target = "y";
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(INT.to_owned());
+        let target = PropertyBlockVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"int    y    \r\n");
         let target = "y    ";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(INT.to_owned());
+        let target = PropertyBlockVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"         int y\n");
         let target = "y";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(INT.to_owned());
+        let target = PropertyBlockVariant::Scalar(INT.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"uchar  \n");
         let target = "\n";
         let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyVariant::Scalar(UCHAR.to_owned());
+        let target = PropertyBlockVariant::Scalar(UCHAR.to_owned());
         assert_eq!(output.variant, target);
 
         let source = &mut Cursor::new(b"\nuchar\n");
@@ -247,8 +247,9 @@ mod tests {
         let output = PropertyBlock::default().name;
         assert_eq!(output, target);
 
-        let target = PropertyVariant::Scalar(ScalarProperty::default());
-        let output = PropertyVariant::default();
+        let target =
+            PropertyBlockVariant::Scalar(ScalarPropertyBlock::default());
+        let output = PropertyBlockVariant::default();
         assert_eq!(output, target);
     }
 }

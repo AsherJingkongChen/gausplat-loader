@@ -4,7 +4,7 @@ pub use super::*;
 ///
 /// ```plaintext
 /// <format-block> :=
-///     | "format " <format-variant> [{" "}] <version> <newline>
+///     | "format " <format-block-variant> [{" "}] <version> <newline>
 ///
 /// <version> :=
 ///     | <ascii-string>
@@ -16,17 +16,17 @@ pub use super::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`FormatVariant`]
+/// - [`FormatBlockVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct FormatBlock {
-    pub variant: FormatVariant,
+    pub variant: FormatBlockVariant,
     pub version: AsciiString,
 }
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <format-variant> :=
+/// <format-block-variant> :=
 ///     | [{" "}] <format> " "
 ///
 /// <format> :=
@@ -35,7 +35,7 @@ pub struct FormatBlock {
 ///     | "binary_little_endian"
 /// ```
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum FormatVariant {
+pub enum FormatBlockVariant {
     #[default]
     Ascii,
     BinaryBigEndian,
@@ -46,7 +46,7 @@ impl FormatBlock {
     pub const KEYWORD: &[u8; 7] = b"format ";
 }
 
-impl FormatVariant {
+impl FormatBlockVariant {
     pub const DOMAIN: [&str; 3] =
         ["ascii", "binary_big_endian", "binary_little_endian"];
 }
@@ -61,7 +61,7 @@ impl Decoder for FormatBlock {
             ))?;
         }
 
-        let variant = FormatVariant::decode(reader)?;
+        let variant = FormatBlockVariant::decode(reader)?;
 
         let mut version = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<version>".into()))?];
@@ -76,19 +76,21 @@ impl Decoder for FormatBlock {
     }
 }
 
-impl Decoder for FormatVariant {
+impl Decoder for FormatBlockVariant {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut variant = vec![read_byte_after(reader, is_space)?
-            .ok_or_else(|| Error::MissingToken("<format-variant>".into()))?];
+        let mut variant =
+            vec![read_byte_after(reader, is_space)?.ok_or_else(|| {
+                Error::MissingToken("<format-block-variant>".into())
+            })?];
         variant.extend(read_bytes_before(reader, is_space, 20)?);
 
         Ok(match variant.as_slice() {
             b"binary_little_endian" => Self::BinaryLittleEndian,
             b"ascii" => Self::Ascii,
             b"binary_big_endian" => Self::BinaryBigEndian,
-            _ => Err(Error::InvalidPolygonFormatVariant(
+            _ => Err(Error::InvalidPolygonFormatBlockVariant(
                 String::from_utf8_lossy(&variant).into_owned(),
             ))?,
         })
@@ -121,7 +123,7 @@ impl Encoder for FormatBlock {
     }
 }
 
-impl Encoder for FormatVariant {
+impl Encoder for FormatBlockVariant {
     type Err = Error;
 
     #[inline]
@@ -150,7 +152,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"format ascii 1.0\n");
         let target = FormatBlock {
-            variant: FormatVariant::Ascii,
+            variant: FormatBlockVariant::Ascii,
             version: "1.0".into_ascii_string().unwrap(),
         };
         let output = FormatBlock::decode(source).unwrap();
@@ -158,7 +160,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"format binary_little_endian 1.0.1\n");
         let target = FormatBlock {
-            variant: FormatVariant::BinaryLittleEndian,
+            variant: FormatBlockVariant::BinaryLittleEndian,
             version: "1.0.1".into_ascii_string().unwrap(),
         };
         let output = FormatBlock::decode(source).unwrap();
@@ -167,7 +169,7 @@ mod tests {
         let source =
             &mut Cursor::new(b"format    binary_big_endian private    \n");
         let target = FormatBlock {
-            variant: FormatVariant::BinaryBigEndian,
+            variant: FormatBlockVariant::BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
         };
         let output = FormatBlock::decode(source).unwrap();
@@ -208,7 +210,7 @@ mod tests {
     fn default() {
         use super::*;
 
-        let target = FormatVariant::default();
+        let target = FormatBlockVariant::default();
         let output = FormatBlock::default();
         assert_eq!(output.variant, target);
 

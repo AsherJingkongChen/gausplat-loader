@@ -1,10 +1,18 @@
-pub mod data;
+pub mod list;
+pub mod scalar;
 
 pub use super::*;
-pub use data::*;
+pub use list::*;
+pub use scalar::*;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct BodyBlock {
     pub id: Id,
-    pub data: IndexMap<Id, DataBlock>,
+    pub variant: BodyBlockVariant,
+}
+
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum BodyBlockVariant {
+    List(ListPropertyBlock),
+    Scalar(ScalarPropertyBlock),
 }

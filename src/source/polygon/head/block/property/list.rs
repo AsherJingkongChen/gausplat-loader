@@ -3,31 +3,31 @@ pub use super::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <list-property> :=
-///     | <scalar-property> <scalar-property>
+/// <list-property-block> :=
+///     | <scalar-property-block> <scalar-property-block>
 /// ```
 ///
 /// ### Syntax Reference
 ///
-/// - [`ScalarProperty`]
+/// - [`ScalarPropertyBlock`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ListProperty {
-    pub count: ScalarProperty,
-    pub entry: ScalarProperty,
+pub struct ListPropertyBlock {
+    pub count: ScalarPropertyBlock,
+    pub entry: ScalarPropertyBlock,
 }
 
-impl Decoder for ListProperty {
+impl Decoder for ListPropertyBlock {
     type Err = Error;
 
     #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let count = ScalarProperty::decode(reader)?;
-        let entry = ScalarProperty::decode(reader)?;
+        let count = ScalarPropertyBlock::decode(reader)?;
+        let entry = ScalarPropertyBlock::decode(reader)?;
         Ok(Self { count, entry })
     }
 }
 
-impl Default for ListProperty {
+impl Default for ListPropertyBlock {
     #[inline]
     fn default() -> Self {
         Self {
@@ -37,7 +37,7 @@ impl Default for ListProperty {
     }
 }
 
-impl Encoder for ListProperty {
+impl Encoder for ListPropertyBlock {
     type Err = Error;
 
     #[inline]
@@ -56,8 +56,8 @@ mod tests {
     fn default() {
         use super::*;
 
-        let property = ListProperty::default();
-        ScalarProperty::search(property.count.kind).unwrap();
-        ScalarProperty::search(property.entry.kind).unwrap();
+        let property = ListPropertyBlock::default();
+        ScalarPropertyBlock::search(property.count.kind).unwrap();
+        ScalarPropertyBlock::search(property.entry.kind).unwrap();
     }
 }

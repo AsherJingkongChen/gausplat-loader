@@ -33,7 +33,7 @@ define_scalar_property!(ULONG, 8);
 /// A hash map whose key is the kind of scalar property,
 /// which is guaranteed to be an ASCII string.
 static SCALAR_PROPERTY_DOMAIN: LazyLock<
-    RwLock<HashMap<Box<[u8]>, ScalarProperty>>,
+    RwLock<HashMap<Box<[u8]>, ScalarPropertyBlock>>,
 > = LazyLock::new(|| {
     [
         &LIST, &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT,
@@ -49,7 +49,7 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 /// ## Syntax
 ///
 /// ```plaintext
-/// <scalar-property> :=
+/// <scalar-property-block> :=
 ///     | [{" "}] <kind> " "
 ///
 /// <kind> :=
@@ -63,12 +63,12 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 ///
 /// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ScalarProperty {
+pub struct ScalarPropertyBlock {
     pub kind: AsciiString,
     pub size: u64,
 }
 
-impl ScalarProperty {
+impl ScalarPropertyBlock {
     #[inline]
     pub fn try_new<K: AsRef<[u8]>>(
         kind: K,
@@ -86,7 +86,7 @@ impl ScalarProperty {
     pub fn register<K: AsRef<[u8]>>(
         kind: K,
         size: u64,
-    ) -> Result<Option<ScalarProperty>, Error> {
+    ) -> Result<Option<ScalarPropertyBlock>, Error> {
         let kind = kind.as_ref();
 
         #[cfg(all(debug_assertions, not(test)))]
@@ -106,11 +106,11 @@ impl ScalarProperty {
         Ok(SCALAR_PROPERTY_DOMAIN
             .write()
             .expect("Poisoned")
-            .insert(kind.into(), ScalarProperty::try_new(kind, size)?))
+            .insert(kind.into(), ScalarPropertyBlock::try_new(kind, size)?))
     }
 
     #[inline]
-    pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
+    pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarPropertyBlock> {
         SCALAR_PROPERTY_DOMAIN
             .read()
             .expect("Poisoned")
@@ -119,7 +119,7 @@ impl ScalarProperty {
     }
 
     #[inline]
-    pub fn unregister<K: AsRef<[u8]>>(kind: K) -> Option<ScalarProperty> {
+    pub fn unregister<K: AsRef<[u8]>>(kind: K) -> Option<ScalarPropertyBlock> {
         let kind = kind.as_ref();
 
         #[cfg(all(debug_assertions, not(test)))]
@@ -141,7 +141,7 @@ impl ScalarProperty {
     }
 }
 
-impl Decoder for ScalarProperty {
+impl Decoder for ScalarPropertyBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
@@ -157,14 +157,14 @@ impl Decoder for ScalarProperty {
     }
 }
 
-impl Default for ScalarProperty {
+impl Default for ScalarPropertyBlock {
     #[inline]
     fn default() -> Self {
         FLOAT.to_owned()
     }
 }
 
-impl Encoder for ScalarProperty {
+impl Encoder for ScalarPropertyBlock {
     type Err = Error;
 
     #[inline]
@@ -180,10 +180,10 @@ impl Encoder for ScalarProperty {
 macro_rules! define_scalar_property {
     ($kind:ident, $size:literal) => {
         paste::paste! {
-            pub static [<$kind:upper>]: std::sync::LazyLock<ScalarProperty> =
+            pub static [<$kind:upper>]: std::sync::LazyLock<ScalarPropertyBlock> =
                 std::sync::LazyLock::new(|| {
                     let kind = stringify!([<$kind:lower>]);
-                    ScalarProperty::try_new(kind, $size)
+                    ScalarPropertyBlock::try_new(kind, $size)
                         .expect(&format!("Invalid scalar property: {kind:?}"))
                 });
         }
@@ -200,71 +200,72 @@ mod tests {
 
         let source = &mut Cursor::new(b"float ");
         let target = FLOAT.to_owned();
-        let output = ScalarProperty::decode(source).unwrap();
+        let output = ScalarPropertyBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"float64 ");
         let target = FLOAT64.to_owned();
-        let output = ScalarProperty::decode(source).unwrap();
+        let output = ScalarPropertyBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"  int ");
         let target = INT.to_owned();
-        let output = ScalarProperty::decode(source).unwrap();
+        let output = ScalarPropertyBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"uchar ");
         let target = UCHAR.to_owned();
-        let output = ScalarProperty::decode(source).unwrap();
+        let output = ScalarPropertyBlock::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"uchar\n");
-        ScalarProperty::decode(source).unwrap_err();
+        ScalarPropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"example ");
-        ScalarProperty::decode(source).unwrap_err();
+        ScalarPropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        ScalarProperty::decode(source).unwrap_err();
+        ScalarPropertyBlock::decode(source).unwrap_err();
     }
 
     #[test]
     fn default() {
         use super::*;
 
-        ScalarProperty::search(ScalarProperty::default().kind).unwrap();
+        ScalarPropertyBlock::search(ScalarPropertyBlock::default().kind)
+            .unwrap();
     }
 
     #[test]
     fn register_and_search_and_unregister() {
         use super::*;
 
-        ScalarProperty::search("uint").unwrap();
+        ScalarPropertyBlock::search("uint").unwrap();
 
         let target = UINT.to_owned();
-        let output = ScalarProperty::register("uint", 4).unwrap().unwrap();
+        let output = ScalarPropertyBlock::register("uint", 4).unwrap().unwrap();
         assert_eq!(output, target);
 
-        let output = ScalarProperty::search("uint").unwrap();
-        assert_eq!(output, target);
-
-        let target = None;
-        let output = ScalarProperty::search("example");
+        let output = ScalarPropertyBlock::search("uint").unwrap();
         assert_eq!(output, target);
 
         let target = None;
-        let output = ScalarProperty::register("example", 1).unwrap();
-        assert_eq!(output, target);
-
-        let target = ScalarProperty::try_new("example", 1).unwrap();
-        let output = ScalarProperty::search("example").unwrap();
-        assert_eq!(output, target);
-
-        let output = ScalarProperty::unregister("example").unwrap();
+        let output = ScalarPropertyBlock::search("example");
         assert_eq!(output, target);
 
         let target = None;
-        let output = ScalarProperty::search("example");
+        let output = ScalarPropertyBlock::register("example", 1).unwrap();
+        assert_eq!(output, target);
+
+        let target = ScalarPropertyBlock::try_new("example", 1).unwrap();
+        let output = ScalarPropertyBlock::search("example").unwrap();
+        assert_eq!(output, target);
+
+        let output = ScalarPropertyBlock::unregister("example").unwrap();
+        assert_eq!(output, target);
+
+        let target = None;
+        let output = ScalarPropertyBlock::search("example");
         assert_eq!(output, target);
     }
 
@@ -272,8 +273,8 @@ mod tests {
     fn register_on_list() {
         use super::*;
 
-        ScalarProperty::search("list").unwrap();
-        ScalarProperty::register("list", 0).unwrap_err();
+        ScalarPropertyBlock::search("list").unwrap();
+        ScalarPropertyBlock::register("list", 0).unwrap_err();
     }
 
     #[test]
@@ -281,7 +282,7 @@ mod tests {
         use super::*;
 
         let target = None;
-        let output = ScalarProperty::search("\u{ae}");
+        let output = ScalarPropertyBlock::search("\u{ae}");
         assert_eq!(output, target);
     }
 
@@ -289,7 +290,7 @@ mod tests {
     fn try_new_on_invalid_ascii_kind() {
         use super::*;
 
-        ScalarProperty::try_new("\u{ae}", 1).unwrap_err();
+        ScalarPropertyBlock::try_new("\u{ae}", 1).unwrap_err();
     }
 
     #[test]
@@ -297,7 +298,7 @@ mod tests {
         use super::*;
 
         let target = None;
-        let output = ScalarProperty::unregister("\u{ae}");
+        let output = ScalarPropertyBlock::unregister("\u{ae}");
         assert_eq!(output, target);
     }
 
@@ -306,11 +307,11 @@ mod tests {
         use super::*;
 
         let target = None;
-        let output = ScalarProperty::unregister("list");
+        let output = ScalarPropertyBlock::unregister("list");
         assert_eq!(output, target);
 
         let target = LIST.to_owned();
-        let output = ScalarProperty::search("list").unwrap();
+        let output = ScalarPropertyBlock::search("list").unwrap();
         assert_eq!(output, target);
     }
 }
