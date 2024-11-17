@@ -1,5 +1,5 @@
 use crate::source::polygon::{
-    group::Id,
+    object::Id,
     head::{FormatVariant, Head},
 };
 

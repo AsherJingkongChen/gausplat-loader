@@ -16,8 +16,5 @@
 #![doc = include_str!("LICENSE.md")]
 
 pub mod body;
-pub mod group;
 pub mod head;
-
-// TODO: Philosphy:
-// - Relations should be tracked.
+pub mod object;

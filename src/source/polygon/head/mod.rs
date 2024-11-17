@@ -1,6 +1,6 @@
 pub mod block;
 
-pub use super::group::Id;
+pub use super::object::Id;
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
