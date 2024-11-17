@@ -70,7 +70,7 @@ pub struct ScalarPropertyBlock {
 
 impl ScalarPropertyBlock {
     #[inline]
-    pub fn try_new<K: AsRef<[u8]>>(
+    pub fn new<K: AsRef<[u8]>>(
         kind: K,
         size: u64,
     ) -> Result<Self, Error> {
@@ -106,7 +106,7 @@ impl ScalarPropertyBlock {
         Ok(SCALAR_PROPERTY_DOMAIN
             .write()
             .expect("Poisoned")
-            .insert(kind.into(), ScalarPropertyBlock::try_new(kind, size)?))
+            .insert(kind.into(), ScalarPropertyBlock::new(kind, size)?))
     }
 
     #[inline]
@@ -183,7 +183,7 @@ macro_rules! define_scalar_property {
             pub static [<$kind:upper>]: std::sync::LazyLock<ScalarPropertyBlock> =
                 std::sync::LazyLock::new(|| {
                     let kind = stringify!([<$kind:lower>]);
-                    ScalarPropertyBlock::try_new(kind, $size)
+                    ScalarPropertyBlock::new(kind, $size)
                         .expect(&format!("Invalid scalar property: {kind:?}"))
                 });
         }
@@ -257,7 +257,7 @@ mod tests {
         let output = ScalarPropertyBlock::register("example", 1).unwrap();
         assert_eq!(output, target);
 
-        let target = ScalarPropertyBlock::try_new("example", 1).unwrap();
+        let target = ScalarPropertyBlock::new("example", 1).unwrap();
         let output = ScalarPropertyBlock::search("example").unwrap();
         assert_eq!(output, target);
 
@@ -287,10 +287,10 @@ mod tests {
     }
 
     #[test]
-    fn try_new_on_invalid_ascii_kind() {
+    fn new_on_invalid_ascii_kind() {
         use super::*;
 
-        ScalarPropertyBlock::try_new("\u{ae}", 1).unwrap_err();
+        ScalarPropertyBlock::new("\u{ae}", 1).unwrap_err();
     }
 
     #[test]

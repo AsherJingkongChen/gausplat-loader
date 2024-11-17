@@ -4,7 +4,6 @@ pub mod format;
 pub mod property;
 
 pub use super::*;
-
 pub use ascii::{AsAsciiStr, AsciiString, IntoAsciiString};
 pub use comment::*;
 pub use element::*;

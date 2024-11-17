@@ -1,4 +1,5 @@
 pub mod block;
+pub mod group;
 
 pub use super::object::Id;
 pub use crate::{
@@ -6,6 +7,7 @@ pub use crate::{
     function::{Decoder, Encoder},
 };
 pub use block::*;
+pub use group::*;
 pub use indexmap::IndexMap;
 
 use crate::function::{
@@ -46,6 +48,7 @@ use std::io::{Read, Write};
 pub struct Head {
     pub blocks: IndexMap<Id, HeadBlock>,
     pub format: FormatBlock,
+    // pub group: HeadGroup,
 }
 
 impl Head {
@@ -148,7 +151,10 @@ impl Decoder for Head {
             blocks.insert(id, HeadBlock { id, variant });
         }
 
-        Ok(Self { blocks, format })
+        Ok(Self {
+            blocks,
+            format,
+        })
     }
 }
 

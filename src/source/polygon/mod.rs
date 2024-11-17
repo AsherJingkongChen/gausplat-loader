@@ -18,3 +18,6 @@
 pub mod body;
 pub mod head;
 pub mod object;
+
+pub use body::Body;
+pub use head::Head;
