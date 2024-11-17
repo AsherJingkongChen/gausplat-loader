@@ -44,8 +44,8 @@ use std::io::{Read, Write};
 /// - [`FormatBlock`]
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Head {
-    pub format: FormatBlock,
     pub blocks: IndexMap<Id, HeadBlock>,
+    pub format: FormatBlock,
 }
 
 impl Head {
@@ -73,6 +73,8 @@ impl Decoder for Head {
         let format = FormatBlock::decode(reader)?;
 
         let mut blocks = IndexMap::default();
+        let mut has_element = false;
+
         loop {
             let keyword_prefix = read_any::<[u8; 2]>(reader)?;
             let variant = match &keyword_prefix {
@@ -104,7 +106,10 @@ impl Decoder for Head {
                 b"el" => {
                     let keyword_suffix = read_any::<[u8; 6]>(reader)?;
                     match &keyword_suffix {
-                        b"ement " => Ok(Element(ElementBlock::decode(reader)?)),
+                        b"ement " => {
+                            has_element = true;
+                            Ok(Element(ElementBlock::decode(reader)?))
+                        },
                         _ => Err(keyword_suffix.into()),
                     }
                 },
@@ -112,6 +117,9 @@ impl Decoder for Head {
                     let keyword_suffix = read_any::<[u8; 7]>(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
+                            if !has_element {
+                                Err(Error::MissingToken("element ".into()))?;
+                            }
                             Ok(Property(PropertyBlock::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -135,12 +143,12 @@ impl Decoder for Head {
                 )
             })?;
 
-            let id = Id::default();
+            let id = Default::default();
 
             blocks.insert(id, HeadBlock { id, variant });
         }
 
-        Ok(Self { format, blocks })
+        Ok(Self { blocks, format })
     }
 }
 
@@ -192,7 +200,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = include_bytes!(
-            "../../../../examples/data/polygon/valid-block-ascii.ply"
+            "../../../../examples/data/polygon/valid-block.ascii.ply"
         );
 
         let reader = &mut Cursor::new(source);
@@ -207,12 +215,25 @@ mod tests {
     }
 
     #[test]
+    fn decode_on_orphan_property() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/orphan-property.ascii.ply"
+        );
+
+        let reader = &mut Cursor::new(source);
+        Head::decode(reader).unwrap_err();
+    }
+
+    #[test]
     fn decode_on_empty_head() {
         use super::*;
         use std::io::{Cursor, ErrorKind};
 
         let source = include_bytes!(
-            "../../../../examples/data/polygon/empty-head-ascii.ply"
+            "../../../../examples/data/polygon/empty-head.ascii.ply"
         );
 
         let reader = &mut Cursor::new(source);
@@ -247,7 +268,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = include_bytes!(
-            "../../../../examples/data/polygon/empty-head-ascii.ply"
+            "../../../../examples/data/polygon/empty-head.ascii.ply"
         );
 
         let reader = &mut Cursor::new([b"plh", &source[3..]].concat());

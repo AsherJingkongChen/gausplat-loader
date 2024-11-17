@@ -222,6 +222,9 @@ mod tests {
 
         let source = &mut Cursor::new(b"uchar");
         PropertyBlock::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"");
+        PropertyBlock::decode(source).unwrap_err();
     }
 
     #[test]

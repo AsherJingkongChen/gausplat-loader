@@ -199,6 +199,9 @@ mod tests {
         let source = &mut Cursor::new(b"format ");
         FormatBlock::decode(source).unwrap_err();
 
+        let source = &mut Cursor::new(b"fromat ");
+        FormatBlock::decode(source).unwrap_err();
+
         let source = &mut Cursor::new(b"form");
         FormatBlock::decode(source).unwrap_err();
 

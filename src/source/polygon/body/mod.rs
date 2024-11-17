@@ -1,10 +1,7 @@
 pub mod block;
 
 pub use super::object::Id;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
+pub use crate::error::Error;
 pub use block::*;
 pub use indexmap::IndexMap;
 
