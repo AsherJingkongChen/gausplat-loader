@@ -55,8 +55,7 @@ impl Decoder for ElementBlock {
 impl Default for ElementBlock {
     #[inline]
     fn default() -> Self {
-        // SAFETY: This is an ASCII string literal.
-        let name = unsafe { "default".into_ascii_string_unchecked() };
+        let name = "default".into_ascii_string().expect("Unreachable");
         let size = Default::default();
         Self { name, size }
     }

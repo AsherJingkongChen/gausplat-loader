@@ -81,8 +81,7 @@ impl Decoder for PropertyVariant {
 impl Default for PropertyBlock {
     #[inline]
     fn default() -> Self {
-        // SAFETY: This is an ASCII string literal.
-        let name = unsafe { "default".into_ascii_string_unchecked() };
+        let name = "default".into_ascii_string().expect("Unreachable");
         let variant = Default::default();
         Self { name, variant }
     }

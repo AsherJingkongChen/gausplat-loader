@@ -56,7 +56,9 @@ impl Decoder for FormatBlock {
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         if read_any::<[u8; 7]>(reader)? != *Self::KEYWORD {
-            Err(Error::MissingToken("format ".into()))?;
+            Err(Error::MissingToken(
+                String::from_utf8(Self::KEYWORD.into()).expect("Unreachable"),
+            ))?;
         }
 
         let variant = FormatVariant::decode(reader)?;
@@ -97,8 +99,7 @@ impl Default for FormatBlock {
     #[inline]
     fn default() -> Self {
         let variant = Default::default();
-        // SAFETY: This is an ASCII string literal.
-        let version = unsafe { "1.0".into_ascii_string_unchecked() };
+        let version = "1.0".into_ascii_string().expect("Unreachable");
         Self { variant, version }
     }
 }

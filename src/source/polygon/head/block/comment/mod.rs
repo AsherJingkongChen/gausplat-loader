@@ -44,8 +44,7 @@ impl Decoder for CommentBlock {
 impl Default for CommentBlock {
     #[inline]
     fn default() -> Self {
-        // SAFETY: This is an ASCII string literal.
-        let message = unsafe { "default".into_ascii_string_unchecked() };
+        let message = "default".into_ascii_string().expect("Unreachable");
         Self { message }
     }
 }

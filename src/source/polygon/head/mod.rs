@@ -62,7 +62,9 @@ impl Decoder for Head {
         use HeadBlockVariant::*;
 
         if read_any::<[u8; 3]>(reader)? != *Self::SIGNATURE {
-            Err(Error::MissingToken("ply".into()))?;
+            Err(Error::MissingToken(
+                String::from_utf8(Self::SIGNATURE.into()).expect("Unreachable"),
+            ))?;
         }
         if !read_bytes_before_newline(reader, 0)?.is_empty() {
             Err(Error::MissingToken("<newline>".into()))?;
