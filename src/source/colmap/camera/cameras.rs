@@ -173,7 +173,7 @@ mod tests {
 
         let target =
             include_bytes!("../../../../examples/data/colmap/0/cameras.bin");
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
@@ -186,7 +186,7 @@ mod tests {
         let source = Cameras::default();
 
         let target = &[0, 0, 0, 0, 0, 0, 0, 0];
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);

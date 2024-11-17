@@ -263,7 +263,7 @@ mod tests {
 
         let target =
             include_bytes!("../../../../examples/data/colmap/1/points3D.bin");
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
@@ -276,7 +276,7 @@ mod tests {
         let source = Points::default();
 
         let target = &[0, 0, 0, 0, 0, 0, 0, 0];
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);

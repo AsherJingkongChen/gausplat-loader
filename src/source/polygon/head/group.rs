@@ -101,8 +101,8 @@ mod tests {
 
     #[test]
     fn build_on_simple_tree() {
-        let source_element_id = Id::default();
-        let source_property_ids = [Id::default(), Id::default()];
+        let source_element_id = Id::new();
+        let source_property_ids = [Id::new(), Id::new()];
         let group = HeadGroupBuilder::default()
             .set_element_id(source_element_id)
             .add_property_id(source_property_ids[0])
@@ -125,15 +125,15 @@ mod tests {
     #[test]
     fn build_on_orphan_property() {
         let target = None;
-        let output = HeadGroupBuilder::default().add_property_id(Id::default());
+        let output = HeadGroupBuilder::default().add_property_id(Id::new());
         assert_eq!(output, target);
     }
 
     #[test]
     fn get_and_set_property_id() {
         let mut group = HeadGroup::default();
-        let element_id = Id::default();
-        let property_id = Id::default();
+        let element_id = Id::new();
+        let property_id = Id::new();
         group.set_property_id(property_id, element_id);
 
         let target = element_id;

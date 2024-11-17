@@ -50,7 +50,7 @@ mod tests {
         use super::*;
 
         let source = &[20241109_u32, 131452000];
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
 
         let target =
             &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")
@@ -65,7 +65,7 @@ mod tests {
         use super::*;
 
         let source = b"Hello, World!";
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let mut writer = std::io::Cursor::new(vec![]);
 
         let target =
             include_bytes!("../../examples/data/hello-world/ascii.txt");

@@ -48,12 +48,17 @@ use std::io::{Read, Write};
 pub struct Head {
     pub blocks: IndexMap<Id, HeadBlock>,
     pub format: FormatBlock,
-    // pub group: HeadGroup,
+    pub group: HeadGroup,
 }
 
 impl Head {
-    pub const KEYWORD_DOMAIN: [&str; 5] =
-        ["element", "property", "comment", "obj_info", "end_header"];
+    pub const KEYWORD_DOMAIN: [&str; 5] = [
+        "element ",
+        "property ",
+        "comment ",
+        "obj_info ",
+        "end_header",
+    ];
 
     pub const SIGNATURE: &[u8; 3] = b"ply";
 }
@@ -76,9 +81,11 @@ impl Decoder for Head {
         let format = FormatBlock::decode(reader)?;
 
         let mut blocks = IndexMap::default();
-        let mut has_element = false;
+        let mut group_builder = HeadGroupBuilder::default();
 
         loop {
+            let id = Id::new();
+
             let keyword_prefix = read_any::<[u8; 2]>(reader)?;
             let variant = match &keyword_prefix {
                 b"en" => {
@@ -110,7 +117,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_any::<[u8; 6]>(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            has_element = true;
+                            group_builder = group_builder.set_element_id(id);
                             Ok(Element(ElementBlock::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -120,9 +127,10 @@ impl Decoder for Head {
                     let keyword_suffix = read_any::<[u8; 7]>(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
-                            if !has_element {
-                                Err(Error::MissingToken("element ".into()))?;
-                            }
+                            group_builder =
+                                group_builder.add_property_id(id).ok_or_else(
+                                    || Error::MissingToken("element ".into()),
+                                )?;
                             Ok(Property(PropertyBlock::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -146,14 +154,15 @@ impl Decoder for Head {
                 )
             })?;
 
-            let id = Default::default();
-
             blocks.insert(id, HeadBlock { id, variant });
         }
+
+        let group = group_builder.build();
 
         Ok(Self {
             blocks,
             format,
+            group,
         })
     }
 }

@@ -52,7 +52,7 @@ impl Image {
             ))?;
         }
 
-        let mut result = Cursor::new(Vec::new());
+        let mut result = Cursor::new(vec![]);
         let value = tensor
             .mul_scalar(255.0)
             .add_scalar(0.5)
