@@ -1,6 +1,6 @@
 use crate::source::polygon::{
-    object::Id,
     head::{FormatVariant, Head},
+    object::Id,
 };
 
 #[derive(Debug, thiserror::Error)]

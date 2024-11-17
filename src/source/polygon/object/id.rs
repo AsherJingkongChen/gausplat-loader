@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref};
+use std::ops::Deref;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Id(u64);
@@ -27,16 +27,6 @@ impl Default for Id {
     }
 }
 
-impl fmt::Display for Id {
-    #[inline]
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter,
-    ) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
@@ -45,16 +35,6 @@ mod tests {
 
         let target: u64 = *Id::new() + 1;
         let output: u64 = *Id::default();
-        assert_eq!(output, target);
-    }
-
-    #[test]
-    fn display() {
-        use super::*;
-
-        let target = true;
-        let output =
-            u64::from_str_radix(&format!("{}", Id::default()), 10).is_ok();
         assert_eq!(output, target);
     }
 }

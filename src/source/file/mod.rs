@@ -151,9 +151,9 @@ mod tests {
         let target = source;
         file.write(source).unwrap();
         file.rewind().unwrap();
-        let output = (*file).to_owned().into_inner();
+        let output = file.deref().to_owned().into_inner();
         assert_eq!(output, target);
-        let output = (&mut *file).to_owned().into_inner();
+        let output = file.deref_mut().to_owned().into_inner();
         assert_eq!(output, target);
     }
 }

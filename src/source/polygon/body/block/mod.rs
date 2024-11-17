@@ -1,7 +1,7 @@
 pub mod data;
 
-pub use data::*;
 pub use super::*;
+pub use data::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct BodyBlock {

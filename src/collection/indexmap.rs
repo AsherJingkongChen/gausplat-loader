@@ -449,10 +449,7 @@ mod tests {
     fn shuffle() {
         use super::*;
 
-        let mut map = (0..=255)
-            .zip(0..=255)
-            .into_iter()
-            .collect::<IndexMap<u8, u8>>();
+        let mut map = (0..=255).zip(0..=255).collect::<IndexMap<u8, u8>>();
 
         map.seed(0);
 
