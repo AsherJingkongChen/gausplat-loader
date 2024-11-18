@@ -1,13 +1,13 @@
-use super::CommentBlock;
+use super::CommentMeta;
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <obj_info-block> :=
-///     | <comment-block>
+/// <obj_info-meta> :=
+///     | <comment-meta>
 /// ```
 ///
 /// ### Syntax Reference
 ///
-/// - [`CommentBlock`]
-pub type ObjInfoBlock = CommentBlock;
+/// - [`CommentMeta`]
+pub type ObjInfoMeta = CommentMeta;

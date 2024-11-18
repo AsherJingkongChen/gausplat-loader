@@ -6,7 +6,7 @@ pub use obj_info::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <comment-block> :=
+/// <comment-meta> :=
 ///     | [{" "}] <message> <newline>
 ///
 /// <message> :=
@@ -20,11 +20,11 @@ pub use obj_info::*;
 ///
 /// - [`AsciiString`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct CommentBlock {
+pub struct CommentMeta {
     pub message: AsciiString,
 }
 
-impl Decoder for CommentBlock {
+impl Decoder for CommentMeta {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
@@ -41,7 +41,7 @@ impl Decoder for CommentBlock {
     }
 }
 
-impl Default for CommentBlock {
+impl Default for CommentMeta {
     #[inline]
     fn default() -> Self {
         let message = "default".into_ascii_string().expect("Unreachable");
@@ -49,7 +49,7 @@ impl Default for CommentBlock {
     }
 }
 
-impl Encoder for CommentBlock {
+impl Encoder for CommentMeta {
     type Err = Error;
 
     #[inline]
@@ -73,12 +73,12 @@ mod tests {
         let reader = &mut Cursor::new(source);
 
         let target = source.len() - 1;
-        let output = CommentBlock::decode(reader).unwrap().message.len();
+        let output = CommentMeta::decode(reader).unwrap().message.len();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"    ");
 
-        CommentBlock::decode(source).unwrap_err();
+        CommentMeta::decode(source).unwrap_err();
     }
 
     #[test]
@@ -87,7 +87,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new("\u{ae}");
-        CommentBlock::decode(source).unwrap_err();
+        CommentMeta::decode(source).unwrap_err();
     }
 
     #[test]
@@ -95,7 +95,7 @@ mod tests {
         use super::*;
 
         let target = "default";
-        let output = CommentBlock::default().message;
+        let output = CommentMeta::default().message;
         assert_eq!(output, target);
     }
 }

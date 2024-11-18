@@ -1,5 +1,5 @@
 use crate::source::polygon::{
-    head::{FormatBlockVariant, Head},
+    head::{FormatMetaVariant, Head},
     object::Id,
 };
 
@@ -30,10 +30,10 @@ pub enum Error {
     InvalidPolygonKeyword(String),
 
     #[error(
-        "Invalid polygon format block variant: {0:?}. It should be one of {:?}.",
-        FormatBlockVariant::DOMAIN
+        "Invalid polygon format meta variant: {0:?}. It should be one of {:?}.",
+        FormatMetaVariant::DOMAIN
     )]
-    InvalidPolygonFormatBlockVariant(String),
+    InvalidPolygonFormatMetaVariant(String),
 
     #[error("Invalid polygon property kind: {0:?}")]
     InvalidPolygonPropertyKind(String),

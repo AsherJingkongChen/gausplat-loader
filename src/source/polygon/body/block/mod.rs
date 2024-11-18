@@ -6,23 +6,23 @@ pub use list::*;
 pub use scalar::*;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct BodyBlock {
+pub struct Data {
     pub id: Id,
-    pub variant: BodyBlockVariant,
+    pub variant: DataVariant,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum BodyBlockVariant {
-    List(ListBodyBlock),
-    Scalar(ScalarBodyBlock),
+pub enum DataVariant {
+    List(ListData),
+    Scalar(ScalarData),
 }
 
-impl_body_block_variant_matchers!(List, Scalar);
+impl_data_variant_matchers!(List, Scalar);
 
-macro_rules! impl_body_block_variant_matchers {
+macro_rules! impl_data_variant_matchers {
     ($( $variant:ident ),* ) => {
         paste::paste! {
-            impl BodyBlockVariant {
+            impl DataVariant {
                 $(
                     #[inline]
                     pub fn [<is_ $variant:snake>](&self) -> bool {
@@ -30,18 +30,18 @@ macro_rules! impl_body_block_variant_matchers {
                     }
 
                     #[inline]
-                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant BodyBlock>]> {
+                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Data>]> {
                         match self {
-                            Self::$variant(block) => Some(block),
+                            Self::$variant(data) => Some(data),
                             _ => None,
                         }
                     }
 
 
                     #[inline]
-                    pub fn [<as_ $variant:snake _mut>](&mut self) -> Option<&mut [<$variant BodyBlock>]> {
+                    pub fn [<as_ $variant:snake _mut>](&mut self) -> Option<&mut [<$variant Data>]> {
                         match self {
-                            Self::$variant(block) => Some(block),
+                            Self::$variant(data) => Some(data),
                             _ => None,
                         }
                     }
@@ -50,4 +50,4 @@ macro_rules! impl_body_block_variant_matchers {
         }
     };
 }
-use impl_body_block_variant_matchers;
+use impl_data_variant_matchers;

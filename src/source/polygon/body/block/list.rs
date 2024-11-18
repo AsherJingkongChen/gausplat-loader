@@ -5,11 +5,11 @@ use bytemuck::{try_cast_slice, try_cast_slice_mut};
 use std::ops;
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ListBodyBlock {
+pub struct ListData {
     inner: Vec<Box<[u8]>>,
 }
 
-impl ListBodyBlock {
+impl ListData {
     #[inline]
     pub fn into_inner(self) -> Vec<Box<[u8]>> {
         self.inner
@@ -39,7 +39,7 @@ impl ListBodyBlock {
     }
 }
 
-impl ops::Deref for ListBodyBlock {
+impl ops::Deref for ListData {
     type Target = Vec<Box<[u8]>>;
 
     #[inline]
@@ -48,7 +48,7 @@ impl ops::Deref for ListBodyBlock {
     }
 }
 
-impl ops::DerefMut for ListBodyBlock {
+impl ops::DerefMut for ListData {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner

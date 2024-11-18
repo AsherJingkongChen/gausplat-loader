@@ -4,11 +4,11 @@ pub use bytemuck::Pod;
 use std::ops;
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ScalarBodyBlock {
+pub struct ScalarData {
     inner: Vec<u8>,
 }
 
-impl ScalarBodyBlock {
+impl ScalarData {
     #[inline]
     pub fn into_inner(self) -> Vec<u8> {
         self.inner
@@ -32,7 +32,7 @@ impl ScalarBodyBlock {
     }
 }
 
-impl ops::Deref for ScalarBodyBlock {
+impl ops::Deref for ScalarData {
     type Target = Vec<u8>;
 
     #[inline]
@@ -41,7 +41,7 @@ impl ops::Deref for ScalarBodyBlock {
     }
 }
 
-impl ops::DerefMut for ScalarBodyBlock {
+impl ops::DerefMut for ScalarData {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner

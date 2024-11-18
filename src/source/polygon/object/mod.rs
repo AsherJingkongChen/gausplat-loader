@@ -21,8 +21,8 @@ impl Decoder for Object {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        use body::{BodyBlock, BodyBlockVariant, ScalarBodyBlock};
-        use head::PropertyBlockVariant;
+        use body::{Data, DataVariant, ScalarData};
+        use head::PropertyMetaVariant;
 
         // Decoding the head
 
@@ -39,9 +39,9 @@ impl Decoder for Object {
                 // Reading the element size
 
                 let element_size = head
-                    .blocks
+                    .meta_map
                     .get(element_id)
-                    .and_then(|block| block.variant.as_element())
+                    .and_then(|meta| meta.variant.as_element())
                     .map(|element| element.size)
                     .expect("Unreachable");
 
@@ -50,9 +50,9 @@ impl Decoder for Object {
                 let properties = property_ids
                     .iter()
                     .filter_map(|property_id| {
-                        head.blocks
+                        head.meta_map
                             .get(property_id)
-                            .and_then(|block| block.variant.as_property())
+                            .and_then(|meta| meta.variant.as_property())
                             .map(|property| &property.variant)
                     })
                     .collect::<Vec<_>>();
@@ -63,22 +63,22 @@ impl Decoder for Object {
                     property_ids.iter().zip(properties.iter()).try_for_each(
                         |(&property_id, property)| {
                             match property {
-                                PropertyBlockVariant::List(list) => {
+                                PropertyMetaVariant::List(list) => {
                                     let count_size = list.count.size;
                                     let value_size = list.value.size;
                                 },
-                                PropertyBlockVariant::Scalar(scalar) => {
+                                PropertyMetaVariant::Scalar(scalar) => {
                                     let property_size = scalar.size;
-                                    let block_size =
+                                    let data_size =
                                         element_size * property_size;
 
-                                    body.blocks
+                                    body.data_map
                                         .entry(property_id)
-                                        .or_insert_with(|| BodyBlock {
+                                        .or_insert_with(|| Data {
                                             id: property_id,
-                                            variant: BodyBlockVariant::Scalar(
-                                                ScalarBodyBlock::with_capacity(
-                                                    block_size,
+                                            variant: DataVariant::Scalar(
+                                                ScalarData::with_capacity(
+                                                    data_size,
                                                 ),
                                             ),
                                         })

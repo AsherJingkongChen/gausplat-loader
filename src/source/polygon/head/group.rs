@@ -1,18 +1,18 @@
 pub use super::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct HeadGroup {
+pub struct Group {
     pub element_to_property_ids: IndexMap<Id, Vec<Id>>,
     pub property_to_element_id: IndexMap<Id, Id>,
 }
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct HeadGroupBuilder {
+pub struct GroupBuilder {
     pub element_id: Option<Id>,
     pub element_id_and_property_id: Vec<(Id, Id)>,
 }
 
-impl HeadGroup {
+impl Group {
     #[inline]
     pub fn get_element_id(
         &self,
@@ -48,7 +48,7 @@ impl HeadGroup {
     }
 }
 
-impl HeadGroupBuilder {
+impl GroupBuilder {
     #[inline]
     pub fn new() -> Self {
         Self::default()
@@ -74,9 +74,9 @@ impl HeadGroupBuilder {
     }
 
     #[inline]
-    pub fn build(self) -> HeadGroup {
+    pub fn build(self) -> Group {
         self.element_id_and_property_id.into_iter().fold(
-            HeadGroup::default(),
+            Group::default(),
             |mut group, (element_id, property_id)| {
                 group.set_property_id(property_id, element_id);
                 group
@@ -91,8 +91,8 @@ mod tests {
 
     #[test]
     fn default_and_new() {
-        let target = HeadGroup::default();
-        let output = HeadGroupBuilder::new().build();
+        let target = Group::default();
+        let output = GroupBuilder::new().build();
         assert_eq!(output, target);
     }
 
@@ -100,7 +100,7 @@ mod tests {
     fn build_on_simple_tree() {
         let source_element_id = Id::new();
         let source_property_ids = [Id::new(), Id::new()];
-        let group = HeadGroupBuilder::default()
+        let group = GroupBuilder::default()
             .set_element_id(source_element_id)
             .add_property_id(source_property_ids[0])
             .unwrap()
@@ -122,13 +122,13 @@ mod tests {
     #[test]
     fn build_on_orphan_property() {
         let target = None;
-        let output = HeadGroupBuilder::default().add_property_id(Id::new());
+        let output = GroupBuilder::default().add_property_id(Id::new());
         assert_eq!(output, target);
     }
 
     #[test]
     fn get_and_set_property_id() {
-        let mut group = HeadGroup::default();
+        let mut group = Group::default();
         let element_id = Id::new();
         let property_id = Id::new();
         group.set_property_id(property_id, element_id);

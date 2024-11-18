@@ -23,7 +23,7 @@ use std::io::{Read, Write};
 ///
 /// ```plaintext
 /// <head> :=
-///     | <start_header> <format-block> [{<head-block>}] <end_header>
+///     | <start_header> <format-meta> [{<meta>}] <end_header>
 ///
 /// <start_header> :=
 ///     | "ply" <newline>
@@ -31,11 +31,11 @@ use std::io::{Read, Write};
 /// <end_header> :=
 ///     | "end_header" <newline>
 ///
-/// <head-block> :=
-///     | "comment " <comment-block>
-///     | "element " <element-block>
-///     | "property " <property-block>
-///     | "obj_info " <obj_info-block>
+/// <meta> :=
+///     | "comment " <comment-meta>
+///     | "element " <element-meta>
+///     | "property " <property-meta>
+///     | "obj_info " <obj_info-meta>
 ///
 /// <newline> :=
 ///     | ["\r"] "\n"
@@ -43,12 +43,12 @@ use std::io::{Read, Write};
 ///
 /// ### Syntax Reference
 ///
-/// - [`FormatBlock`]
+/// - [`FormatMeta`]
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Head {
-    pub blocks: IndexMap<Id, HeadBlock>,
-    pub format: FormatBlock,
-    pub group: HeadGroup,
+    pub format: FormatMeta,
+    pub group: Group,
+    pub meta_map: IndexMap<Id, Meta>,
 }
 
 impl Head {
@@ -67,7 +67,7 @@ impl Decoder for Head {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        use HeadBlockVariant::*;
+        use MetaVariant::*;
 
         if read_any::<[u8; 3]>(reader)? != *Self::SIGNATURE {
             Err(Error::MissingToken(
@@ -78,10 +78,10 @@ impl Decoder for Head {
             Err(Error::MissingToken("<newline>".into()))?;
         }
 
-        let format = FormatBlock::decode(reader)?;
+        let format = FormatMeta::decode(reader)?;
 
-        let mut blocks = IndexMap::default();
-        let mut group_builder = HeadGroupBuilder::default();
+        let mut meta_map = IndexMap::default();
+        let mut group_builder = GroupBuilder::default();
 
         loop {
             let id = Id::new();
@@ -109,7 +109,7 @@ impl Decoder for Head {
                 b"co" => {
                     let keyword_suffix = read_any::<[u8; 6]>(reader)?;
                     match &keyword_suffix {
-                        b"mment " => Ok(Comment(CommentBlock::decode(reader)?)),
+                        b"mment " => Ok(Comment(CommentMeta::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),
                     }
                 },
@@ -118,7 +118,7 @@ impl Decoder for Head {
                     match &keyword_suffix {
                         b"ement " => {
                             group_builder = group_builder.set_element_id(id);
-                            Ok(Element(ElementBlock::decode(reader)?))
+                            Ok(Element(ElementMeta::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
                     }
@@ -131,7 +131,7 @@ impl Decoder for Head {
                                 group_builder.add_property_id(id).ok_or_else(
                                     || Error::MissingToken("element ".into()),
                                 )?;
-                            Ok(Property(PropertyBlock::decode(reader)?))
+                            Ok(Property(PropertyMeta::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
                     }
@@ -139,9 +139,7 @@ impl Decoder for Head {
                 b"ob" => {
                     let keyword_suffix = read_any::<[u8; 7]>(reader)?;
                     match &keyword_suffix {
-                        b"j_info " => {
-                            Ok(ObjInfo(ObjInfoBlock::decode(reader)?))
-                        },
+                        b"j_info " => Ok(ObjInfo(ObjInfoMeta::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),
                     }
                 },
@@ -154,15 +152,15 @@ impl Decoder for Head {
                 )
             })?;
 
-            blocks.insert(id, HeadBlock { id, variant });
+            meta_map.insert(id, Meta { id, variant });
         }
 
         let group = group_builder.build();
 
         Ok(Self {
-            blocks,
             format,
             group,
+            meta_map,
         })
     }
 }
@@ -174,31 +172,31 @@ impl Encoder for Head {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        use HeadBlockVariant::*;
+        use MetaVariant::*;
 
         write_bytes(writer, b"ply")?;
         write_bytes(writer, NEWLINE)?;
 
         self.format.encode(writer)?;
 
-        self.blocks
+        self.meta_map
             .values()
-            .try_for_each(|block| match &block.variant {
-                Comment(block) => {
+            .try_for_each(|meta| match &meta.variant {
+                Comment(meta) => {
                     write_bytes(writer, b"comment ")?;
-                    block.encode(writer)
+                    meta.encode(writer)
                 },
-                Element(block) => {
+                Element(meta) => {
                     write_bytes(writer, b"element ")?;
-                    block.encode(writer)
+                    meta.encode(writer)
                 },
-                Property(block) => {
+                Property(meta) => {
                     write_bytes(writer, b"property ")?;
-                    block.encode(writer)
+                    meta.encode(writer)
                 },
-                ObjInfo(block) => {
+                ObjInfo(meta) => {
                     write_bytes(writer, b"obj_info ")?;
-                    block.encode(writer)
+                    meta.encode(writer)
                 },
             })?;
 
@@ -215,7 +213,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = include_bytes!(
-            "../../../../examples/data/polygon/valid-block.ascii.ply"
+            "../../../../examples/data/polygon/valid-keyword.ascii.ply"
         );
 
         let reader = &mut Cursor::new(source);

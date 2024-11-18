@@ -7,5 +7,5 @@ pub use indexmap::IndexMap;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Body {
-    pub blocks: IndexMap<Id, BodyBlock>,
+    pub data_map: IndexMap<Id, Data>,
 }

@@ -3,8 +3,8 @@ pub use super::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <format-block> :=
-///     | "format " <format-block-variant> [{" "}] <version> <newline>
+/// <format-meta> :=
+///     | "format " <format-meta-variant> [{" "}] <version> <newline>
 ///
 /// <version> :=
 ///     | <ascii-string>
@@ -16,17 +16,17 @@ pub use super::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`FormatBlockVariant`]
+/// - [`FormatMetaVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct FormatBlock {
-    pub variant: FormatBlockVariant,
+pub struct FormatMeta {
+    pub variant: FormatMetaVariant,
     pub version: AsciiString,
 }
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <format-block-variant> :=
+/// <format-meta-variant> :=
 ///     | [{" "}] <format> " "
 ///
 /// <format> :=
@@ -35,25 +35,25 @@ pub struct FormatBlock {
 ///     | "binary_little_endian"
 /// ```
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum FormatBlockVariant {
+pub enum FormatMetaVariant {
     #[default]
     Ascii,
     BinaryBigEndian,
     BinaryLittleEndian,
 }
 
-impl_format_block_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
+impl_format_meta_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
 
-impl FormatBlock {
+impl FormatMeta {
     pub const KEYWORD: &[u8; 7] = b"format ";
 }
 
-impl FormatBlockVariant {
+impl FormatMetaVariant {
     pub const DOMAIN: [&str; 3] =
         ["ascii", "binary_big_endian", "binary_little_endian"];
 }
 
-impl Decoder for FormatBlock {
+impl Decoder for FormatMeta {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
@@ -63,7 +63,7 @@ impl Decoder for FormatBlock {
             ))?;
         }
 
-        let variant = FormatBlockVariant::decode(reader)?;
+        let variant = FormatMetaVariant::decode(reader)?;
 
         let mut version = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<version>".into()))?];
@@ -78,13 +78,13 @@ impl Decoder for FormatBlock {
     }
 }
 
-impl Decoder for FormatBlockVariant {
+impl Decoder for FormatMetaVariant {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let mut variant =
             vec![read_byte_after(reader, is_space)?.ok_or_else(|| {
-                Error::MissingToken("<format-block-variant>".into())
+                Error::MissingToken("<format-meta-variant>".into())
             })?];
         variant.extend(read_bytes_before(reader, is_space, 20)?);
 
@@ -92,14 +92,14 @@ impl Decoder for FormatBlockVariant {
             b"binary_little_endian" => Self::BinaryLittleEndian,
             b"ascii" => Self::Ascii,
             b"binary_big_endian" => Self::BinaryBigEndian,
-            _ => Err(Error::InvalidPolygonFormatBlockVariant(
+            _ => Err(Error::InvalidPolygonFormatMetaVariant(
                 String::from_utf8_lossy(&variant).into_owned(),
             ))?,
         })
     }
 }
 
-impl Default for FormatBlock {
+impl Default for FormatMeta {
     #[inline]
     fn default() -> Self {
         let variant = Default::default();
@@ -108,7 +108,7 @@ impl Default for FormatBlock {
     }
 }
 
-impl Encoder for FormatBlock {
+impl Encoder for FormatMeta {
     type Err = Error;
 
     #[inline]
@@ -125,7 +125,7 @@ impl Encoder for FormatBlock {
     }
 }
 
-impl Encoder for FormatBlockVariant {
+impl Encoder for FormatMetaVariant {
     type Err = Error;
 
     #[inline]
@@ -145,10 +145,10 @@ impl Encoder for FormatBlockVariant {
     }
 }
 
-macro_rules! impl_format_block_variant_matchers {
+macro_rules! impl_format_meta_variant_matchers {
     ($( $variant:ident ),* ) => {
         paste::paste! {
-            impl FormatBlockVariant {
+            impl FormatMetaVariant {
                 $(
                     #[inline]
                     pub fn [<is_ $variant:snake>](&self) -> bool {
@@ -159,7 +159,7 @@ macro_rules! impl_format_block_variant_matchers {
         }
     };
 }
-use impl_format_block_variant_matchers;
+use impl_format_meta_variant_matchers;
 
 #[cfg(test)]
 mod tests {
@@ -169,70 +169,70 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"format ascii 1.0\n");
-        let target = FormatBlock {
-            variant: FormatBlockVariant::Ascii,
+        let target = FormatMeta {
+            variant: FormatMetaVariant::Ascii,
             version: "1.0".into_ascii_string().unwrap(),
         };
-        let output = FormatBlock::decode(source).unwrap();
+        let output = FormatMeta::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"format binary_little_endian 1.0.1\n");
-        let target = FormatBlock {
-            variant: FormatBlockVariant::BinaryLittleEndian,
+        let target = FormatMeta {
+            variant: FormatMetaVariant::BinaryLittleEndian,
             version: "1.0.1".into_ascii_string().unwrap(),
         };
-        let output = FormatBlock::decode(source).unwrap();
+        let output = FormatMeta::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source =
             &mut Cursor::new(b"format    binary_big_endian private    \n");
-        let target = FormatBlock {
-            variant: FormatBlockVariant::BinaryBigEndian,
+        let target = FormatMeta {
+            variant: FormatMetaVariant::BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
         };
-        let output = FormatBlock::decode(source).unwrap();
+        let output = FormatMeta::decode(source).unwrap();
         assert_eq!(output, target);
     }
 
     #[test]
-    fn decode_on_invalid_block() {
+    fn decode_on_invalid_meta() {
         use super::*;
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"format binary_big_endian     ");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format binary_middle_endian 1.0\n");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new("format ascii 1.0+\u{ae}\n".as_bytes());
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"formatascii 1.0\n");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format ascii");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format ");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"fromat ");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"form");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        FormatBlock::decode(source).unwrap_err();
+        FormatMeta::decode(source).unwrap_err();
     }
 
     #[test]
     fn default() {
         use super::*;
 
-        let target = FormatBlockVariant::default();
-        let output = FormatBlock::default();
+        let target = FormatMetaVariant::default();
+        let output = FormatMeta::default();
         assert_eq!(output.variant, target);
 
         let target = "1.0";
@@ -244,29 +244,29 @@ mod tests {
         use super::*;
 
         let target = true;
-        let output = FormatBlockVariant::Ascii.is_ascii();
+        let output = FormatMetaVariant::Ascii.is_ascii();
         assert_eq!(output, target);
 
         let target = true;
-        let output = FormatBlockVariant::BinaryBigEndian.is_binary_big_endian();
+        let output = FormatMetaVariant::BinaryBigEndian.is_binary_big_endian();
         assert_eq!(output, target);
 
         let target = true;
         let output =
-            FormatBlockVariant::BinaryLittleEndian.is_binary_little_endian();
+            FormatMetaVariant::BinaryLittleEndian.is_binary_little_endian();
         assert_eq!(output, target);
 
         let target = false;
-        let output = FormatBlockVariant::BinaryLittleEndian.is_ascii();
+        let output = FormatMetaVariant::BinaryLittleEndian.is_ascii();
         assert_eq!(output, target);
 
         let target = false;
         let output =
-            FormatBlockVariant::BinaryBigEndian.is_binary_little_endian();
+            FormatMetaVariant::BinaryBigEndian.is_binary_little_endian();
         assert_eq!(output, target);
 
         let target = false;
-        let output = FormatBlockVariant::Ascii.is_binary_big_endian();
+        let output = FormatMetaVariant::Ascii.is_binary_big_endian();
         assert_eq!(output, target);
     }
 }

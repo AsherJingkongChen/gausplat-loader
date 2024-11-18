@@ -11,25 +11,25 @@ pub use format::*;
 pub use property::*;
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct HeadBlock {
+pub struct Meta {
     pub id: Id,
-    pub variant: HeadBlockVariant,
+    pub variant: MetaVariant,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum HeadBlockVariant {
-    Element(ElementBlock),
-    Property(PropertyBlock),
-    Comment(CommentBlock),
-    ObjInfo(ObjInfoBlock),
+pub enum MetaVariant {
+    Element(ElementMeta),
+    Property(PropertyMeta),
+    Comment(CommentMeta),
+    ObjInfo(ObjInfoMeta),
 }
 
-impl_head_block_variant_matchers!(Comment, Element, ObjInfo, Property);
+impl_head_meta_variant_matchers!(Comment, Element, ObjInfo, Property);
 
-macro_rules! impl_head_block_variant_matchers {
+macro_rules! impl_head_meta_variant_matchers {
     ($( $variant:ident ),* ) => {
         paste::paste! {
-            impl HeadBlockVariant {
+            impl MetaVariant {
                 $(
                     #[inline]
                     pub fn [<is_ $variant:snake>](&self) -> bool {
@@ -37,9 +37,9 @@ macro_rules! impl_head_block_variant_matchers {
                     }
 
                     #[inline]
-                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Block>]> {
+                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Meta>]> {
                         match self {
-                            Self::$variant(block) => Some(block),
+                            Self::$variant(meta) => Some(meta),
                             _ => None,
                         }
                     }
@@ -48,4 +48,4 @@ macro_rules! impl_head_block_variant_matchers {
         }
     };
 }
-use impl_head_block_variant_matchers;
+use impl_head_meta_variant_matchers;

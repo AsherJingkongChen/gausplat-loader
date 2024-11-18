@@ -3,7 +3,7 @@ pub use super::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <element-block> :=
+/// <element-meta> :=
 ///     | [{" "}] <name> [{" "}] <size> <newline>
 ///
 /// <name> :=
@@ -21,12 +21,12 @@ pub use super::*;
 /// - [`AsciiString`]
 /// - [`usize`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ElementBlock {
+pub struct ElementMeta {
     pub name: AsciiString,
     pub size: usize,
 }
 
-impl Decoder for ElementBlock {
+impl Decoder for ElementMeta {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
@@ -52,7 +52,7 @@ impl Decoder for ElementBlock {
     }
 }
 
-impl Default for ElementBlock {
+impl Default for ElementMeta {
     #[inline]
     fn default() -> Self {
         let name = "default".into_ascii_string().expect("Unreachable");
@@ -61,7 +61,7 @@ impl Default for ElementBlock {
     }
 }
 
-impl Encoder for ElementBlock {
+impl Encoder for ElementMeta {
     type Err = Error;
 
     #[inline]
@@ -86,25 +86,25 @@ mod tests {
 
         let source = &mut Cursor::new(b"color 7\n");
         let target = "color";
-        let output = ElementBlock::decode(source).unwrap();
+        let output = ElementMeta::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = 7;
         assert_eq!(output.size, target);
 
         let source = &mut Cursor::new(b"rgb 888 100\n");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"     point    ");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"vertex 3 \n");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b" ");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
     }
 
     #[test]
@@ -113,7 +113,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new("\u{ae} 3\n".as_bytes());
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
     }
 
     #[test]
@@ -122,10 +122,10 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"none -1\n");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"unicode \x8e\xcd\n");
-        ElementBlock::decode(source).unwrap_err();
+        ElementMeta::decode(source).unwrap_err();
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         use super::*;
 
         let target = "default";
-        let output = ElementBlock::default();
+        let output = ElementMeta::default();
         assert_eq!(output.name, target);
 
         let target = 0;
