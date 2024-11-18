@@ -46,6 +46,8 @@ pub enum PropertyBlockVariant {
     Scalar(ScalarPropertyBlock),
 }
 
+impl_property_block_variant_matchers!(List, Scalar);
+
 impl Decoder for PropertyBlock {
     type Err = Error;
 
@@ -125,6 +127,30 @@ impl Encoder for PropertyBlockVariant {
         }
     }
 }
+
+macro_rules! impl_property_block_variant_matchers {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl PropertyBlockVariant {
+                $(
+                    #[inline]
+                    pub fn [<is_ $variant:snake>](&self) -> bool {
+                        matches!(self, Self::$variant(_))
+                    }
+
+                    #[inline]
+                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant PropertyBlock>]> {
+                        match self {
+                            Self::$variant(block) => Some(block),
+                            _ => None,
+                        }
+                    }
+                )*
+            }
+        }
+    };
+}
+use impl_property_block_variant_matchers;
 
 #[cfg(test)]
 mod tests {

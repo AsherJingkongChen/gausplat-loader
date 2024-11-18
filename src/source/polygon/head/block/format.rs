@@ -42,6 +42,8 @@ pub enum FormatBlockVariant {
     BinaryLittleEndian,
 }
 
+impl_format_block_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
+
 impl FormatBlock {
     pub const KEYWORD: &[u8; 7] = b"format ";
 }
@@ -142,6 +144,22 @@ impl Encoder for FormatBlockVariant {
         write_bytes(writer, SPACE)
     }
 }
+
+macro_rules! impl_format_block_variant_matchers {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl FormatBlockVariant {
+                $(
+                    #[inline]
+                    pub fn [<is_ $variant:snake>](&self) -> bool {
+                        matches!(self, Self::$variant)
+                    }
+                )*
+            }
+        }
+    };
+}
+use impl_format_block_variant_matchers;
 
 #[cfg(test)]
 mod tests {
