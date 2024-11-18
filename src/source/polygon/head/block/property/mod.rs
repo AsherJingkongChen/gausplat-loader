@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(output.name, target);
         let target = PropertyBlockVariant::List(ListPropertyBlock {
             count: UCHAR.to_owned(),
-            entry: INT.to_owned(),
+            value: INT.to_owned(),
         });
         assert_eq!(output.variant, target);
 
@@ -175,7 +175,7 @@ mod tests {
         assert_eq!(output.name, target);
         let target = PropertyBlockVariant::List(ListPropertyBlock {
             count: USHORT.to_owned(),
-            entry: UINT.to_owned(),
+            value: UINT.to_owned(),
         });
         assert_eq!(output.variant, target);
 
@@ -279,6 +279,64 @@ mod tests {
         let target =
             PropertyBlockVariant::Scalar(ScalarPropertyBlock::default());
         let output = PropertyBlockVariant::default();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn matcher_is() {
+        use super::*;
+
+        let target = true;
+        let output =
+            PropertyBlockVariant::List(ListPropertyBlock::default()).is_list();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output =
+            PropertyBlockVariant::Scalar(ScalarPropertyBlock::default())
+                .is_scalar();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output =
+            PropertyBlockVariant::Scalar(ScalarPropertyBlock::default())
+                .is_list();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = PropertyBlockVariant::List(ListPropertyBlock::default())
+            .is_scalar();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn matcher_as() {
+        use super::*;
+
+        let target = Some(ListPropertyBlock::default());
+        let output = PropertyBlockVariant::List(ListPropertyBlock::default())
+            .as_list()
+            .cloned();
+        assert_eq!(output, target);
+
+        let target = Some(ScalarPropertyBlock::default());
+        let output =
+            PropertyBlockVariant::Scalar(ScalarPropertyBlock::default())
+                .as_scalar()
+                .cloned();
+        assert_eq!(output, target);
+
+        let target = None;
+        let output =
+            PropertyBlockVariant::Scalar(ScalarPropertyBlock::default())
+                .as_list()
+                .cloned();
+        assert_eq!(output, target);
+
+        let target = None;
+        let output = PropertyBlockVariant::List(ListPropertyBlock::default())
+            .as_scalar()
+            .cloned();
         assert_eq!(output, target);
     }
 }

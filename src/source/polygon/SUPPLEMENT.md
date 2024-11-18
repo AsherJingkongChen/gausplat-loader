@@ -83,10 +83,10 @@ This is the structure of a supplemented PLY file:
 - There is a special form of <ins>"property"</ins> definitions that uses the <ins class=sup-add>"list data type"</ins>:
 
   ```plaintext
-  property list <count-data-type> <entry-data-type> <property-name>
+  property list <count-data-type> <value-data-type> <property-name>
   ```
 
-  <p class=sup-add>The count and entry data types are specified separately and must be scalar, not list types.</p>
+  <p class=sup-add>The count and value data types are specified separately and must be scalar, not list types.</p>
 
   <p class=sup-add>Here is an example:</p>
 

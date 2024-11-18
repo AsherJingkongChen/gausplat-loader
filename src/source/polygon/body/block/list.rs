@@ -2,13 +2,26 @@ pub use super::*;
 pub use bytemuck::Pod;
 
 use bytemuck::{try_cast_slice, try_cast_slice_mut};
+use std::ops;
 
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ListPropertyBlock {
-    pub inner: Vec<Box<[u8]>>,
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct ListBodyBlock {
+    inner: Vec<Box<[u8]>>,
 }
 
-impl ListPropertyBlock {
+impl ListBodyBlock {
+    #[inline]
+    pub fn into_inner(self) -> Vec<Box<[u8]>> {
+        self.inner
+    }
+
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: Vec::with_capacity(capacity),
+        }
+    }
+
     #[inline]
     pub fn cast_iter<T: Pod>(
         &self
@@ -23,5 +36,21 @@ impl ListPropertyBlock {
         self.inner
             .iter_mut()
             .map(|bytes| Ok(try_cast_slice_mut(bytes)?))
+    }
+}
+
+impl ops::Deref for ListBodyBlock {
+    type Target = Vec<Box<[u8]>>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for ListBodyBlock {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }

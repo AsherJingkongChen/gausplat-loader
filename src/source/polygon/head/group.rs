@@ -2,7 +2,7 @@ pub use super::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct HeadGroup {
-    pub element_to_property_id: IndexMap<Id, Vec<Id>>,
+    pub element_to_property_ids: IndexMap<Id, Vec<Id>>,
     pub property_to_element_id: IndexMap<Id, Id>,
 }
 
@@ -26,7 +26,7 @@ impl HeadGroup {
         &self,
         element_id: Id,
     ) -> Option<&[Id]> {
-        self.element_to_property_id
+        self.element_to_property_ids
             .get(&element_id)
             .map(AsRef::as_ref)
     }
@@ -37,9 +37,11 @@ impl HeadGroup {
         property_id: Id,
         element_id: Id,
     ) -> &mut Self {
-        self.element_to_property_id
+        const CAPACITY_DEFAULT: usize = 8;
+
+        self.element_to_property_ids
             .entry(element_id)
-            .or_insert_with(vec_default_small)
+            .or_insert_with(|| Vec::with_capacity(CAPACITY_DEFAULT))
             .push(property_id);
         self.property_to_element_id.insert(property_id, element_id);
         self
@@ -81,11 +83,6 @@ impl HeadGroupBuilder {
             },
         )
     }
-}
-
-#[inline]
-fn vec_default_small<T>() -> Vec<T> {
-    Vec::with_capacity(4)
 }
 
 #[cfg(test)]

@@ -13,7 +13,7 @@ pub use super::*;
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListPropertyBlock {
     pub count: ScalarPropertyBlock,
-    pub entry: ScalarPropertyBlock,
+    pub value: ScalarPropertyBlock,
 }
 
 impl Decoder for ListPropertyBlock {
@@ -22,8 +22,8 @@ impl Decoder for ListPropertyBlock {
     #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let count = ScalarPropertyBlock::decode(reader)?;
-        let entry = ScalarPropertyBlock::decode(reader)?;
-        Ok(Self { count, entry })
+        let value = ScalarPropertyBlock::decode(reader)?;
+        Ok(Self { count, value })
     }
 }
 
@@ -32,7 +32,7 @@ impl Default for ListPropertyBlock {
     fn default() -> Self {
         Self {
             count: UCHAR.to_owned(),
-            entry: INT.to_owned(),
+            value: INT.to_owned(),
         }
     }
 }
@@ -46,7 +46,7 @@ impl Encoder for ListPropertyBlock {
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
         self.count.encode(writer)?;
-        self.entry.encode(writer)
+        self.value.encode(writer)
     }
 }
 
@@ -58,6 +58,6 @@ mod tests {
 
         let property = ListPropertyBlock::default();
         ScalarPropertyBlock::search(property.count.kind).unwrap();
-        ScalarPropertyBlock::search(property.entry.kind).unwrap();
+        ScalarPropertyBlock::search(property.value.kind).unwrap();
     }
 }

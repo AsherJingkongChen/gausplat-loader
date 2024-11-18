@@ -10,7 +10,7 @@ pub use super::*;
 ///     | <ascii-string> " "
 ///
 /// <size> :=
-///     | <u64>
+///     | <usize>
 ///
 /// <newline> :=
 ///     | ["\r"] "\n"
@@ -19,11 +19,11 @@ pub use super::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`u64`]
+/// - [`usize`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ElementBlock {
     pub name: AsciiString,
-    pub size: u64,
+    pub size: usize,
 }
 
 impl Decoder for ElementBlock {
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_on_invalid_u64_size() {
+    fn decode_on_invalid_usize_size() {
         use super::*;
         use std::io::Cursor;
 

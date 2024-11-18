@@ -54,11 +54,16 @@ use std::{
 /// ```
 #[derive(Clone, Debug)]
 pub struct IndexMap<K, V, S = RandomState> {
-    pub inner: IndexMapInner<K, V, S>,
-    pub rng: StdRng,
+    inner: IndexMapInner<K, V, S>,
+    rng: StdRng,
 }
 
 impl<K, V, S> IndexMap<K, V, S> {
+    #[inline]
+    pub fn into_inner(self) -> IndexMapInner<K, V, S> {
+        self.inner
+    }
+
     #[inline]
     pub fn seed(
         &mut self,
@@ -395,6 +400,17 @@ mod tests {
         let target = Some(67.8);
         map.insert(-123, 67.8);
         let output = map.get_random_value_mut().copied();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn into_inner() {
+        use super::*;
+
+        let map = IndexMap::<u8, f32>::default();
+
+        let target = map.is_empty();
+        let output = map.into_inner().is_empty();
         assert_eq!(output, target);
     }
 

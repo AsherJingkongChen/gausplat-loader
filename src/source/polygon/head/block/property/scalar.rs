@@ -65,14 +65,14 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarPropertyBlock {
     pub kind: AsciiString,
-    pub size: u64,
+    pub size: usize,
 }
 
 impl ScalarPropertyBlock {
     #[inline]
     pub fn new<K: AsRef<[u8]>>(
         kind: K,
-        size: u64,
+        size: usize,
     ) -> Result<Self, Error> {
         let kind = kind.as_ref().into_ascii_string().map_err(|err| {
             Error::InvalidAscii(
@@ -85,7 +85,7 @@ impl ScalarPropertyBlock {
     #[inline]
     pub fn register<K: AsRef<[u8]>>(
         kind: K,
-        size: u64,
+        size: usize,
     ) -> Result<Option<ScalarPropertyBlock>, Error> {
         let kind = kind.as_ref();
 

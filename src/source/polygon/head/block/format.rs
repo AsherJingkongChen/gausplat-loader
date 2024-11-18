@@ -238,4 +238,35 @@ mod tests {
         let target = "1.0";
         assert_eq!(output.version, target);
     }
+
+    #[test]
+    fn matcher_is() {
+        use super::*;
+
+        let target = true;
+        let output = FormatBlockVariant::Ascii.is_ascii();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = FormatBlockVariant::BinaryBigEndian.is_binary_big_endian();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output =
+            FormatBlockVariant::BinaryLittleEndian.is_binary_little_endian();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = FormatBlockVariant::BinaryLittleEndian.is_ascii();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output =
+            FormatBlockVariant::BinaryBigEndian.is_binary_little_endian();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = FormatBlockVariant::Ascii.is_binary_big_endian();
+        assert_eq!(output, target);
+    }
 }
