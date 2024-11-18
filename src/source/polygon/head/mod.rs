@@ -1,19 +1,19 @@
-pub mod meta;
 pub mod group;
+pub mod meta;
 
 pub use super::object::Id;
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
-pub use meta::*;
 pub use group::*;
 pub use indexmap::IndexMap;
+pub use meta::*;
 
 use crate::function::{
     decode::{
-        is_space, read_any, read_byte_after, read_bytes_before,
-        read_bytes_before_newline,
+        is_space, read_byte_after, read_bytes_before,
+        read_bytes_before_newline, read_bytes_const,
     },
     encode::{write_bytes, NEWLINE, SPACE},
 };
@@ -69,7 +69,7 @@ impl Decoder for Head {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use MetaVariant::*;
 
-        if read_any::<[u8; 3]>(reader)? != *Self::SIGNATURE {
+        if read_bytes_const(reader)? != *Self::SIGNATURE {
             Err(Error::MissingToken(
                 String::from_utf8(Self::SIGNATURE.into()).expect("Unreachable"),
             ))?;
@@ -86,10 +86,10 @@ impl Decoder for Head {
         loop {
             let id = Id::new();
 
-            let keyword_prefix = read_any::<[u8; 2]>(reader)?;
+            let keyword_prefix = read_bytes_const(reader)?;
             let variant = match &keyword_prefix {
                 b"en" => {
-                    let keyword_suffix = read_any::<[u8; 8]>(reader)?;
+                    let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"d_header" => {
                             match read_bytes_before_newline(reader, 0)?
@@ -107,14 +107,14 @@ impl Decoder for Head {
                     }
                 },
                 b"co" => {
-                    let keyword_suffix = read_any::<[u8; 6]>(reader)?;
+                    let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"mment " => Ok(Comment(CommentMeta::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"el" => {
-                    let keyword_suffix = read_any::<[u8; 6]>(reader)?;
+                    let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
                             group_builder = group_builder.set_element_id(id);
@@ -124,7 +124,7 @@ impl Decoder for Head {
                     }
                 },
                 b"pr" => {
-                    let keyword_suffix = read_any::<[u8; 7]>(reader)?;
+                    let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
                             group_builder =
@@ -137,7 +137,7 @@ impl Decoder for Head {
                     }
                 },
                 b"ob" => {
-                    let keyword_suffix = read_any::<[u8; 7]>(reader)?;
+                    let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"j_info " => Ok(ObjInfo(ObjInfoMeta::decode(reader)?)),
                         _ => Err(keyword_suffix.into()),

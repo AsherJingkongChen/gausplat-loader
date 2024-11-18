@@ -57,7 +57,7 @@ impl Decoder for FormatMeta {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        if read_any::<[u8; 7]>(reader)? != *Self::KEYWORD {
+        if read_bytes_const(reader)? != *Self::KEYWORD {
             Err(Error::MissingToken(
                 String::from_utf8(Self::KEYWORD.into()).expect("Unreachable"),
             ))?;

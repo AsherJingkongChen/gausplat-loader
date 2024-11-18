@@ -1,11 +1,4 @@
-pub use super::Image;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-
-use crate::function::{read_any, write_any};
-use std::io::{BufReader, BufWriter, Read, Write};
+pub use super::*;
 
 pub type Images = crate::collection::IndexMap<u32, Image>;
 
@@ -15,7 +8,7 @@ impl Decoder for Images {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
 
-        let image_count = read_any::<u64>(reader)? as usize;
+        let image_count = reader.read_u64::<LE>()?;
         let images = (0..image_count)
             .map(|_| {
                 let image = Image::decode(reader)?;
@@ -39,7 +32,7 @@ impl Encoder for Images {
     ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        write_any(writer, &(self.len() as u64))?;
+        writer.write_u64::<LE>(self.len() as u64)?;
         self.values().try_for_each(|image| image.encode(writer))?;
 
         #[cfg(debug_assertions)]

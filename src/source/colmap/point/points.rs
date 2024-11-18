@@ -1,11 +1,4 @@
-pub use super::Point;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-
-use crate::function::{advance, read_any, write_any};
-use std::io::{BufReader, BufWriter, Read, Write};
+pub use super::*;
 
 pub type Points = Vec<Point>;
 
@@ -15,11 +8,12 @@ impl Decoder for Points {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
 
-        let point_count = read_any::<u64>(reader)? as usize;
+        let point_count = reader.read_u64::<LE>()?;
         let points = (0..point_count)
             .map(|_| {
                 // Skip point id
                 advance(reader, 8)?;
+
                 Point::decode(reader)
             })
             .collect();
@@ -40,12 +34,13 @@ impl Encoder for Points {
     ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        write_any(writer, &(self.len() as u64))?;
+        writer.write_u64::<LE>(self.len() as u64)?;
         self.iter()
             .enumerate()
             .try_for_each(|(point_index, point)| {
                 // Write point index to point id
-                write_any(writer, &(point_index as u64))?;
+                writer.write_u64::<LE>(point_index as u64)?;
+
                 point.encode(writer)
             })?;
 

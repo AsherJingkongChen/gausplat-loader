@@ -6,8 +6,8 @@ pub use crate::{
 };
 pub use cameras::*;
 
-use crate::function::{read_any, write_any};
-use std::io::{Read, Write};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Camera {
@@ -69,16 +69,18 @@ impl Decoder for Camera {
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use CameraVariant::*;
 
-        let [camera_id, model_id] = read_any::<[u32; 2]>(reader)?;
-        let [width, height] = read_any::<[u64; 2]>(reader)?;
+        let camera_id = reader.read_u32::<LE>()?;
+        let model_id = reader.read_u32::<LE>()?;
+        let width = reader.read_u64::<LE>()?;
+        let height = reader.read_u64::<LE>()?;
         let variant = match model_id {
             0 => {
-                let focal_length = read_any::<f64>(reader)?;
+                let focal_length = reader.read_f64::<LE>()?;
                 SimplePinhole { focal_length }
             },
             1 => {
-                let [focal_length_x, focal_length_y] =
-                    read_any::<[f64; 2]>(reader)?;
+                let focal_length_x = reader.read_f64::<LE>()?;
+                let focal_length_y = reader.read_f64::<LE>()?;
                 Pinhole {
                     focal_length_x,
                     focal_length_y,
@@ -86,8 +88,8 @@ impl Decoder for Camera {
             },
             _ => Err(Error::InvalidCameraModelId(model_id))?,
         };
-        let [principal_point_x, principal_point_y] =
-            read_any::<[f64; 2]>(reader)?;
+        let principal_point_x = reader.read_f64::<LE>()?;
+        let principal_point_y = reader.read_f64::<LE>()?;
 
         Ok(Self {
             camera_id,
@@ -109,18 +111,24 @@ impl Encoder for Camera {
     ) -> Result<(), Self::Err> {
         use CameraVariant::*;
 
-        write_any(writer, &[self.camera_id, self.model_id()])?;
-        write_any(writer, &[self.width, self.height])?;
+        writer.write_u32::<LE>(self.camera_id)?;
+        writer.write_u32::<LE>(self.model_id())?;
+        writer.write_u64::<LE>(self.width)?;
+        writer.write_u64::<LE>(self.height)?;
         match self.variant {
             SimplePinhole { focal_length } => {
-                write_any(writer, &[focal_length])
+                writer.write_f64::<LE>(focal_length)
             },
             Pinhole {
                 focal_length_x,
                 focal_length_y,
-            } => write_any(writer, &[focal_length_x, focal_length_y]),
+            } => {
+                writer.write_f64::<LE>(focal_length_x)?;
+                writer.write_f64::<LE>(focal_length_y)
+            },
         }?;
-        write_any(writer, &[self.principal_point_x, self.principal_point_y])?;
+        writer.write_f64::<LE>(self.principal_point_x)?;
+        writer.write_f64::<LE>(self.principal_point_y)?;
 
         Ok(())
     }

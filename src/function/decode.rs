@@ -1,5 +1,4 @@
 pub use crate::error::Error;
-pub use bytemuck::Pod;
 
 use super::SPACE;
 use std::io::Read;
@@ -36,22 +35,24 @@ pub const fn is_space(byte: u8) -> bool {
     byte == SPACE[0]
 }
 
-/// Reading any type of data.
+/// Reading `N` bytes.
 #[inline]
-pub fn read_any<T: Pod>(reader: &mut impl Read) -> Result<T, Error> {
-    let bytes = &mut vec![0; std::mem::size_of::<T>()];
-    reader.read_exact(bytes)?;
+pub fn read_bytes_const<const N: usize>(
+    reader: &mut impl Read
+) -> Result<[u8; N], Error> {
+    let mut bytes = [0; N];
+    reader.read_exact(&mut bytes)?;
 
-    Ok(*bytemuck::from_bytes::<T>(bytes))
+    Ok(bytes)
 }
 
-/// Reading `size` bytes.
+/// Reading `n` bytes.
 #[inline]
 pub fn read_bytes(
     reader: &mut impl Read,
-    size: usize,
+    n: usize,
 ) -> Result<Vec<u8>, Error> {
-    let mut bytes = vec![0; size];
+    let mut bytes = vec![0; n];
     reader.read_exact(&mut bytes)?;
 
     Ok(bytes)
@@ -127,23 +128,23 @@ mod tests {
         ]);
 
         advance(reader, 4).unwrap();
-        let output = read_any::<u32>(reader).unwrap();
-        let target = 0x00500004;
+        let output = read_bytes_const(reader).unwrap();
+        let target = [0x04, 0x00, 0x50, 0x00];
         assert_eq!(output, target);
 
         advance(reader, 4).unwrap_err();
     }
 
     #[test]
-    fn read_any() {
+    fn read_bytes_const() {
         use super::*;
 
         let source =
             include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
         let reader = &mut std::io::Cursor::new(source);
 
-        let target = [20241109, 131452000];
-        let output = read_any::<[u32; 2]>(reader).unwrap();
+        let target = [0xd5, 0xda, 0x34, 0x01, 0x60, 0xcc, 0xd5, 0x07];
+        let output = read_bytes_const(reader).unwrap();
         assert_eq!(output, target);
     }
 

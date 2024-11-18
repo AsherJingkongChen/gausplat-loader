@@ -1,11 +1,4 @@
-pub use super::Camera;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-
-use crate::function::{read_any, write_any};
-use std::io::{BufReader, BufWriter, Read, Write};
+pub use super::*;
 
 pub type Cameras = crate::collection::IndexMap<u32, Camera>;
 
@@ -14,8 +7,8 @@ impl Decoder for Cameras {
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
-        let camera_count = read_any::<u64>(reader)? as usize;
 
+        let camera_count = reader.read_u64::<LE>()?;
         let cameras = (0..camera_count)
             .map(|_| {
                 let camera = Camera::decode(reader)?;
@@ -39,7 +32,7 @@ impl Encoder for Cameras {
     ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        write_any(writer, &(self.len() as u64))?;
+        writer.write_u64::<LE>(self.len() as u64)?;
         self.values().try_for_each(|camera| camera.encode(writer))?;
 
         #[cfg(debug_assertions)]
