@@ -1,4 +1,4 @@
-pub mod block;
+pub mod meta;
 pub mod group;
 
 pub use super::object::Id;
@@ -6,7 +6,7 @@ pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
-pub use block::*;
+pub use meta::*;
 pub use group::*;
 pub use indexmap::IndexMap;
 

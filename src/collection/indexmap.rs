@@ -294,7 +294,7 @@ where
     S1: BuildHasher,
     S2: BuildHasher,
 {
-    /// Return `true` if [`self.inner`](IndexMap::inner) is equal to `other.inner`.
+    /// Return `true` if the underlying maps are equal.
     #[inline]
     fn eq(
         &self,
