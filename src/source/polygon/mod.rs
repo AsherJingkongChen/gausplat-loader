@@ -22,7 +22,7 @@ pub mod object;
 pub use body::Body;
 pub use head::Head;
 
-macro_rules! impl_map_filters {
+macro_rules! impl_map_accessors {
     ($subject:ident, $( $map:ident ),* ) => {
         paste::paste! {
             $(
@@ -71,7 +71,7 @@ macro_rules! impl_map_filters {
         }
     };
 }
-use impl_map_filters;
+use impl_map_accessors;
 
 macro_rules! impl_variant_matchers {
     ($subject:ident, $( $variant:ident ),* ) => {

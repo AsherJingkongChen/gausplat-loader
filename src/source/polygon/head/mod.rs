@@ -10,7 +10,7 @@ pub use group::*;
 pub use indexmap::IndexMap;
 pub use meta::*;
 
-use super::{impl_map_filters, impl_variant_matchers};
+use super::{impl_map_accessors, impl_variant_matchers};
 use crate::function::{
     decode::{
         is_space, read_byte_after, read_bytes_before,
@@ -53,7 +53,23 @@ pub struct Head {
 }
 
 impl Head {
-    impl_map_filters!(Meta, Comment, Element, ObjInfo, Property);
+    pub const KEYWORDS: [&str; 5] = [
+        "comment ",
+        "element ",
+        "end_header",
+        "property ",
+        "obj_info ",
+    ];
+    pub const SIGNATURE: &[u8; 3] = b"ply";
+
+    impl_map_accessors!(Meta, Comment, Element, ObjInfo, Property);
+
+    pub fn remove_comment(
+        &mut self,
+        id: &Id,
+    ) -> Option<Meta> {
+        self.meta_map.shift_remove(id)
+    }
 
     #[inline]
     pub const fn get_format(&self) -> FormatMetaVariant {
@@ -65,6 +81,18 @@ impl Head {
         &mut self,
         variant: FormatMetaVariant,
     ) {
+        let is_same_endian = match variant {
+            BinaryLittleEndian => self.is_format_binary_little_endian(),
+            Ascii => self.is_format_ascii(),
+            BinaryBigEndian => self.is_format_binary_big_endian(),
+        };
+        if !is_same_endian {
+            log::warn!(
+                target: "gausplat-loader::source::polygon::head",
+                "The format is changed to {variant:?}. The data may be corrupted.",
+            );
+        }
+
         self.format.variant = variant;
     }
 
@@ -79,41 +107,13 @@ impl Head {
         version: S,
     ) -> Result<(), Error> {
         self.format.version =
-        version.as_ref().into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(err.into_source()).into_owned(),
-            )
-        })?;
+            version.as_ref().into_ascii_string().map_err(|err| {
+                Error::InvalidAscii(
+                    String::from_utf8_lossy(err.into_source()).into_owned(),
+                )
+            })?;
         Ok(())
     }
-}
-
-impl_head_format_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
-macro_rules! impl_head_format_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl Head {
-                $(
-                    #[inline]
-                    pub const fn [<is_format_ $variant:snake>](&self) -> bool {
-                        matches!(self.format.variant, FormatMetaVariant::$variant)
-                    }
-                )*
-            }
-        }
-    };
-}
-use impl_head_format_matchers;
-
-impl Head {
-    pub const KEYWORD_DOMAIN: [&str; 5] = [
-        "comment ",
-        "element ",
-        "end_header",
-        "property ",
-        "obj_info ",
-    ];
-    pub const SIGNATURE: &[u8; 3] = b"ply";
 
     #[inline]
     pub fn iter_element_and_property(
@@ -152,6 +152,32 @@ impl Head {
     }
 }
 
+impl_head_format_matchers_and_setters!(
+    Ascii,
+    BinaryBigEndian,
+    BinaryLittleEndian
+);
+macro_rules! impl_head_format_matchers_and_setters {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl Head {
+                $(
+                    #[inline]
+                    pub const fn [<is_format_ $variant:snake>](&self) -> bool {
+                        matches!(self.format.variant, FormatMetaVariant::$variant)
+                    }
+
+                    #[inline]
+                    pub fn [<set_format_ $variant:snake>](&mut self) {
+                        self.set_format(FormatMetaVariant::$variant);
+                    }
+                )*
+            }
+        }
+    };
+}
+use impl_head_format_matchers_and_setters;
+
 impl Decoder for Head {
     type Err = Error;
 
@@ -180,7 +206,9 @@ impl Decoder for Head {
                     match &keyword_suffix {
                         b"operty " => {
                             // NOTE: Inserting the most recent element.
-                            if let Some(variant) = group.take_element().map(Element) {
+                            if let Some(variant) =
+                                group.take_element().map(Element)
+                            {
                                 let id = Id::new();
                                 group.set_element_id(id);
                                 meta_map.insert(id, Meta { id, variant });
@@ -413,6 +441,16 @@ mod tests {
         head.set_format(target);
         let output = head.get_format();
         assert_eq!(output, target);
+
+        let target = FormatMetaVariant::Ascii;
+        head.set_format_ascii();
+        let output = head.get_format();
+        assert_eq!(output, target);
+
+        let target = FormatMetaVariant::BinaryLittleEndian;
+        head.set_format_binary_little_endian();
+        let output = head.get_format();
+        assert_eq!(output, target);
     }
 
     #[test]
@@ -431,5 +469,33 @@ mod tests {
         assert_eq!(output, target);
 
         head.set_version("private+\u{ae}").unwrap_err();
+    }
+
+    #[test]
+    fn remove_comment_on_all() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/another-cube.greg-turk.ascii.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let mut head = Head::decode(reader).unwrap();
+
+        let target = true;
+        let output = head.iter_comment().next().is_some();
+        assert_eq!(output, target);
+
+        head.iter_comment()
+            .map(|(id, _)| *id)
+            .collect::<Vec<_>>()
+            .into_iter()
+            .for_each(|id| {
+                head.remove_comment(&id).unwrap();
+            });
+        
+        let target = false;
+        let output = head.iter_comment().next().is_some();
+        assert_eq!(output, target);
     }
 }

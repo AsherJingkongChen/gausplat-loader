@@ -28,7 +28,7 @@ pub enum Error {
 
     #[error(
         "Invalid polygon keyword: {0:?}. It should be one of {:?}.",
-        Head::KEYWORD_DOMAIN
+        Head::KEYWORDS
     )]
     InvalidPolygonKeyword(String),
 

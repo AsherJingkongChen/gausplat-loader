@@ -33,7 +33,7 @@ define_scalar_property!(ULONG, 8);
 
 /// A hash map whose key is the kind of scalar property,
 /// which is guaranteed to be an ASCII string.
-static SCALAR_PROPERTY_DOMAIN: LazyLock<
+static SCALAR_PROPERTIES: LazyLock<
     RwLock<HashMap<Box<[u8]>, ScalarPropertyMeta>>,
 > = LazyLock::new(|| {
     [
@@ -105,7 +105,7 @@ impl ScalarPropertyMeta {
             ))?;
         }
 
-        Ok(SCALAR_PROPERTY_DOMAIN
+        Ok(SCALAR_PROPERTIES
             .write()
             .expect("Poisoned")
             .insert(kind.into(), ScalarPropertyMeta::new(kind, size)?))
@@ -113,7 +113,7 @@ impl ScalarPropertyMeta {
 
     #[inline]
     pub fn search<K: AsRef<[u8]>>(kind: K) -> Option<ScalarPropertyMeta> {
-        SCALAR_PROPERTY_DOMAIN
+        SCALAR_PROPERTIES
             .read()
             .expect("Poisoned")
             .get(kind.as_ref())
@@ -136,7 +136,7 @@ impl ScalarPropertyMeta {
             None?;
         }
 
-        SCALAR_PROPERTY_DOMAIN
+        SCALAR_PROPERTIES
             .write()
             .expect("Poisoned")
             .remove(kind)

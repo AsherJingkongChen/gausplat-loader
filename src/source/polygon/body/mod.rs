@@ -5,7 +5,7 @@ pub use crate::error::Error;
 pub use data::*;
 pub use indexmap::IndexMap;
 
-use super::{impl_map_filters, impl_variant_matchers};
+use super::{impl_map_accessors, impl_variant_matchers};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Body {
@@ -13,7 +13,7 @@ pub struct Body {
 }
 
 impl Body {
-    impl_map_filters!(Data, List, Scalar);
+    impl_map_accessors!(Data, List, Scalar);
 
     #[inline]
     pub fn property_count(&self) -> usize {

@@ -1,4 +1,5 @@
 pub use super::*;
+pub use FormatMetaVariant::*;
 
 /// ## Syntax
 ///
@@ -87,9 +88,9 @@ impl Decoder for FormatMetaVariant {
         variant.extend(read_bytes_before(reader, is_space, 20)?);
 
         Ok(match variant.as_slice() {
-            b"binary_little_endian" => Self::BinaryLittleEndian,
-            b"ascii" => Self::Ascii,
-            b"binary_big_endian" => Self::BinaryBigEndian,
+            b"binary_little_endian" => BinaryLittleEndian,
+            b"ascii" => Ascii,
+            b"binary_big_endian" => BinaryBigEndian,
             _ => Err(Error::InvalidPolygonFormatMetaVariant(
                 String::from_utf8_lossy(&variant).into_owned(),
             ))?,
@@ -132,9 +133,9 @@ impl Encoder for FormatMetaVariant {
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
         writer.write_all(match self {
-            Self::BinaryLittleEndian => b"binary_little_endian",
-            Self::Ascii => b"ascii",
-            Self::BinaryBigEndian => b"binary_big_endian",
+            BinaryLittleEndian => b"binary_little_endian",
+            Ascii => b"ascii",
+            BinaryBigEndian => b"binary_big_endian",
         })?;
         Ok(writer.write_all(SPACE)?)
     }
@@ -149,7 +150,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"format ascii 1.0\n");
         let target = FormatMeta {
-            variant: FormatMetaVariant::Ascii,
+            variant: Ascii,
             version: "1.0".into_ascii_string().unwrap(),
         };
         let output = FormatMeta::decode(source).unwrap();
@@ -157,7 +158,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"format binary_little_endian 1.0.1\n");
         let target = FormatMeta {
-            variant: FormatMetaVariant::BinaryLittleEndian,
+            variant: BinaryLittleEndian,
             version: "1.0.1".into_ascii_string().unwrap(),
         };
         let output = FormatMeta::decode(source).unwrap();
@@ -166,7 +167,7 @@ mod tests {
         let source =
             &mut Cursor::new(b"format    binary_big_endian private    \n");
         let target = FormatMeta {
-            variant: FormatMetaVariant::BinaryBigEndian,
+            variant: BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
         };
         let output = FormatMeta::decode(source).unwrap();

@@ -25,10 +25,7 @@ impl Decoder for Object {
         use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
 
         let head = Head::decode(reader)?;
-
-        if head.is_format_ascii() {
-            unimplemented!("TODO: Decoding on ascii format");
-        }
+        assert!(!head.is_format_ascii(), "TODO: Decoding on ascii format");
 
         let mut body = Body::default();
 
@@ -93,11 +90,11 @@ impl Encoder for Object {
     ) -> Result<(), Self::Err> {
         use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
 
-        if self.head.is_format_ascii() {
-            unimplemented!("TODO: Encoding on ascii format");
-        }
-
         self.head.encode(writer)?;
+        assert!(
+            !self.head.is_format_ascii(),
+            "TODO: Encoding on ascii format"
+        );
 
         self.head.iter_element_and_property().try_for_each(
             |((_, element), properties)| {
