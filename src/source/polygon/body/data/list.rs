@@ -11,15 +11,15 @@ pub struct ListData {
 
 impl ListData {
     #[inline]
-    pub fn into_inner(self) -> Vec<Box<[u8]>> {
-        self.inner
-    }
-
-    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             inner: Vec::with_capacity(capacity),
         }
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> Vec<Box<[u8]>> {
+        self.inner
     }
 
     #[inline]

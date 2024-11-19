@@ -2,17 +2,25 @@ pub use super::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Group {
-    pub element_to_property_ids: IndexMap<Id, Vec<Id>>,
-    pub property_to_element_id: IndexMap<Id, Id>,
+    element_to_property_ids: IndexMap<Id, Vec<Id>>,
+    property_to_element_id: IndexMap<Id, Id>,
 }
 
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GroupBuilder {
     pub element_id: Option<Id>,
     pub element_id_and_property_id: Vec<(Id, Id)>,
 }
 
 impl Group {
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            element_to_property_ids: IndexMap::with_capacity(2),
+            property_to_element_id: IndexMap::with_capacity(capacity),
+        }
+    }
+
     #[inline]
     pub fn get_element_id(
         &self,
@@ -37,23 +45,27 @@ impl Group {
         property_id: Id,
         element_id: Id,
     ) -> &mut Self {
-        const CAPACITY_DEFAULT: usize = 8;
-
         self.element_to_property_ids
             .entry(element_id)
-            .or_insert_with(|| Vec::with_capacity(CAPACITY_DEFAULT))
+            .or_insert_with(|| Vec::with_capacity(8))
             .push(property_id);
         self.property_to_element_id.insert(property_id, element_id);
         self
     }
+
+    #[inline]
+    pub fn iter_element_and_property_ids(
+        &self
+    ) -> impl Iterator<Item = (&Id, &[Id])> {
+        self.element_to_property_ids
+            .iter()
+            .map(|(element_id, property_ids)| {
+                (element_id, property_ids.as_ref())
+            })
+    }
 }
 
 impl GroupBuilder {
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     #[inline]
     pub fn add_property_id(
         mut self,
@@ -75,8 +87,10 @@ impl GroupBuilder {
 
     #[inline]
     pub fn build(self) -> Group {
+        let property_count = self.element_id_and_property_id.len();
+
         self.element_id_and_property_id.into_iter().fold(
-            Group::default(),
+            Group::with_capacity(property_count),
             |mut group, (element_id, property_id)| {
                 group.set_property_id(property_id, element_id);
                 group
@@ -85,19 +99,23 @@ impl GroupBuilder {
     }
 }
 
+impl Default for GroupBuilder {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            element_id: None,
+            element_id_and_property_id: Vec::with_capacity(8),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn default_and_new() {
-        let target = Group::default();
-        let output = GroupBuilder::new().build();
-        assert_eq!(output, target);
-    }
 
     #[test]
     fn build_on_simple_tree() {
+        use super::*;
+
         let source_element_id = Id::new();
         let source_property_ids = [Id::new(), Id::new()];
         let group = GroupBuilder::default()
@@ -121,6 +139,8 @@ mod tests {
 
     #[test]
     fn build_on_misplaced_property() {
+        use super::*;
+
         let target = None;
         let output = GroupBuilder::default().add_property_id(Id::new());
         assert_eq!(output, target);
@@ -128,6 +148,8 @@ mod tests {
 
     #[test]
     fn get_and_set_property_id() {
+        use super::*;
+
         let mut group = Group::default();
         let element_id = Id::new();
         let property_id = Id::new();

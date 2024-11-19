@@ -134,12 +134,12 @@ macro_rules! impl_property_meta_variant_matchers {
             impl PropertyMetaVariant {
                 $(
                     #[inline]
-                    pub fn [<is_ $variant:snake>](&self) -> bool {
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
                         matches!(self, Self::$variant(_))
                     }
 
                     #[inline]
-                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant PropertyMeta>]> {
+                    pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant PropertyMeta>]> {
                         match self {
                             Self::$variant(meta) => Some(meta),
                             _ => None,

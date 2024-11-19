@@ -61,6 +61,47 @@ impl Head {
     ];
 
     pub const SIGNATURE: &[u8; 3] = b"ply";
+
+    #[inline]
+    pub fn iter_elements(&self) -> impl Iterator<Item = (&Id, &ElementMeta)> {
+        self.iter_elements_and_properties().map(|(meta, _)| meta)
+    }
+
+    #[inline]
+    pub fn iter_elements_and_properties(
+        &self
+    ) -> impl Iterator<
+        Item = (
+            (&Id, &ElementMeta),
+            impl Iterator<Item = (&Id, &PropertyMeta)>,
+        ),
+    > {
+        self.group.iter_element_and_property_ids().map(
+            |(element_id, property_ids)| {
+                let element = self
+                    .meta_map
+                    .get(element_id)
+                    .expect("Unreachable")
+                    .variant
+                    .as_element()
+                    .expect("Unreachable");
+
+                let properties = property_ids.iter().map(|property_id| {
+                    (
+                        property_id,
+                        self.meta_map
+                            .get(property_id)
+                            .expect("Unreachable")
+                            .variant
+                            .as_property()
+                            .expect("Unreachable"),
+                    )
+                });
+
+                ((element_id, element), properties)
+            },
+        )
+    }
 }
 
 impl Decoder for Head {
@@ -80,8 +121,8 @@ impl Decoder for Head {
 
         let format = FormatMeta::decode(reader)?;
 
-        let mut meta_map = IndexMap::default();
-        let mut group_builder = GroupBuilder::default();
+        let mut meta_map = IndexMap::with_capacity(16);
+        let mut group = GroupBuilder::default();
 
         loop {
             let id = Id::new();
@@ -92,10 +133,10 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
-                            group_builder =
-                                group_builder.add_property_id(id).ok_or_else(
-                                    || Error::MissingToken("element ".into()),
-                                )?;
+                            group =
+                                group.add_property_id(id).ok_or_else(|| {
+                                    Error::MissingToken("element ".into())
+                                })?;
                             Ok(Property(PropertyMeta::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -105,7 +146,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            group_builder = group_builder.set_element_id(id);
+                            group = group.set_element_id(id);
                             Ok(Element(ElementMeta::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -155,7 +196,7 @@ impl Decoder for Head {
             meta_map.insert(id, Meta { id, variant });
         }
 
-        let group = group_builder.build();
+        let group = group.build();
 
         Ok(Self {
             format,

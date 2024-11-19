@@ -9,12 +9,8 @@ pub use id::*;
 pub use indexmap::IndexMap;
 
 use crate::function::read_bytes;
-use body::{Data, DataVariant, ListData, ScalarData};
 use byteorder::{ReadBytesExt, WriteBytesExt, BE, LE};
-use std::{
-    io::{Read, Write},
-    ops::Mul,
-};
+use std::io::{Read, Write};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Object {
@@ -40,100 +36,51 @@ impl Decoder for Object {
 
         let mut body = Body::default();
 
-        // Reading each element
+        head.iter_elements_and_properties().try_for_each(
+            |((_, element), properties)| {
+                let property_variants = properties
+                    .map(|(id, property)| (id, &property.variant))
+                    .collect::<Box<[_]>>();
 
-        head.group.element_to_property_ids.iter().try_for_each(
-            |(element_id, property_ids)| {
-                // Reading the element size
+                (0..element.size).try_for_each(|_| {
+                    property_variants.iter().try_for_each(|(&id, property)| {
+                        match property {
+                            PropertyMetaVariant::Scalar(scalar) => {
+                                let property_size = scalar.size;
+                                let data_size = element.size * property_size;
+                                let value = read_bytes(reader, property_size)?;
 
-                let element_size = head
-                    .meta_map
-                    .get(element_id)
-                    .and_then(|meta| meta.variant.as_element())
-                    .map(|element| element.size)
-                    .expect("Unreachable");
+                                body.get_scalar_mut(id, data_size)
+                                    .expect("Unreachable")
+                                    .extend(value);
+                            },
+                            PropertyMetaVariant::List(list) => {
+                                let count_size = list.count.size;
+                                let value_count: usize =
+                                    match head.format.variant {
+                                        BinaryLittleEndian => {
+                                            reader.read_uint::<LE>(count_size)
+                                        },
+                                        Ascii => unreachable!(),
+                                        BinaryBigEndian => {
+                                            reader.read_uint::<BE>(count_size)
+                                        },
+                                    }?
+                                    .try_into()?;
+                                let value_size = list.value.size;
+                                let property_size = value_size * value_count;
+                                let data_size_estimated = element.size
+                                    * property_size.max(value_size);
+                                let value = read_bytes(reader, property_size)?;
 
-                // Reading all properties metadata
+                                body.get_list_mut(id, data_size_estimated)
+                                    .expect("Unreachable")
+                                    .push(value.into());
+                            },
+                        };
 
-                let properties = property_ids
-                    .iter()
-                    .filter_map(|property_id| {
-                        head.meta_map
-                            .get(property_id)
-                            .and_then(|meta| meta.variant.as_property())
-                            .map(|property| &property.variant)
+                        Ok::<(), Self::Err>(())
                     })
-                    .collect::<Vec<_>>();
-
-                // Reading each property data
-
-                (0..element_size).try_for_each(|_| {
-                    property_ids.iter().zip(properties.iter()).try_for_each(
-                        |(&property_id, property)| {
-                            match property {
-                                PropertyMetaVariant::Scalar(scalar) => {
-                                    let property_size = scalar.size;
-                                    let data_size =
-                                        element_size.mul(property_size);
-
-                                    let value =
-                                        read_bytes(reader, property_size)?;
-
-                                    body.data_map
-                                        .entry(property_id)
-                                        .or_insert_with(|| Data {
-                                            id: property_id,
-                                            variant: DataVariant::Scalar(
-                                                ScalarData::with_capacity(
-                                                    data_size,
-                                                ),
-                                            ),
-                                        })
-                                        .variant
-                                        .as_scalar_mut()
-                                        .expect("Unreachable")
-                                        .extend(value);
-                                },
-                                PropertyMetaVariant::List(list) => {
-                                    let count_size = list.count.size;
-                                    let value_size = list.value.size;
-                                    let value_count: usize =
-                                        match head.format.variant {
-                                            BinaryLittleEndian => reader
-                                                .read_uint::<LE>(count_size),
-                                            Ascii => unreachable!(),
-                                            BinaryBigEndian => reader
-                                                .read_uint::<BE>(count_size),
-                                        }?
-                                        .try_into()?;
-                                    let property_size =
-                                        value_size.mul(value_count);
-                                    let data_size_estimated = element_size
-                                        .mul(property_size.max(value_size));
-
-                                    let value =
-                                        read_bytes(reader, property_size)?;
-
-                                    body.data_map
-                                        .entry(property_id)
-                                        .or_insert_with(|| Data {
-                                            id: property_id,
-                                            variant: DataVariant::List(
-                                                ListData::with_capacity(
-                                                    data_size_estimated,
-                                                ),
-                                            ),
-                                        })
-                                        .variant
-                                        .as_list_mut()
-                                        .expect("Unreachable")
-                                        .push(value.into());
-                                },
-                            };
-
-                            Ok::<(), Self::Err>(())
-                        },
-                    )
                 })?;
 
                 Ok::<(), Self::Err>(())
@@ -190,6 +137,10 @@ mod tests {
         );
         let reader = &mut Cursor::new(source);
         let object = Object::decode(reader).unwrap();
+
+        let target = 2;
+        let output = object.head.iter_elements().count();
+        assert_eq!(output, target);
 
         let target = 3;
         let output = object

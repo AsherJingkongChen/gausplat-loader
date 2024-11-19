@@ -25,12 +25,12 @@ macro_rules! impl_data_variant_matchers {
             impl DataVariant {
                 $(
                     #[inline]
-                    pub fn [<is_ $variant:snake>](&self) -> bool {
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
                         matches!(self, Self::$variant(_))
                     }
 
                     #[inline]
-                    pub fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Data>]> {
+                    pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Data>]> {
                         match self {
                             Self::$variant(data) => Some(data),
                             _ => None,

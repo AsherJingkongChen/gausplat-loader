@@ -148,7 +148,7 @@ macro_rules! impl_format_meta_variant_matchers {
             impl FormatMetaVariant {
                 $(
                     #[inline]
-                    pub fn [<is_ $variant:snake>](&self) -> bool {
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
                         matches!(self, Self::$variant)
                     }
                 )*
