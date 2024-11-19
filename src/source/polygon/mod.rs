@@ -6,10 +6,10 @@
 //!
 //! <details>
 //! <summary>
-//!     <strong><code>another-cube.greg-turk.ply</code>:</strong>
+//!     <strong><code>another-cube.greg-turk.ascii.ply</code>:</strong>
 //! </summary>
 //! <pre class=language-plaintext>
-#![doc = include_str!("../../../examples/data/polygon/another-cube.greg-turk.ply")]
+#![doc = include_str!("../../../examples/data/polygon/another-cube.greg-turk.ascii.ply")]
 //! </pre>
 //! </details>
 #![doc = include_str!("SUPPLEMENT.md")]

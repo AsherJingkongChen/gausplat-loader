@@ -120,7 +120,7 @@ mod tests {
     }
 
     #[test]
-    fn build_on_orphan_property() {
+    fn build_on_misplaced_property() {
         let target = None;
         let output = GroupBuilder::default().add_property_id(Id::new());
         assert_eq!(output, target);

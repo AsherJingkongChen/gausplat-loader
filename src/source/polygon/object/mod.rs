@@ -29,7 +29,7 @@ impl Decoder for Object {
 
         let head = Head::decode(reader)?;
 
-        if !head.format.variant.is_ascii() {
+        if head.format.variant.is_ascii() {
             unimplemented!("TODO: Decoding on ascii format");
         }
 
@@ -68,6 +68,29 @@ impl Decoder for Object {
                     property_ids.iter().zip(properties.iter()).try_for_each(
                         |(&property_id, property)| {
                             match property {
+                                PropertyMetaVariant::Scalar(scalar) => {
+                                    let property_size = scalar.size;
+                                    let data_size =
+                                        element_size.mul(property_size);
+
+                                    let value =
+                                        read_bytes(reader, property_size)?;
+
+                                    body.data_map
+                                        .entry(property_id)
+                                        .or_insert_with(|| Data {
+                                            id: property_id,
+                                            variant: DataVariant::Scalar(
+                                                ScalarData::with_capacity(
+                                                    data_size,
+                                                ),
+                                            ),
+                                        })
+                                        .variant
+                                        .as_scalar_mut()
+                                        .expect("Unreachable")
+                                        .extend(value);
+                                },
                                 PropertyMetaVariant::List(list) => {
                                     let count_size = list.count.size;
                                     let value_size = list.value.size;
@@ -103,29 +126,6 @@ impl Decoder for Object {
                                         .expect("Unreachable")
                                         .push(value.into());
                                 },
-                                PropertyMetaVariant::Scalar(scalar) => {
-                                    let property_size = scalar.size;
-                                    let data_size =
-                                        element_size.mul(property_size);
-
-                                    let value =
-                                        read_bytes(reader, property_size)?;
-
-                                    body.data_map
-                                        .entry(property_id)
-                                        .or_insert_with(|| Data {
-                                            id: property_id,
-                                            variant: DataVariant::Scalar(
-                                                ScalarData::with_capacity(
-                                                    data_size,
-                                                ),
-                                            ),
-                                        })
-                                        .variant
-                                        .as_scalar_mut()
-                                        .expect("Unreachable")
-                                        .extend(value);
-                                },
                             };
 
                             Ok::<(), Self::Err>(())
@@ -140,5 +140,27 @@ impl Decoder for Object {
         // head -> element collection -> property collection
 
         Ok(Self { head, body })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn decode_on_binary_big_endian() {}
+    #[test]
+    fn decode_on_binary_little_endian() {}
+    #[test]
+    fn decode_on_empty_element() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/empty-element.binary-le.ply"
+        );
+
+        let reader = &mut Cursor::new(source);
+        let output = Object::decode(reader).unwrap();
+        println!("{:#?}", output);
     }
 }

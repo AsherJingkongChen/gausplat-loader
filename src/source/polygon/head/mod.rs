@@ -88,6 +88,29 @@ impl Decoder for Head {
 
             let keyword_prefix = read_bytes_const(reader)?;
             let variant = match &keyword_prefix {
+                b"pr" => {
+                    let keyword_suffix = read_bytes_const(reader)?;
+                    match &keyword_suffix {
+                        b"operty " => {
+                            group_builder =
+                            group_builder.add_property_id(id).ok_or_else(
+                                || Error::MissingToken("element ".into()),
+                            )?;
+                            Ok(Property(PropertyMeta::decode(reader)?))
+                        },
+                        _ => Err(keyword_suffix.into()),
+                    }
+                },
+                b"el" => {
+                    let keyword_suffix = read_bytes_const(reader)?;
+                    match &keyword_suffix {
+                        b"ement " => {
+                            group_builder = group_builder.set_element_id(id);
+                            Ok(Element(ElementMeta::decode(reader)?))
+                        },
+                        _ => Err(keyword_suffix.into()),
+                    }
+                },
                 b"en" => {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
@@ -110,29 +133,6 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"mment " => Ok(Comment(CommentMeta::decode(reader)?)),
-                        _ => Err(keyword_suffix.into()),
-                    }
-                },
-                b"el" => {
-                    let keyword_suffix = read_bytes_const(reader)?;
-                    match &keyword_suffix {
-                        b"ement " => {
-                            group_builder = group_builder.set_element_id(id);
-                            Ok(Element(ElementMeta::decode(reader)?))
-                        },
-                        _ => Err(keyword_suffix.into()),
-                    }
-                },
-                b"pr" => {
-                    let keyword_suffix = read_bytes_const(reader)?;
-                    match &keyword_suffix {
-                        b"operty " => {
-                            group_builder =
-                                group_builder.add_property_id(id).ok_or_else(
-                                    || Error::MissingToken("element ".into()),
-                                )?;
-                            Ok(Property(PropertyMeta::decode(reader)?))
-                        },
                         _ => Err(keyword_suffix.into()),
                     }
                 },
@@ -182,16 +182,16 @@ impl Encoder for Head {
         self.meta_map
             .values()
             .try_for_each(|meta| match &meta.variant {
-                Comment(meta) => {
-                    write_bytes(writer, b"comment ")?;
+                Property(meta) => {
+                    write_bytes(writer, b"property ")?;
                     meta.encode(writer)
                 },
                 Element(meta) => {
                     write_bytes(writer, b"element ")?;
                     meta.encode(writer)
                 },
-                Property(meta) => {
-                    write_bytes(writer, b"property ")?;
+                Comment(meta) => {
+                    write_bytes(writer, b"comment ")?;
                     meta.encode(writer)
                 },
                 ObjInfo(meta) => {
@@ -228,12 +228,12 @@ mod tests {
     }
 
     #[test]
-    fn decode_on_orphan_property() {
+    fn decode_on_misplaced_property() {
         use super::*;
         use std::io::Cursor;
 
         let source = include_bytes!(
-            "../../../../examples/data/polygon/orphan-property.ascii.ply"
+            "../../../../examples/data/polygon/misplaced-property.ascii.ply"
         );
 
         let reader = &mut Cursor::new(source);

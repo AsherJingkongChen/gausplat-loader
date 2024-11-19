@@ -1,0 +1,24 @@
+ply
+format ascii 1.0
+comment author: Asher Chen
+comment object: This example polygon file shows empty elements.
+element vertex 0
+property float x
+property float y
+property float z
+property uchar red
+property uchar green
+property uchar blue
+element face 7
+element edge 5
+property uint vertex1
+property uint vertex2
+property uchar red
+property uchar green
+property uchar blue
+end_header
+0 1 255 255 0
+1 2 0 128 255
+2 3 255 0 128
+3 0 128 255 255
+2 0 0 0 0

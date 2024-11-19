@@ -1,6 +1,6 @@
 ply
 format ascii 1.0
-comment This example polygon file shows all valid keywords in the header.
+comment This example polygon file shows all valid keywords.
 obj_info Yet Another Comment - Obj Info!
 comment 8-bit grayscale color point:
 element gray8_color 0

@@ -119,11 +119,11 @@ impl Encoder for PropertyMetaVariant {
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
         match self {
+            Self::Scalar(scalar) => scalar.encode(writer),
             Self::List(list) => {
                 write_bytes(writer, b"list ")?;
                 list.encode(writer)
             },
-            Self::Scalar(scalar) => scalar.encode(writer),
         }
     }
 }
