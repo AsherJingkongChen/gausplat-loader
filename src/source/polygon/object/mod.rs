@@ -26,7 +26,7 @@ impl Decoder for Object {
 
         let head = Head::decode(reader)?;
 
-        if head.format.variant.is_ascii() {
+        if head.is_format_ascii() {
             unimplemented!("TODO: Decoding on ascii format");
         }
 
@@ -39,7 +39,7 @@ impl Decoder for Object {
                     .collect::<Box<[_]>>();
 
                 (0..element.size).try_for_each(|_| {
-                    property_variants.iter().try_for_each(|(&id, property)| {
+                    property_variants.iter().try_for_each(|(id, property)| {
                         match property {
                             Scalar(scalar) => {
                                 let step = scalar.size;
@@ -52,7 +52,7 @@ impl Decoder for Object {
                             },
                             List(list) => {
                                 let step = list.count.size;
-                                let count: usize = match head.format.variant {
+                                let count: usize = match head.get_format() {
                                     BinaryLittleEndian => {
                                         reader.read_uint::<LE>(step)
                                     },
@@ -93,7 +93,7 @@ impl Encoder for Object {
     ) -> Result<(), Self::Err> {
         use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
 
-        if self.head.format.variant.is_ascii() {
+        if self.head.is_format_ascii() {
             unimplemented!("TODO: Encoding on ascii format");
         }
 
@@ -106,7 +106,7 @@ impl Encoder for Object {
                     .collect::<Box<[_]>>();
 
                 (0..element.size).try_for_each(|element_index| {
-                    property_variants.iter().try_for_each(|(&id, property)| {
+                    property_variants.iter().try_for_each(|(id, property)| {
                         match property {
                             Scalar(scalar) => {
                                 let step = scalar.size;
@@ -130,7 +130,7 @@ impl Encoder for Object {
                                     (value.len() / list.value.size) as u64;
                                 let step = list.count.size;
 
-                                match self.head.format.variant {
+                                match self.head.get_format() {
                                     BinaryLittleEndian => {
                                         writer.write_uint::<LE>(count, step)?;
                                     },

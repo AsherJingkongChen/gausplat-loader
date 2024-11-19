@@ -47,14 +47,63 @@ use std::io::{Read, Write};
 /// - [`FormatMeta`]
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Head {
-    pub format: FormatMeta,
+    format: FormatMeta,
     group: Group,
     meta_map: IndexMap<Id, Meta>,
 }
 
 impl Head {
     impl_map_filters!(Meta, Comment, Element, ObjInfo, Property);
+
+    #[inline]
+    pub const fn get_format(&self) -> FormatMetaVariant {
+        self.format.variant
+    }
+
+    #[inline]
+    pub fn set_format(
+        &mut self,
+        variant: FormatMetaVariant,
+    ) {
+        self.format.variant = variant;
+    }
+
+    #[inline]
+    pub fn get_version(&self) -> &str {
+        self.format.version.as_str()
+    }
+
+    #[inline]
+    pub fn set_version<S: AsRef<[u8]>>(
+        &mut self,
+        version: S,
+    ) -> Result<(), Error> {
+        self.format.version =
+        version.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(
+                String::from_utf8_lossy(err.into_source()).into_owned(),
+            )
+        })?;
+        Ok(())
+    }
 }
+
+impl_head_format_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
+macro_rules! impl_head_format_matchers {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl Head {
+                $(
+                    #[inline]
+                    pub const fn [<is_format_ $variant:snake>](&self) -> bool {
+                        matches!(self.format.variant, FormatMetaVariant::$variant)
+                    }
+                )*
+            }
+        }
+    };
+}
+use impl_head_format_matchers;
 
 impl Head {
     pub const KEYWORD_DOMAIN: [&str; 5] = [
@@ -131,13 +180,13 @@ impl Decoder for Head {
                     match &keyword_suffix {
                         b"operty " => {
                             // NOTE: Inserting the most recent element.
-                            group.take_element().map(Element).map(|variant| {
+                            if let Some(variant) = group.take_element().map(Element) {
                                 let id = Id::new();
                                 group.set_element_id(id);
                                 meta_map.insert(id, Meta { id, variant });
-                            });
+                            }
 
-                            // NOTE: Avoid inserting the misplaced property.
+                            // NOTE: Rejecting the misplaced property.
                             let variant =
                                 Property(PropertyMeta::decode(reader)?);
                             let id = Id::new();
@@ -348,5 +397,39 @@ mod tests {
         let target = Head::default();
         let output = Head::decode(reader).unwrap();
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn get_and_set_format() {
+        use super::*;
+
+        let mut head = Head::default();
+
+        let target = FormatMetaVariant::Ascii;
+        let output = head.get_format();
+        assert_eq!(output, target);
+
+        let target = FormatMetaVariant::BinaryBigEndian;
+        head.set_format(target);
+        let output = head.get_format();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn get_and_set_version() {
+        use super::*;
+
+        let mut head = Head::default();
+
+        let target = "1.0";
+        let output = head.get_version();
+        assert_eq!(output, target);
+
+        let target = "1.1.10";
+        head.set_version(target).unwrap();
+        let output = head.get_version();
+        assert_eq!(output, target);
+
+        head.set_version("private+\u{ae}").unwrap_err();
     }
 }

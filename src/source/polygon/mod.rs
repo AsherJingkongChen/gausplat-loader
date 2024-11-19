@@ -29,20 +29,20 @@ macro_rules! impl_map_filters {
                 #[inline]
                 pub fn [<get_ $map:snake>](
                     &self,
-                    id: Id,
+                    id: &Id,
                 ) -> Option<&[<$map $subject>]> {
                     self.[<$subject:snake _map>]
-                        .get(&id)
+                        .get(id)
                         .and_then(|c| c.variant.[<as_ $map:snake>]())
                 }
 
                 #[inline]
                 pub fn [<get_ $map:snake _mut>](
                     &mut self,
-                    id: Id,
+                    id: &Id,
                 ) -> Option<&mut [<$map $subject>]> {
                     self.[<$subject:snake _map>]
-                        .get_mut(&id)
+                        .get_mut(id)
                         .and_then(|c| c.variant.[<as_ $map:snake _mut>]())
                 }
 

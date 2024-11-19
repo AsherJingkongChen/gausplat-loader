@@ -30,11 +30,12 @@ macro_rules! impl_body_data_accessors {
                     #[inline]
                     pub fn [<get_or_init_ $data:snake _mut>](
                         &mut self,
-                        id: Id,
+                        id: &Id,
                         capacity: usize,
                     ) -> Option<&mut [<$data Data>]> {
                         use DataVariant::*;
 
+                        let id = *id;
                         self.data_map
                             .entry(id)
                             .or_insert_with(|| Data {

@@ -34,7 +34,7 @@ pub struct FormatMeta {
 ///     | "binary_big_endian"
 ///     | "binary_little_endian"
 /// ```
-#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum FormatMetaVariant {
     #[default]
     Ascii,
@@ -50,23 +50,6 @@ impl FormatMetaVariant {
     pub const DOMAIN: [&str; 3] =
         ["ascii", "binary_big_endian", "binary_little_endian"];
 }
-
-impl_format_meta_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
-macro_rules! impl_format_meta_variant_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl FormatMetaVariant {
-                $(
-                    #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant)
-                    }
-                )*
-            }
-        }
-    };
-}
-use impl_format_meta_variant_matchers;
 
 impl Decoder for FormatMeta {
     type Err = Error;
@@ -233,37 +216,5 @@ mod tests {
 
         let target = "1.0";
         assert_eq!(output.version, target);
-    }
-
-    // TODO: Reduce tests
-    #[test]
-    fn matcher_is() {
-        use super::*;
-
-        let target = true;
-        let output = FormatMetaVariant::Ascii.is_ascii();
-        assert_eq!(output, target);
-
-        let target = true;
-        let output = FormatMetaVariant::BinaryBigEndian.is_binary_big_endian();
-        assert_eq!(output, target);
-
-        let target = true;
-        let output =
-            FormatMetaVariant::BinaryLittleEndian.is_binary_little_endian();
-        assert_eq!(output, target);
-
-        let target = false;
-        let output = FormatMetaVariant::BinaryLittleEndian.is_ascii();
-        assert_eq!(output, target);
-
-        let target = false;
-        let output =
-            FormatMetaVariant::BinaryBigEndian.is_binary_little_endian();
-        assert_eq!(output, target);
-
-        let target = false;
-        let output = FormatMetaVariant::Ascii.is_binary_big_endian();
-        assert_eq!(output, target);
     }
 }
