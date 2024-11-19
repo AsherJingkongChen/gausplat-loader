@@ -96,8 +96,9 @@ impl ScalarPropertyMeta {
             String::from_utf8_lossy(kind),
         );
 
-        // Retain the special properties.
-        if kind == b"list" {
+        // Retaining the special properties.
+        // Forbidding zero-sized properties.
+        if kind == b"list" || size == 0 {
             Err(Error::InvalidPolygonPropertyKind(
                 String::from_utf8_lossy(kind).into_owned(),
             ))?;
@@ -129,7 +130,7 @@ impl ScalarPropertyMeta {
             String::from_utf8_lossy(kind),
         );
 
-        // Retain the special properties.
+        // Retaining the special properties.
         if kind == b"list" {
             None?;
         }

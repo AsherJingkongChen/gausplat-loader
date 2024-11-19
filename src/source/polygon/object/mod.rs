@@ -22,17 +22,13 @@ impl Decoder for Object {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        use head::{FormatMetaVariant::*, PropertyMetaVariant};
-
-        // Decoding the head
+        use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
 
         let head = Head::decode(reader)?;
 
         if head.format.variant.is_ascii() {
             unimplemented!("TODO: Decoding on ascii format");
         }
-
-        // Decoding the body
 
         let mut body = Body::default();
 
@@ -45,35 +41,32 @@ impl Decoder for Object {
                 (0..element.size).try_for_each(|_| {
                     property_variants.iter().try_for_each(|(&id, property)| {
                         match property {
-                            PropertyMetaVariant::Scalar(scalar) => {
-                                let property_size = scalar.size;
-                                let data_size = element.size * property_size;
-                                let value = read_bytes(reader, property_size)?;
+                            Scalar(scalar) => {
+                                let step = scalar.size;
+                                let value = read_bytes(reader, step)?;
 
-                                body.get_scalar_mut(id, data_size)
+                                let capacity = element.size * scalar.size;
+                                body.get_scalar_mut(id, capacity)
                                     .expect("Unreachable")
                                     .extend(value);
                             },
-                            PropertyMetaVariant::List(list) => {
-                                let count_size = list.count.size;
-                                let value_count: usize =
-                                    match head.format.variant {
-                                        BinaryLittleEndian => {
-                                            reader.read_uint::<LE>(count_size)
-                                        },
-                                        Ascii => unreachable!(),
-                                        BinaryBigEndian => {
-                                            reader.read_uint::<BE>(count_size)
-                                        },
-                                    }?
-                                    .try_into()?;
-                                let value_size = list.value.size;
-                                let property_size = value_size * value_count;
-                                let data_size_estimated = element.size
-                                    * property_size.max(value_size);
-                                let value = read_bytes(reader, property_size)?;
+                            List(list) => {
+                                let step = list.count.size;
+                                let count: usize = match head.format.variant {
+                                    BinaryLittleEndian => {
+                                        reader.read_uint::<LE>(step)
+                                    },
+                                    Ascii => unreachable!(),
+                                    BinaryBigEndian => {
+                                        reader.read_uint::<BE>(step)
+                                    },
+                                }?
+                                .try_into()?;
+                                let step = count * list.value.size;
+                                let value = read_bytes(reader, step)?;
 
-                                body.get_list_mut(id, data_size_estimated)
+                                let capacity = element.size * list.value.size;
+                                body.get_list_mut(id, capacity)
                                     .expect("Unreachable")
                                     .push(value.into());
                             },
@@ -98,24 +91,65 @@ impl Encoder for Object {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
+        use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
+
+        if self.head.format.variant.is_ascii() {
+            unimplemented!("TODO: Encoding on ascii format");
+        }
+
         self.head.encode(writer)?;
 
-        // self.body.data_map.values().try_for_each(|data| {
-        //     match &data.variant {
-        //         DataVariant::Scalar(scalar) => {
-        //             scalar.iter().try_for_each(|value| {
-        //                 // writer.write_all(value)?;
-        //                 // Ok(())
-        //             })
-        //         },
-        //         DataVariant::List(list) => {
-        //             // list.iter().try_for_each(|value| {
-        //             //     writer.write_all(value)?;
-        //             //     Ok(())
-        //             // })
-        //         },
-        //     }
-        // })?;
+        self.head.iter_elements_and_properties().try_for_each(
+            |((_, element), properties)| {
+                let property_variants = properties
+                    .map(|(id, property)| (id, &property.variant))
+                    .collect::<Box<[_]>>();
+
+                (0..element.size).try_for_each(|element_index| {
+                    property_variants.iter().try_for_each(|(&id, property)| {
+                        match property {
+                            Scalar(scalar) => {
+                                let step = scalar.size;
+                                let offset = element_index * step;
+                                let value = &self
+                                    .body
+                                    .get_scalar(id)
+                                    .expect("Unreachable")
+                                    [offset..offset + step];
+
+                                writer.write_all(value)?;
+                            },
+                            List(list) => {
+                                let value = self
+                                    .body
+                                    .get_list(id)
+                                    .expect("Unreachable")
+                                    .get(element_index)
+                                    .expect("Unreachable");
+                                let count = (value.len() / list.value.size) as u64;
+                                let step = list.count.size;
+
+                                match self.head.format.variant {
+                                    BinaryLittleEndian => {
+                                        writer.write_uint::<LE>(count, step)?;
+                                    },
+                                    Ascii => unreachable!(),
+                                    BinaryBigEndian => {
+                                        writer.write_uint::<BE>(count, step)?;
+                                    },
+                                }
+
+                                writer.write_all(value)?;
+                            },
+                        }
+
+                        Ok::<(), Self::Err>(())
+                    })
+                })?;
+
+                Ok::<(), Self::Err>(())
+            },
+        )?;
 
         Ok(())
     }
@@ -124,9 +158,51 @@ impl Encoder for Object {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn decode_on_binary_big_endian() {}
+    fn decode_and_encode_on_binary_be() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/another-cube.greg-turk.binary-be.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let output = Object::decode(reader).unwrap();
+
+        let mut writer = Cursor::new(vec![]);
+        let target = source;
+        output.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+
+        output.iter().zip(target.iter()).enumerate().for_each(
+            |(index, (output, target))| {
+                assert_eq!(output, target, "index: {}", index);
+            },
+        );
+    }
+
     #[test]
-    fn decode_on_binary_little_endian() {}
+    fn decode_and_encode_on_binary_le() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/another-cube.greg-turk.binary-le.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let output = Object::decode(reader).unwrap();
+
+        let mut writer = Cursor::new(vec![]);
+        let target = source;
+        output.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+
+        output.iter().zip(target.iter()).enumerate().for_each(
+            |(index, (output, target))| {
+                assert_eq!(output, target, "index: {}", index);
+            },
+        );
+    }
+
     #[test]
     fn decode_on_empty_element() {
         use super::*;
