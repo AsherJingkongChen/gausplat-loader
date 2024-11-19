@@ -172,8 +172,8 @@ impl Encoder for ScalarPropertyMeta {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        write_bytes(writer, self.kind.as_bytes())?;
-        write_bytes(writer, SPACE)
+        writer.write_all(self.kind.as_bytes())?;
+        Ok(writer.write_all(SPACE)?)
     }
 }
 

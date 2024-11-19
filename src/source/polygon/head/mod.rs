@@ -15,7 +15,7 @@ use crate::function::{
         is_space, read_byte_after, read_bytes_before,
         read_bytes_before_newline, read_bytes_const,
     },
-    encode::{write_bytes, NEWLINE, SPACE},
+    encode::{NEWLINE, SPACE},
 };
 use std::io::{Read, Write};
 
@@ -93,9 +93,9 @@ impl Decoder for Head {
                     match &keyword_suffix {
                         b"operty " => {
                             group_builder =
-                            group_builder.add_property_id(id).ok_or_else(
-                                || Error::MissingToken("element ".into()),
-                            )?;
+                                group_builder.add_property_id(id).ok_or_else(
+                                    || Error::MissingToken("element ".into()),
+                                )?;
                             Ok(Property(PropertyMeta::decode(reader)?))
                         },
                         _ => Err(keyword_suffix.into()),
@@ -174,8 +174,8 @@ impl Encoder for Head {
     ) -> Result<(), Self::Err> {
         use MetaVariant::*;
 
-        write_bytes(writer, b"ply")?;
-        write_bytes(writer, NEWLINE)?;
+        writer.write_all(b"ply")?;
+        writer.write_all(NEWLINE)?;
 
         self.format.encode(writer)?;
 
@@ -183,25 +183,25 @@ impl Encoder for Head {
             .values()
             .try_for_each(|meta| match &meta.variant {
                 Property(meta) => {
-                    write_bytes(writer, b"property ")?;
+                    writer.write_all(b"property ")?;
                     meta.encode(writer)
                 },
                 Element(meta) => {
-                    write_bytes(writer, b"element ")?;
+                    writer.write_all(b"element ")?;
                     meta.encode(writer)
                 },
                 Comment(meta) => {
-                    write_bytes(writer, b"comment ")?;
+                    writer.write_all(b"comment ")?;
                     meta.encode(writer)
                 },
                 ObjInfo(meta) => {
-                    write_bytes(writer, b"obj_info ")?;
+                    writer.write_all(b"obj_info ")?;
                     meta.encode(writer)
                 },
             })?;
 
-        write_bytes(writer, b"end_header")?;
-        write_bytes(writer, NEWLINE)
+        writer.write_all(b"end_header")?;
+        Ok(writer.write_all(NEWLINE)?)
     }
 }
 
@@ -215,7 +215,6 @@ mod tests {
         let source = include_bytes!(
             "../../../../examples/data/polygon/valid-keyword.ascii.ply"
         );
-
         let reader = &mut Cursor::new(source);
         let output = Head::decode(reader).unwrap();
 

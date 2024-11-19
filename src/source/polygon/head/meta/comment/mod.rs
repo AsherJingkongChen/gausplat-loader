@@ -57,8 +57,8 @@ impl Encoder for CommentMeta {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        write_bytes(writer, self.message.as_bytes())?;
-        write_bytes(writer, NEWLINE)
+        writer.write_all(self.message.as_bytes())?;
+        Ok(writer.write_all(NEWLINE)?)
     }
 }
 

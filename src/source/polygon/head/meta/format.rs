@@ -116,12 +116,12 @@ impl Encoder for FormatMeta {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        write_bytes(writer, Self::KEYWORD)?;
+        writer.write_all(Self::KEYWORD)?;
 
         self.variant.encode(writer)?;
 
-        write_bytes(writer, self.version.as_bytes())?;
-        write_bytes(writer, NEWLINE)
+        writer.write_all(self.version.as_bytes())?;
+        Ok(writer.write_all(NEWLINE)?)
     }
 }
 
@@ -133,15 +133,12 @@ impl Encoder for FormatMetaVariant {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        write_bytes(
-            writer,
-            match self {
-                Self::BinaryLittleEndian => b"binary_little_endian",
-                Self::Ascii => b"ascii",
-                Self::BinaryBigEndian => b"binary_big_endian",
-            },
-        )?;
-        write_bytes(writer, SPACE)
+        writer.write_all(match self {
+            Self::BinaryLittleEndian => b"binary_little_endian",
+            Self::Ascii => b"ascii",
+            Self::BinaryBigEndian => b"binary_big_endian",
+        })?;
+        Ok(writer.write_all(SPACE)?)
     }
 }
 

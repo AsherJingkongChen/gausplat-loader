@@ -9,8 +9,12 @@ pub use id::*;
 pub use indexmap::IndexMap;
 
 use crate::function::read_bytes;
-use byteorder::{ReadBytesExt, BE, LE};
-use std::{io::Read, ops::Mul};
+use body::{Data, DataVariant, ListData, ScalarData};
+use byteorder::{ReadBytesExt, WriteBytesExt, BE, LE};
+use std::{
+    io::{Read, Write},
+    ops::Mul,
+};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Object {
@@ -22,7 +26,6 @@ impl Decoder for Object {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        use body::{Data, DataVariant, ListData, ScalarData};
         use head::{FormatMetaVariant::*, PropertyMetaVariant};
 
         // Decoding the head
@@ -137,15 +140,42 @@ impl Decoder for Object {
             },
         )?;
 
-        // head -> element collection -> property collection
-
         Ok(Self { head, body })
+    }
+}
+
+impl Encoder for Object {
+    type Err = Error;
+
+    fn encode(
+        &self,
+        writer: &mut impl Write,
+    ) -> Result<(), Self::Err> {
+        self.head.encode(writer)?;
+
+        // self.body.data_map.values().try_for_each(|data| {
+        //     match &data.variant {
+        //         DataVariant::Scalar(scalar) => {
+        //             scalar.iter().try_for_each(|value| {
+        //                 // writer.write_all(value)?;
+        //                 // Ok(())
+        //             })
+        //         },
+        //         DataVariant::List(list) => {
+        //             // list.iter().try_for_each(|value| {
+        //             //     writer.write_all(value)?;
+        //             //     Ok(())
+        //             // })
+        //         },
+        //     }
+        // })?;
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     #[test]
     fn decode_on_binary_big_endian() {}
     #[test]
@@ -158,9 +188,29 @@ mod tests {
         let source = include_bytes!(
             "../../../../examples/data/polygon/empty-element.binary-le.ply"
         );
-
         let reader = &mut Cursor::new(source);
-        let output = Object::decode(reader).unwrap();
-        println!("{:#?}", output);
+        let object = Object::decode(reader).unwrap();
+
+        let target = 3;
+        let output = object
+            .head
+            .meta_map
+            .values()
+            .filter(|meta| meta.variant.is_element())
+            .count();
+        assert_eq!(output, target);
+
+        let target = 11;
+        let output = object
+            .head
+            .meta_map
+            .values()
+            .filter(|meta| meta.variant.is_property())
+            .count();
+        assert_eq!(output, target);
+
+        let target = 5;
+        let output = object.body.data_map.len();
+        assert_eq!(output, target);
     }
 }

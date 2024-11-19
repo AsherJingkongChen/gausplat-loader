@@ -23,29 +23,3 @@ where
         writer: &mut impl Write,
     ) -> Result<(), Self::Err>;
 }
-
-/// Writing all bytes.
-#[inline]
-pub fn write_bytes(
-    writer: &mut impl Write,
-    bytes: &[u8],
-) -> Result<(), Error> {
-    Ok(writer.write_all(bytes)?)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn write_bytes() {
-        use super::*;
-
-        let source = b"Hello, World!";
-        let mut writer = std::io::Cursor::new(vec![]);
-
-        let target =
-            include_bytes!("../../examples/data/hello-world/ascii.txt");
-        write_bytes(&mut writer, source).unwrap();
-        let output = writer.into_inner();
-        assert_eq!(output, target);
-    }
-}

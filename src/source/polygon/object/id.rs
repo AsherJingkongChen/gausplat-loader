@@ -1,6 +1,6 @@
-use std::ops::Deref;
+use std::{fmt, ops::Deref};
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Id(u64);
 
 impl Id {
@@ -27,8 +27,26 @@ impl Default for Id {
     }
 }
 
+impl fmt::Debug for Id {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn debug() {
+        use super::*;
+
+        let target = true;
+        let output = format!("{:#?}", Id::new()).parse::<u64>().is_ok();
+        assert_eq!(output, target);
+    }
+
     #[test]
     fn default_and_deref() {
         use super::*;

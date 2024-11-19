@@ -6,7 +6,7 @@ pub use crate::{
 };
 pub use points::*;
 
-use crate::function::{advance, read_bytes_const, write_bytes};
+use crate::function::{advance, read_bytes_const};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{BufReader, BufWriter, Read, Write};
 
@@ -61,7 +61,7 @@ impl Encoder for Point {
         writer.write_f64::<LE>(self.position[0])?;
         writer.write_f64::<LE>(self.position[1])?;
         writer.write_f64::<LE>(self.position[2])?;
-        write_bytes(writer, &self.color_rgb)?;
+        writer.write_all(&self.color_rgb)?;
 
         // Write -1.0 to re-projection error
         writer.write_f64::<LE>(-1.0)?;

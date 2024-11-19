@@ -6,7 +6,7 @@ pub use crate::{
 };
 pub use images::*;
 
-use crate::function::{advance, read_bytes_before, write_bytes};
+use crate::function::{advance, read_bytes_before};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::{
     ffi::CString,
@@ -79,7 +79,7 @@ impl Encoder for Image {
         writer.write_f64::<LE>(self.translation[1])?;
         writer.write_f64::<LE>(self.translation[2])?;
         writer.write_u32::<LE>(self.camera_id)?;
-        write_bytes(writer, self.file_name.as_bytes_with_nul())?;
+        writer.write_all(self.file_name.as_bytes_with_nul())?;
 
         // Write 0 to point count
         writer.write_u64::<LE>(0)?;

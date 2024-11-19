@@ -105,8 +105,8 @@ impl Encoder for PropertyMeta {
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
         self.variant.encode(writer)?;
-        write_bytes(writer, self.name.as_bytes())?;
-        write_bytes(writer, NEWLINE)
+        writer.write_all(self.name.as_bytes())?;
+        Ok(writer.write_all(NEWLINE)?)
     }
 }
 
@@ -121,7 +121,7 @@ impl Encoder for PropertyMetaVariant {
         match self {
             Self::Scalar(scalar) => scalar.encode(writer),
             Self::List(list) => {
-                write_bytes(writer, b"list ")?;
+                writer.write_all(b"list ")?;
                 list.encode(writer)
             },
         }

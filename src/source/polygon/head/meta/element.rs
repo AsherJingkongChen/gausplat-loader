@@ -69,11 +69,11 @@ impl Encoder for ElementMeta {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        write_bytes(writer, self.name.as_bytes())?;
-        write_bytes(writer, SPACE)?;
+        writer.write_all(self.name.as_bytes())?;
+        writer.write_all(SPACE)?;
 
-        write_bytes(writer, self.size.to_string().as_bytes())?;
-        write_bytes(writer, NEWLINE)
+        writer.write_all(self.size.to_string().as_bytes())?;
+        Ok(writer.write_all(NEWLINE)?)
     }
 }
 
