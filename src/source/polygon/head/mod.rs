@@ -10,6 +10,7 @@ pub use group::*;
 pub use indexmap::IndexMap;
 pub use meta::*;
 
+use super::{impl_map_filters, impl_variant_matchers};
 use crate::function::{
     decode::{
         is_space, read_byte_after, read_bytes_before,
@@ -28,14 +29,14 @@ use std::io::{Read, Write};
 /// <start_header> :=
 ///     | "ply" <newline>
 ///
-/// <end_header> :=
-///     | "end_header" <newline>
-///
 /// <meta> :=
 ///     | "comment " <comment-meta>
 ///     | "element " <element-meta>
-///     | "property " <property-meta>
 ///     | "obj_info " <obj_info-meta>
+///     | "property " <property-meta>
+///
+/// <end_header> :=
+///     | "end_header" <newline>
 ///
 /// <newline> :=
 ///     | ["\r"] "\n"
@@ -47,28 +48,26 @@ use std::io::{Read, Write};
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Head {
     pub format: FormatMeta,
-    pub group: Group,
-    pub meta_map: IndexMap<Id, Meta>,
+    group: Group,
+    meta_map: IndexMap<Id, Meta>,
+}
+
+impl Head {
+    impl_map_filters!(Meta, Comment, Element, ObjInfo, Property);
 }
 
 impl Head {
     pub const KEYWORD_DOMAIN: [&str; 5] = [
-        "element ",
-        "property ",
         "comment ",
-        "obj_info ",
+        "element ",
         "end_header",
+        "property ",
+        "obj_info ",
     ];
-
     pub const SIGNATURE: &[u8; 3] = b"ply";
 
     #[inline]
-    pub fn iter_elements(&self) -> impl Iterator<Item = (&Id, &ElementMeta)> {
-        self.iter_elements_and_properties().map(|(meta, _)| meta)
-    }
-
-    #[inline]
-    pub fn iter_elements_and_properties(
+    pub fn iter_element_and_property(
         &self
     ) -> impl Iterator<
         Item = (
@@ -76,7 +75,7 @@ impl Head {
             impl Iterator<Item = (&Id, &PropertyMeta)>,
         ),
     > {
-        self.group.iter_element_and_property_ids().map(
+        self.group.iter_element_id_and_property_ids().map(
             |(element_id, property_ids)| {
                 let element = self
                     .meta_map
@@ -121,23 +120,33 @@ impl Decoder for Head {
 
         let format = FormatMeta::decode(reader)?;
 
-        let mut meta_map = IndexMap::with_capacity(16);
         let mut group = GroupBuilder::default();
+        let mut meta_map = IndexMap::with_capacity(16);
 
         loop {
-            let id = Id::new();
-
             let keyword_prefix = read_bytes_const(reader)?;
-            let variant = match &keyword_prefix {
+            match &keyword_prefix {
                 b"pr" => {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
-                            group =
-                                group.add_property_id(id).ok_or_else(|| {
-                                    Error::MissingToken("element ".into())
-                                })?;
-                            Ok(Property(PropertyMeta::decode(reader)?))
+                            // NOTE: Inserting the most recent element.
+                            group.take_element().map(Element).map(|variant| {
+                                let id = Id::new();
+                                group.set_element_id(id);
+                                meta_map.insert(id, Meta { id, variant });
+                            });
+
+                            // NOTE: Avoid inserting the misplaced property.
+                            let variant =
+                                Property(PropertyMeta::decode(reader)?);
+                            let id = Id::new();
+                            group.add_property_id(id).ok_or_else(|| {
+                                Error::MissingToken("element ".into())
+                            })?;
+                            meta_map.insert(id, Meta { id, variant });
+
+                            Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
                     }
@@ -146,8 +155,8 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            group = group.set_element_id(id);
-                            Ok(Element(ElementMeta::decode(reader)?))
+                            group.set_element(ElementMeta::decode(reader)?);
+                            Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
                     }
@@ -173,14 +182,24 @@ impl Decoder for Head {
                 b"co" => {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
-                        b"mment " => Ok(Comment(CommentMeta::decode(reader)?)),
+                        b"mment " => {
+                            let variant = Comment(CommentMeta::decode(reader)?);
+                            let id = Id::new();
+                            meta_map.insert(id, Meta { id, variant });
+                            Ok(())
+                        },
                         _ => Err(keyword_suffix.into()),
                     }
                 },
                 b"ob" => {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
-                        b"j_info " => Ok(ObjInfo(ObjInfoMeta::decode(reader)?)),
+                        b"j_info " => {
+                            let variant = ObjInfo(ObjInfoMeta::decode(reader)?);
+                            let id = Id::new();
+                            meta_map.insert(id, Meta { id, variant });
+                            Ok(())
+                        },
                         _ => Err(keyword_suffix.into()),
                     }
                 },
@@ -192,8 +211,6 @@ impl Decoder for Head {
                     String::from_utf8_lossy(keyword).into_owned(),
                 )
             })?;
-
-            meta_map.insert(id, Meta { id, variant });
         }
 
         let group = group.build();

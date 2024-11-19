@@ -46,7 +46,7 @@ pub enum PropertyMetaVariant {
     Scalar(ScalarPropertyMeta),
 }
 
-impl_property_meta_variant_matchers!(List, Scalar);
+impl_variant_matchers!(PropertyMeta, List, Scalar);
 
 impl Decoder for PropertyMeta {
     type Err = Error;
@@ -127,30 +127,6 @@ impl Encoder for PropertyMetaVariant {
         }
     }
 }
-
-macro_rules! impl_property_meta_variant_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl PropertyMetaVariant {
-                $(
-                    #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant(_))
-                    }
-
-                    #[inline]
-                    pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant PropertyMeta>]> {
-                        match self {
-                            Self::$variant(meta) => Some(meta),
-                            _ => None,
-                        }
-                    }
-                )*
-            }
-        }
-    };
-}
-use impl_property_meta_variant_matchers;
 
 #[cfg(test)]
 mod tests {
@@ -281,28 +257,26 @@ mod tests {
         assert_eq!(output, target);
     }
 
+    // TODO: Reduce tests
     #[test]
     fn matcher_is() {
         use super::*;
 
         let target = true;
-        let output =
-            PropertyMetaVariant::List(ListPropertyMeta::default()).is_list();
+        let output = PropertyMetaVariant::List(Default::default()).is_list();
         assert_eq!(output, target);
 
         let target = true;
-        let output = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default())
-            .is_scalar();
-        assert_eq!(output, target);
-
-        let target = false;
-        let output = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default())
-            .is_list();
-        assert_eq!(output, target);
-
-        let target = false;
         let output =
-            PropertyMetaVariant::List(ListPropertyMeta::default()).is_scalar();
+            PropertyMetaVariant::Scalar(Default::default()).is_scalar();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = PropertyMetaVariant::Scalar(Default::default()).is_list();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = PropertyMetaVariant::List(Default::default()).is_scalar();
         assert_eq!(output, target);
     }
 
@@ -310,26 +284,26 @@ mod tests {
     fn matcher_as() {
         use super::*;
 
-        let target = Some(ListPropertyMeta::default());
-        let output = PropertyMetaVariant::List(ListPropertyMeta::default())
+        let target = Some(Default::default());
+        let output = PropertyMetaVariant::List(Default::default())
             .as_list()
             .cloned();
         assert_eq!(output, target);
 
-        let target = Some(ScalarPropertyMeta::default());
-        let output = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default())
+        let target = Some(Default::default());
+        let output = PropertyMetaVariant::Scalar(Default::default())
             .as_scalar()
             .cloned();
         assert_eq!(output, target);
 
         let target = None;
-        let output = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default())
+        let output = PropertyMetaVariant::Scalar(Default::default())
             .as_list()
             .cloned();
         assert_eq!(output, target);
 
         let target = None;
-        let output = PropertyMetaVariant::List(ListPropertyMeta::default())
+        let output = PropertyMetaVariant::List(Default::default())
             .as_scalar()
             .cloned();
         assert_eq!(output, target);

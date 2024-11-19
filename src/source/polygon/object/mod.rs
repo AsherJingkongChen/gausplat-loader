@@ -32,7 +32,7 @@ impl Decoder for Object {
 
         let mut body = Body::default();
 
-        head.iter_elements_and_properties().try_for_each(
+        head.iter_element_and_property().try_for_each(
             |((_, element), properties)| {
                 let property_variants = properties
                     .map(|(id, property)| (id, &property.variant))
@@ -46,7 +46,7 @@ impl Decoder for Object {
                                 let value = read_bytes(reader, step)?;
 
                                 let capacity = element.size * scalar.size;
-                                body.get_scalar_mut(id, capacity)
+                                body.get_or_init_scalar_mut(id, capacity)
                                     .expect("Unreachable")
                                     .extend(value);
                             },
@@ -66,7 +66,7 @@ impl Decoder for Object {
                                 let value = read_bytes(reader, step)?;
 
                                 let capacity = element.size * list.value.size;
-                                body.get_list_mut(id, capacity)
+                                body.get_or_init_list_mut(id, capacity)
                                     .expect("Unreachable")
                                     .push(value.into());
                             },
@@ -99,7 +99,7 @@ impl Encoder for Object {
 
         self.head.encode(writer)?;
 
-        self.head.iter_elements_and_properties().try_for_each(
+        self.head.iter_element_and_property().try_for_each(
             |((_, element), properties)| {
                 let property_variants = properties
                     .map(|(id, property)| (id, &property.variant))
@@ -126,7 +126,8 @@ impl Encoder for Object {
                                     .expect("Unreachable")
                                     .get(element_index)
                                     .expect("Unreachable");
-                                let count = (value.len() / list.value.size) as u64;
+                                let count =
+                                    (value.len() / list.value.size) as u64;
                                 let step = list.count.size;
 
                                 match self.head.format.variant {
@@ -215,29 +216,17 @@ mod tests {
         let object = Object::decode(reader).unwrap();
 
         let target = 2;
-        let output = object.head.iter_elements().count();
+        let output = object.head.iter_element().count();
         assert_eq!(output, target);
 
-        let target = 3;
-        let output = object
-            .head
-            .meta_map
-            .values()
-            .filter(|meta| meta.variant.is_element())
-            .count();
-        assert_eq!(output, target);
+        println!("{:#?}", object);
 
         let target = 11;
-        let output = object
-            .head
-            .meta_map
-            .values()
-            .filter(|meta| meta.variant.is_property())
-            .count();
+        let output = object.head.iter_property().count();
         assert_eq!(output, target);
 
         let target = 5;
-        let output = object.body.data_map.len();
+        let output = object.body.property_count();
         assert_eq!(output, target);
     }
 }

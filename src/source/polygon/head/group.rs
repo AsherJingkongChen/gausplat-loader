@@ -2,12 +2,13 @@ pub use super::*;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Group {
-    element_to_property_ids: IndexMap<Id, Vec<Id>>,
-    property_to_element_id: IndexMap<Id, Id>,
+    element_id_to_property_ids: IndexMap<Id, Vec<Id>>,
+    property_id_to_element_id: IndexMap<Id, Id>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct GroupBuilder {
+    pub element: Option<ElementMeta>,
     pub element_id: Option<Id>,
     pub element_id_and_property_id: Vec<(Id, Id)>,
 }
@@ -16,8 +17,8 @@ impl Group {
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            element_to_property_ids: IndexMap::with_capacity(2),
-            property_to_element_id: IndexMap::with_capacity(capacity),
+            element_id_to_property_ids: IndexMap::with_capacity(2),
+            property_id_to_element_id: IndexMap::with_capacity(capacity),
         }
     }
 
@@ -26,7 +27,7 @@ impl Group {
         &self,
         property_id: Id,
     ) -> Option<Id> {
-        self.property_to_element_id.get(&property_id).copied()
+        self.property_id_to_element_id.get(&property_id).copied()
     }
 
     #[inline]
@@ -34,7 +35,7 @@ impl Group {
         &self,
         element_id: Id,
     ) -> Option<&[Id]> {
-        self.element_to_property_ids
+        self.element_id_to_property_ids
             .get(&element_id)
             .map(AsRef::as_ref)
     }
@@ -45,44 +46,55 @@ impl Group {
         property_id: Id,
         element_id: Id,
     ) -> &mut Self {
-        self.element_to_property_ids
+        self.element_id_to_property_ids
             .entry(element_id)
             .or_insert_with(|| Vec::with_capacity(8))
             .push(property_id);
-        self.property_to_element_id.insert(property_id, element_id);
+        self.property_id_to_element_id
+            .insert(property_id, element_id);
         self
     }
 
     #[inline]
-    pub fn iter_element_and_property_ids(
+    pub fn iter_element_id_and_property_ids(
         &self
     ) -> impl Iterator<Item = (&Id, &[Id])> {
-        self.element_to_property_ids
-            .iter()
-            .map(|(element_id, property_ids)| {
-                (element_id, property_ids.as_ref())
-            })
+        self.element_id_to_property_ids.iter().map(
+            |(element_id, property_ids)| (element_id, property_ids.as_ref()),
+        )
     }
 }
 
 impl GroupBuilder {
     #[inline]
     pub fn add_property_id(
-        mut self,
+        &mut self,
         property_id: Id,
-    ) -> Option<Self> {
+    ) -> Option<()> {
         self.element_id_and_property_id
             .push((self.element_id?, property_id));
-        Some(self)
+        Some(())
+    }
+
+    #[inline]
+    pub fn take_element(&mut self) -> Option<ElementMeta> {
+        self.element.take()
+    }
+
+    #[inline]
+    pub fn set_element(
+        &mut self,
+        element: ElementMeta,
+    ) {
+        self.element = Some(element);
     }
 
     #[inline]
     pub fn set_element_id(
-        mut self,
+        &mut self,
         element_id: Id,
-    ) -> Self {
+    ) {
         self.element_id = Some(element_id);
-        self
     }
 
     #[inline]
@@ -103,6 +115,7 @@ impl Default for GroupBuilder {
     #[inline]
     fn default() -> Self {
         Self {
+            element: None,
             element_id: None,
             element_id_and_property_id: Vec::with_capacity(8),
         }
@@ -118,13 +131,11 @@ mod tests {
 
         let source_element_id = Id::new();
         let source_property_ids = [Id::new(), Id::new()];
-        let group = GroupBuilder::default()
-            .set_element_id(source_element_id)
-            .add_property_id(source_property_ids[0])
-            .unwrap()
-            .add_property_id(source_property_ids[1])
-            .unwrap()
-            .build();
+        let mut group = GroupBuilder::default();
+        group.set_element_id(source_element_id);
+        group.add_property_id(source_property_ids[0]).unwrap();
+        group.add_property_id(source_property_ids[1]).unwrap();
+        let group = group.build();
 
         let target = source_property_ids[1];
         let output = group.get_property_ids(source_element_id).unwrap()[1];

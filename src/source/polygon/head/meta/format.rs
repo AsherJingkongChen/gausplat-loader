@@ -42,8 +42,6 @@ pub enum FormatMetaVariant {
     BinaryLittleEndian,
 }
 
-impl_format_meta_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
-
 impl FormatMeta {
     pub const KEYWORD: &[u8; 7] = b"format ";
 }
@@ -52,6 +50,23 @@ impl FormatMetaVariant {
     pub const DOMAIN: [&str; 3] =
         ["ascii", "binary_big_endian", "binary_little_endian"];
 }
+
+impl_format_meta_variant_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
+macro_rules! impl_format_meta_variant_matchers {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl FormatMetaVariant {
+                $(
+                    #[inline]
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
+                        matches!(self, Self::$variant)
+                    }
+                )*
+            }
+        }
+    };
+}
+use impl_format_meta_variant_matchers;
 
 impl Decoder for FormatMeta {
     type Err = Error;
@@ -142,22 +157,6 @@ impl Encoder for FormatMetaVariant {
     }
 }
 
-macro_rules! impl_format_meta_variant_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl FormatMetaVariant {
-                $(
-                    #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant)
-                    }
-                )*
-            }
-        }
-    };
-}
-use impl_format_meta_variant_matchers;
-
 #[cfg(test)]
 mod tests {
     #[test]
@@ -236,6 +235,7 @@ mod tests {
         assert_eq!(output.version, target);
     }
 
+    // TODO: Reduce tests
     #[test]
     fn matcher_is() {
         use super::*;

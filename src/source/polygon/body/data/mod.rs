@@ -17,37 +17,45 @@ pub enum DataVariant {
     Scalar(ScalarData),
 }
 
-impl_data_variant_matchers!(List, Scalar);
+impl_variant_matchers!(Data, List, Scalar);
 
-macro_rules! impl_data_variant_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl DataVariant {
-                $(
-                    #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant(_))
-                    }
+// TODO: Reduce tests
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn matcher_as() {
+        use super::*;
 
-                    #[inline]
-                    pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Data>]> {
-                        match self {
-                            Self::$variant(data) => Some(data),
-                            _ => None,
-                        }
-                    }
+        let target = true;
+        let output = DataVariant::List(Default::default()).as_list().is_some();
+        assert_eq!(output, target);
 
+        let target = true;
+        let output = DataVariant::Scalar(Default::default())
+            .as_scalar()
+            .is_some();
+        assert_eq!(output, target);
 
-                    #[inline]
-                    pub fn [<as_ $variant:snake _mut>](&mut self) -> Option<&mut [<$variant Data>]> {
-                        match self {
-                            Self::$variant(data) => Some(data),
-                            _ => None,
-                        }
-                    }
-                )*
-            }
-        }
-    };
+        let target = false;
+        let output =
+            DataVariant::List(Default::default()).as_scalar().is_some();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn matcher_is() {
+        use super::*;
+
+        let target = true;
+        let output = DataVariant::List(Default::default()).is_list();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = DataVariant::Scalar(Default::default()).is_scalar();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = DataVariant::List(Default::default()).is_scalar();
+        assert_eq!(output, target);
+    }
 }
-use impl_data_variant_matchers;

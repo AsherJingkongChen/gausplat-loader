@@ -18,34 +18,94 @@ pub struct Meta {
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum MetaVariant {
-    Element(ElementMeta),
-    Property(PropertyMeta),
     Comment(CommentMeta),
+    Element(ElementMeta),
     ObjInfo(ObjInfoMeta),
+    Property(PropertyMeta),
 }
 
-impl_head_meta_variant_matchers!(Comment, Element, ObjInfo, Property);
+impl_variant_matchers!(Meta, Comment, Element, ObjInfo, Property);
 
-macro_rules! impl_head_meta_variant_matchers {
-    ($( $variant:ident ),* ) => {
-        paste::paste! {
-            impl MetaVariant {
-                $(
-                    #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant(_))
-                    }
+// TODO: Reduce tests
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn matcher_as() {
+        use super::*;
 
-                    #[inline]
-                    pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant Meta>]> {
-                        match self {
-                            Self::$variant(meta) => Some(meta),
-                            _ => None,
-                        }
-                    }
-                )*
-            }
-        }
-    };
+        let target = true;
+        let output = MetaVariant::Comment(Default::default())
+            .as_comment()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::Element(Default::default())
+            .as_element()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::ObjInfo(Default::default())
+            .as_obj_info()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::Property(Default::default())
+            .as_property()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Comment(Default::default())
+            .as_element()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Element(Default::default())
+            .as_property()
+            .is_some();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Property(Default::default())
+            .as_comment()
+            .is_some();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn matcher_is() {
+        use super::*;
+
+        let target = true;
+        let output = MetaVariant::Comment(Default::default()).is_comment();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::Element(Default::default()).is_element();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::ObjInfo(Default::default()).is_obj_info();
+        assert_eq!(output, target);
+
+        let target = true;
+        let output = MetaVariant::Property(Default::default()).is_property();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Comment(Default::default()).is_element();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Element(Default::default()).is_property();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = MetaVariant::Property(Default::default()).is_comment();
+        assert_eq!(output, target);
+    }
 }
-use impl_head_meta_variant_matchers;

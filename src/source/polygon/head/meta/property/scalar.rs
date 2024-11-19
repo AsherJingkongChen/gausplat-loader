@@ -2,6 +2,7 @@ pub use super::*;
 
 use std::{
     collections::HashMap,
+    fmt,
     sync::{LazyLock, RwLock},
 };
 
@@ -62,7 +63,7 @@ static SCALAR_PROPERTY_DOMAIN: LazyLock<
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarPropertyMeta {
     pub kind: AsciiString,
     pub size: usize,
@@ -162,6 +163,15 @@ impl Default for ScalarPropertyMeta {
     #[inline]
     fn default() -> Self {
         FLOAT.to_owned()
+    }
+}
+
+impl fmt::Debug for ScalarPropertyMeta {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        write!(f, "\"{}\"", self.kind)
     }
 }
 
