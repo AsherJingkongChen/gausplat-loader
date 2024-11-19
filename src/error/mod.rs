@@ -8,6 +8,9 @@ pub enum Error {
     #[error("Bytemuck error: {0}")]
     Bytemuck(#[from] bytemuck::PodCastError),
 
+    #[error("Cast int error: {0}")]
+    CastIntError(#[from] std::num::TryFromIntError),
+
     #[error("Glob error: {0}")]
     Glob(#[from] globset::Error),
 

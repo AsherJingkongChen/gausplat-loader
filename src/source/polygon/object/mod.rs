@@ -9,7 +9,8 @@ pub use id::*;
 pub use indexmap::IndexMap;
 
 use crate::function::read_bytes;
-use std::io::Read;
+use byteorder::{ReadBytesExt, BE, LE};
+use std::{io::Read, ops::Mul};
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Object {
@@ -22,17 +23,14 @@ impl Decoder for Object {
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         use body::{Data, DataVariant, ListData, ScalarData};
-        use head::PropertyMetaVariant;
+        use head::{FormatMetaVariant::*, PropertyMetaVariant};
 
         // Decoding the head
 
         let head = Head::decode(reader)?;
 
-        // TODO: This requires byte-order-aware decoding utilities.
-        if !head.format.variant.is_binary_little_endian() {
-            unimplemented!(
-                "TODO: Decoding on formats other than binary little-endian"
-            );
+        if !head.format.variant.is_ascii() {
+            unimplemented!("TODO: Decoding on ascii format");
         }
 
         // Decoding the body
@@ -73,22 +71,22 @@ impl Decoder for Object {
                                 PropertyMetaVariant::List(list) => {
                                     let count_size = list.count.size;
                                     let value_size = list.value.size;
-
-                                    // NOTE: It assumes that the incoming bytes are in LE order.
-                                    // TODO: Bad smell. It should be byte-order-aware.
-                                    let mut value_count =
-                                        [0; size_of::<usize>()];
-                                    value_count.copy_from_slice(&read_bytes(
-                                        reader, count_size,
-                                    )?);
-                                    let value_count =
-                                        usize::from_le_bytes(value_count);
-
-                                    let data_size_estimated = element_size
-                                        * value_size
-                                        * value_count.max(1);
+                                    let value_count: usize =
+                                        match head.format.variant {
+                                            BinaryLittleEndian => reader
+                                                .read_uint::<LE>(count_size),
+                                            Ascii => unreachable!(),
+                                            BinaryBigEndian => reader
+                                                .read_uint::<BE>(count_size),
+                                        }?
+                                        .try_into()?;
                                     let property_size =
-                                        value_size * value_count;
+                                        value_size.mul(value_count);
+                                    let data_size_estimated = element_size
+                                        .mul(property_size.max(value_size));
+
+                                    let value =
+                                        read_bytes(reader, property_size)?;
 
                                     body.data_map
                                         .entry(property_id)
@@ -103,15 +101,15 @@ impl Decoder for Object {
                                         .variant
                                         .as_list_mut()
                                         .expect("Unreachable")
-                                        .push(
-                                            read_bytes(reader, property_size)?
-                                                .into(),
-                                        );
+                                        .push(value.into());
                                 },
                                 PropertyMetaVariant::Scalar(scalar) => {
                                     let property_size = scalar.size;
                                     let data_size =
-                                        element_size * property_size;
+                                        element_size.mul(property_size);
+
+                                    let value =
+                                        read_bytes(reader, property_size)?;
 
                                     body.data_map
                                         .entry(property_id)
@@ -126,10 +124,7 @@ impl Decoder for Object {
                                         .variant
                                         .as_scalar_mut()
                                         .expect("Unreachable")
-                                        .extend(read_bytes(
-                                            reader,
-                                            property_size,
-                                        )?);
+                                        .extend(value);
                                 },
                             };
 
