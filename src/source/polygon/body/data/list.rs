@@ -17,18 +17,17 @@ impl ListData {
     }
 
     #[inline]
-    pub fn cast_iter<T: Pod>(
+    pub fn iter_cast<T: Pod>(
         &self
     ) -> impl Iterator<Item = Result<&[T], Error>> {
         self.iter().map(|bytes| Ok(try_cast_slice(bytes)?))
     }
 
     #[inline]
-    pub fn cast_iter_mut<T: Pod>(
+    pub fn iter_cast_mut<T: Pod>(
         &mut self
     ) -> impl Iterator<Item = Result<&mut [T], Error>> {
-        self.iter_mut()
-            .map(|bytes| Ok(try_cast_slice_mut(bytes)?))
+        self.iter_mut().map(|bytes| Ok(try_cast_slice_mut(bytes)?))
     }
 }
 

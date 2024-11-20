@@ -10,15 +10,17 @@ property uchar red
 property uchar green
 property uchar blue
 element face 7
-element edge 5
+element edge 6
 property uint vertex1
 property uint vertex2
 property uchar red
 property uchar green
 property uchar blue
+element ignored 1
 end_header
 0 1 255 255 0
 1 2 0 128 255
 2 3 255 0 128
 3 0 128 255 255
 2 0 0 0 0
+1 0 128 128 127

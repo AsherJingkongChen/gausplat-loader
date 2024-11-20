@@ -12,7 +12,7 @@ pub use property::*;
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Meta {
-    pub variant: MetaVariant,
+    variant: MetaVariant,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -23,7 +23,7 @@ pub enum MetaVariant {
     Property(PropertyMeta),
 }
 
-impl_variant_matchers!(Meta, Comment, Element, ObjInfo, Property);
+impl_variant_matchers! { Meta, Comment, Element, ObjInfo, Property }
 
 impl Default for MetaVariant {
     #[inline]

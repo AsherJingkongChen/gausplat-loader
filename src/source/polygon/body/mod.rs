@@ -8,7 +8,7 @@ use std::ops;
 
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Body {
-    inner: Vec<Vec<Data>>,
+    inner: Vec<ElementData>,
 }
 
 impl Body {
@@ -20,29 +20,25 @@ impl Body {
     }
 
     #[inline]
-    pub fn iters(
-        &self
-    ) -> impl Iterator<Item = impl Iterator<Item = &Data>> {
-        self.iter().map(|element| element.iter())
+    pub fn iter_data(&self) -> impl Iterator<Item = &Data> {
+        self.iter().flatten()
     }
 
     #[inline]
-    pub fn iters_mut(
-        &mut self
-    ) -> impl Iterator<Item = impl Iterator<Item = &mut Data>> {
-        self.iter_mut().map(|element| element.iter_mut())
+    pub fn iter_data_mut(&mut self) -> impl Iterator<Item = &mut Data> {
+        self.iter_mut().flatten()
     }
 }
 
-impl From<Vec<Vec<Data>>> for Body {
+impl From<Vec<ElementData>> for Body {
     #[inline]
-    fn from(inner: Vec<Vec<Data>>) -> Self {
+    fn from(inner: Vec<ElementData>) -> Self {
         Self { inner }
     }
 }
 
 impl ops::Deref for Body {
-    type Target = Vec<Vec<Data>>;
+    type Target = Vec<ElementData>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {

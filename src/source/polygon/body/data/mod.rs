@@ -5,6 +5,9 @@ pub use super::*;
 pub use list::*;
 pub use scalar::*;
 
+pub type ElementData = Vec<PropertyData>;
+pub type PropertyData = Data;
+
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Data {
     variant: DataVariant,
@@ -16,7 +19,7 @@ pub enum DataVariant {
     Scalar(ScalarData),
 }
 
-impl_variant_matchers!(Data, List, Scalar);
+impl_variant_matchers! { Data, List, Scalar }
 
 impl Default for DataVariant {
     #[inline]

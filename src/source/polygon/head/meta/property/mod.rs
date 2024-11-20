@@ -46,7 +46,7 @@ pub enum PropertyMetaVariant {
     Scalar(ScalarPropertyMeta),
 }
 
-impl_variant_matchers!(PropertyMeta, List, Scalar);
+impl_variant_matchers! { PropertyMeta, List, Scalar }
 
 impl Decoder for PropertyMeta {
     type Err = Error;

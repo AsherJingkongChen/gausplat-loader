@@ -136,10 +136,7 @@ impl ScalarPropertyMeta {
             None?;
         }
 
-        SCALAR_PROPERTIES
-            .write()
-            .expect("Poisoned")
-            .remove(kind)
+        SCALAR_PROPERTIES.write().expect("Poisoned").remove(kind)
     }
 }
 

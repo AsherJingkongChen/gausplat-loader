@@ -26,6 +26,18 @@ pub struct CommentMeta {
     inner: AsciiString,
 }
 
+impl CommentMeta {
+    #[inline]
+    pub fn new<S: AsRef<[u8]>>(inner: S) -> Result<Self, Error> {
+        let inner = inner.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(
+                String::from_utf8_lossy(err.into_source()).into_owned(),
+            )
+        })?;
+        Ok(Self { inner })
+    }
+}
+
 impl Decoder for CommentMeta {
     type Err = Error;
 
@@ -57,7 +69,10 @@ impl Encoder for CommentMeta {
 }
 
 impl fmt::Debug for CommentMeta {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         write!(f, "{:?}", self.inner)
     }
 }

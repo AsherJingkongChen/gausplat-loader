@@ -62,6 +62,12 @@ impl Head {
     pub const SIGNATURE: &[u8; 3] = b"ply";
 
     #[inline]
+    pub fn new(format: FormatMeta) -> Self {
+        let inner = Vec::with_capacity(16);
+        Self { format, inner }
+    }
+
+    #[inline]
     pub const fn get_format(&self) -> FormatMetaVariant {
         self.format.variant
     }
@@ -71,18 +77,6 @@ impl Head {
         &mut self,
         variant: FormatMetaVariant,
     ) {
-        let is_same_endian = match variant {
-            BinaryLittleEndian => self.is_format_binary_little_endian(),
-            Ascii => self.is_format_ascii(),
-            BinaryBigEndian => self.is_format_binary_big_endian(),
-        };
-        if !is_same_endian {
-            log::warn!(
-                target: "gausplat-loader::source::polygon::head",
-                "The format is changed to {variant:?}. The data may be corrupted.",
-            );
-        }
-
         *self.format = variant;
     }
 
@@ -104,27 +98,62 @@ impl Head {
             })?;
         Ok(())
     }
+}
 
+macro_rules! impl_head_filtered_iterators {
+    ($( $variant:ident ),* ) => {
+        paste::paste! {
+            impl Head {
+                $(
+                    #[inline]
+                    pub fn [<iter_ $variant:snake>](
+                        &self
+                    ) -> impl Iterator<Item = &[<$variant Meta>]> {
+                        self.iter().filter_map(|meta| meta.[<as_ $variant:snake>]())
+                    }
+
+                    #[inline]
+                    pub fn [<iter_ $variant:snake _mut>](
+                        &mut self
+                    ) -> impl Iterator<Item = &mut [<$variant Meta>]> {
+                        self.iter_mut().filter_map(|meta| meta.[<as_ $variant:snake _mut>]())
+                    }
+                )*
+            }
+        }
+    };
+}
+impl_head_filtered_iterators! { Comment, Element, ObjInfo, Property }
+
+// Special filtered iterators
+impl Head {
     #[inline]
-    pub fn elements_and_properties(
+    pub fn iter_element_then_property(
         &self
     ) -> impl Iterator<Item = (&ElementMeta, impl Iterator<Item = &PropertyMeta>)>
     {
-        self.iter().enumerate().filter_map(|(i, meta)| {
-            meta.as_element().and_then(|element| {
-                let properties = self
-                    .get(i + 1..)?
-                    .iter()
-                    .take_while(|m| !m.is_element())
-                    .filter_map(|m| m.as_property());
-
-                Some((element, properties))
-            })
+        self.iter().enumerate().filter_map(|(index, meta)| {
+            let element = meta.as_element()?;
+            let properties = self
+                .iter()
+                .skip(index + 1)
+                .take_while(|meta| !meta.is_element())
+                .filter_map(|meta| meta.as_property());
+            Some((element, properties))
         })
+    }
+
+    #[inline]
+    pub fn iter_element_and_property(
+        &self
+    ) -> impl Iterator<Item = (&ElementMeta, &PropertyMeta)> {
+        self.iter_element_then_property()
+            .flat_map(|(element, properties)| {
+                properties.map(move |property| (element, property))
+            })
     }
 }
 
-impl_head_format_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
 macro_rules! impl_head_format_matchers {
     ($( $variant:ident ),* ) => {
         paste::paste! {
@@ -139,7 +168,7 @@ macro_rules! impl_head_format_matchers {
         }
     };
 }
-use impl_head_format_matchers;
+impl_head_format_matchers! { Ascii, BinaryBigEndian, BinaryLittleEndian }
 
 impl Decoder for Head {
     type Err = Error;
@@ -156,11 +185,9 @@ impl Decoder for Head {
             Err(Error::MissingToken("<newline>".into()))?;
         }
 
-        let format = FormatMeta::decode(reader)?;
-
+        let mut head = Head::new(FormatMeta::decode(reader)?);
+        
         let mut had_element = false;
-        let mut inner = Vec::with_capacity(16);
-
         loop {
             let keyword_prefix = read_bytes_const(reader)?;
             match &keyword_prefix {
@@ -173,7 +200,7 @@ impl Decoder for Head {
                                 Err(Error::MissingToken("element ".into()))?;
                             }
 
-                            inner.push(
+                            head.push(
                                 Property(PropertyMeta::decode(reader)?).into(),
                             );
 
@@ -186,7 +213,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            inner.push(
+                            head.push(
                                 Element(ElementMeta::decode(reader)?).into(),
                             );
                             had_element = true;
@@ -217,7 +244,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"mment " => {
-                            inner.push(
+                            head.push(
                                 Comment(CommentMeta::decode(reader)?).into(),
                             );
                             Ok(())
@@ -229,7 +256,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"j_info " => {
-                            inner.push(
+                            head.push(
                                 ObjInfo(ObjInfoMeta::decode(reader)?).into(),
                             );
                             Ok(())
@@ -247,7 +274,7 @@ impl Decoder for Head {
             })?;
         }
 
-        Ok(Self { format, inner })
+        Ok(head)
     }
 }
 

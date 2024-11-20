@@ -45,6 +45,19 @@ pub enum FormatMetaVariant {
 
 impl FormatMeta {
     pub const KEYWORD: &[u8; 7] = b"format ";
+
+    #[inline]
+    pub fn new<V: AsRef<[u8]>>(
+        variant: FormatMetaVariant,
+        version: V,
+    ) -> Result<Self, Error> {
+        let version = version.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(
+                String::from_utf8_lossy(&err.into_source()).into_owned(),
+            )
+        })?;
+        Ok(Self { variant, version })
+    }
 }
 
 impl FormatMetaVariant {

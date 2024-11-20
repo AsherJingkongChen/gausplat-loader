@@ -43,7 +43,10 @@ impl Encoder for ListPropertyMeta {
 }
 
 impl fmt::Debug for ListPropertyMeta {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         write!(f, "list<{:?}, {:?}>", self.count, self.value)
     }
 }

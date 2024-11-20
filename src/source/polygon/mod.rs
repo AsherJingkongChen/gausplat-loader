@@ -21,6 +21,7 @@ pub mod object;
 
 pub use body::Body;
 pub use head::Head;
+pub use object::Object;
 
 macro_rules! impl_variant_matchers {
     ($subject:ident, $( $variant:ident ),* ) => {
