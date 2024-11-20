@@ -1,16 +1,13 @@
-pub mod group;
 pub mod meta;
 
-pub use super::object::Id;
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
-pub use group::*;
-pub use indexmap::IndexMap;
+pub use indexmap::{IndexMap, IndexSet};
 pub use meta::*;
 
-use super::{impl_map_accessors, impl_variant_matchers};
+use super::impl_variant_matchers;
 use crate::function::{
     decode::{
         is_space, read_byte_after, read_bytes_before,
@@ -18,7 +15,10 @@ use crate::function::{
     },
     encode::{NEWLINE, SPACE},
 };
-use std::io::{Read, Write};
+use std::{
+    io::{Read, Write},
+    ops,
+};
 
 /// ## Syntax
 ///
@@ -45,15 +45,14 @@ use std::io::{Read, Write};
 /// ### Syntax Reference
 ///
 /// - [`FormatMeta`]
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Head {
     format: FormatMeta,
-    group: Group,
-    meta_map: IndexMap<Id, Meta>,
+    inner: Vec<Meta>,
 }
 
 impl Head {
-    pub const KEYWORDS: [&str; 5] = [
+    pub const KEYWORDS: &[&str; 5] = &[
         "comment ",
         "element ",
         "end_header",
@@ -61,15 +60,6 @@ impl Head {
         "obj_info ",
     ];
     pub const SIGNATURE: &[u8; 3] = b"ply";
-
-    impl_map_accessors!(Meta, Comment, Element, ObjInfo, Property);
-
-    pub fn remove_comment(
-        &mut self,
-        id: &Id,
-    ) -> Option<Meta> {
-        self.meta_map.shift_remove(id)
-    }
 
     #[inline]
     pub const fn get_format(&self) -> FormatMetaVariant {
@@ -93,7 +83,7 @@ impl Head {
             );
         }
 
-        self.format.variant = variant;
+        *self.format = variant;
     }
 
     #[inline]
@@ -102,9 +92,9 @@ impl Head {
     }
 
     #[inline]
-    pub fn set_version<S: AsRef<[u8]>>(
+    pub fn set_version<V: AsRef<[u8]>>(
         &mut self,
-        version: S,
+        version: V,
     ) -> Result<(), Error> {
         self.format.version =
             version.as_ref().into_ascii_string().map_err(|err| {
@@ -116,48 +106,26 @@ impl Head {
     }
 
     #[inline]
-    pub fn iter_element_and_property(
+    pub fn elements_and_properties(
         &self
-    ) -> impl Iterator<
-        Item = (
-            (&Id, &ElementMeta),
-            impl Iterator<Item = (&Id, &PropertyMeta)>,
-        ),
-    > {
-        self.group.iter_element_id_and_property_ids().map(
-            |(element_id, property_ids)| {
-                let element = self
-                    .meta_map
-                    .get(element_id)
-                    .expect("Unreachable")
-                    .variant
-                    .as_element()
-                    .expect("Unreachable");
+    ) -> impl Iterator<Item = (&ElementMeta, impl Iterator<Item = &PropertyMeta>)>
+    {
+        self.iter().enumerate().filter_map(|(i, meta)| {
+            meta.as_element().and_then(|element| {
+                let properties = self
+                    .get(i + 1..)?
+                    .iter()
+                    .take_while(|m| !m.is_element())
+                    .filter_map(|m| m.as_property());
 
-                let properties = property_ids.iter().map(|property_id| {
-                    (
-                        property_id,
-                        self.meta_map
-                            .get(property_id)
-                            .expect("Unreachable")
-                            .variant
-                            .as_property()
-                            .expect("Unreachable"),
-                    )
-                });
-
-                ((element_id, element), properties)
-            },
-        )
+                Some((element, properties))
+            })
+        })
     }
 }
 
-impl_head_format_matchers_and_setters!(
-    Ascii,
-    BinaryBigEndian,
-    BinaryLittleEndian
-);
-macro_rules! impl_head_format_matchers_and_setters {
+impl_head_format_matchers!(Ascii, BinaryBigEndian, BinaryLittleEndian);
+macro_rules! impl_head_format_matchers {
     ($( $variant:ident ),* ) => {
         paste::paste! {
             impl Head {
@@ -166,17 +134,12 @@ macro_rules! impl_head_format_matchers_and_setters {
                     pub const fn [<is_format_ $variant:snake>](&self) -> bool {
                         matches!(self.format.variant, FormatMetaVariant::$variant)
                     }
-
-                    #[inline]
-                    pub fn [<set_format_ $variant:snake>](&mut self) {
-                        self.set_format(FormatMetaVariant::$variant);
-                    }
                 )*
             }
         }
     };
 }
-use impl_head_format_matchers_and_setters;
+use impl_head_format_matchers;
 
 impl Decoder for Head {
     type Err = Error;
@@ -195,8 +158,8 @@ impl Decoder for Head {
 
         let format = FormatMeta::decode(reader)?;
 
-        let mut group = GroupBuilder::default();
-        let mut meta_map = IndexMap::with_capacity(16);
+        let mut had_element = false;
+        let mut inner = Vec::with_capacity(16);
 
         loop {
             let keyword_prefix = read_bytes_const(reader)?;
@@ -205,23 +168,14 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"operty " => {
-                            // NOTE: Inserting the most recent element.
-                            if let Some(variant) =
-                                group.take_element().map(Element)
-                            {
-                                let id = Id::new();
-                                group.set_element_id(id);
-                                meta_map.insert(id, Meta { id, variant });
+                            // Rejecting the misplaced property.
+                            if !had_element {
+                                Err(Error::MissingToken("element ".into()))?;
                             }
 
-                            // NOTE: Rejecting the misplaced property.
-                            let variant =
-                                Property(PropertyMeta::decode(reader)?);
-                            let id = Id::new();
-                            group.add_property_id(id).ok_or_else(|| {
-                                Error::MissingToken("element ".into())
-                            })?;
-                            meta_map.insert(id, Meta { id, variant });
+                            inner.push(
+                                Property(PropertyMeta::decode(reader)?).into(),
+                            );
 
                             Ok(())
                         },
@@ -232,7 +186,10 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            group.set_element(ElementMeta::decode(reader)?);
+                            inner.push(
+                                Element(ElementMeta::decode(reader)?).into(),
+                            );
+                            had_element = true;
                             Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
@@ -260,9 +217,9 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"mment " => {
-                            let variant = Comment(CommentMeta::decode(reader)?);
-                            let id = Id::new();
-                            meta_map.insert(id, Meta { id, variant });
+                            inner.push(
+                                Comment(CommentMeta::decode(reader)?).into(),
+                            );
                             Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
@@ -272,9 +229,9 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"j_info " => {
-                            let variant = ObjInfo(ObjInfoMeta::decode(reader)?);
-                            let id = Id::new();
-                            meta_map.insert(id, Meta { id, variant });
+                            inner.push(
+                                ObjInfo(ObjInfoMeta::decode(reader)?).into(),
+                            );
                             Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
@@ -290,13 +247,7 @@ impl Decoder for Head {
             })?;
         }
 
-        let group = group.build();
-
-        Ok(Self {
-            format,
-            group,
-            meta_map,
-        })
+        Ok(Self { format, inner })
     }
 }
 
@@ -314,29 +265,43 @@ impl Encoder for Head {
 
         self.format.encode(writer)?;
 
-        self.meta_map
-            .values()
-            .try_for_each(|meta| match &meta.variant {
-                Property(meta) => {
-                    writer.write_all(b"property ")?;
-                    meta.encode(writer)
-                },
-                Element(meta) => {
-                    writer.write_all(b"element ")?;
-                    meta.encode(writer)
-                },
-                Comment(meta) => {
-                    writer.write_all(b"comment ")?;
-                    meta.encode(writer)
-                },
-                ObjInfo(meta) => {
-                    writer.write_all(b"obj_info ")?;
-                    meta.encode(writer)
-                },
-            })?;
+        self.iter().try_for_each(|meta| match &**meta {
+            Property(meta) => {
+                writer.write_all(b"property ")?;
+                meta.encode(writer)
+            },
+            Element(meta) => {
+                writer.write_all(b"element ")?;
+                meta.encode(writer)
+            },
+            Comment(meta) => {
+                writer.write_all(b"comment ")?;
+                meta.encode(writer)
+            },
+            ObjInfo(meta) => {
+                writer.write_all(b"obj_info ")?;
+                meta.encode(writer)
+            },
+        })?;
 
         writer.write_all(b"end_header")?;
         Ok(writer.write_all(NEWLINE)?)
+    }
+}
+
+impl ops::Deref for Head {
+    type Target = Vec<Meta>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for Head {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
@@ -442,13 +407,13 @@ mod tests {
         let output = head.get_format();
         assert_eq!(output, target);
 
-        let target = FormatMetaVariant::Ascii;
-        head.set_format_ascii();
+        let target = Ascii;
+        head.set_format(Ascii);
         let output = head.get_format();
         assert_eq!(output, target);
 
         let target = FormatMetaVariant::BinaryLittleEndian;
-        head.set_format_binary_little_endian();
+        head.set_format(BinaryLittleEndian);
         let output = head.get_format();
         assert_eq!(output, target);
     }
@@ -482,20 +447,14 @@ mod tests {
         let reader = &mut Cursor::new(source);
         let mut head = Head::decode(reader).unwrap();
 
-        let target = true;
-        let output = head.iter_comment().next().is_some();
+        let target = 2;
+        let output = head.iter().filter(|meta| meta.is_comment()).count();
         assert_eq!(output, target);
 
-        head.iter_comment()
-            .map(|(id, _)| *id)
-            .collect::<Vec<_>>()
-            .into_iter()
-            .for_each(|id| {
-                head.remove_comment(&id).unwrap();
-            });
-        
-        let target = false;
-        let output = head.iter_comment().next().is_some();
+        head.retain(|meta| !meta.is_comment());
+
+        let target = 0;
+        let output = head.iter().filter(|meta| meta.is_comment()).count();
         assert_eq!(output, target);
     }
 }

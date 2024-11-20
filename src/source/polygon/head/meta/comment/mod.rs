@@ -1,5 +1,7 @@
 pub mod obj_info;
 
+use std::fmt;
+
 pub use super::*;
 pub use obj_info::*;
 
@@ -7,9 +9,9 @@ pub use obj_info::*;
 ///
 /// ```plaintext
 /// <comment-meta> :=
-///     | [{" "}] <message> <newline>
+///     | [{" "}] <comment> <newline>
 ///
-/// <message> :=
+/// <comment> :=
 ///     | <ascii-string>
 ///
 /// <newline> :=
@@ -19,33 +21,25 @@ pub use obj_info::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CommentMeta {
-    pub message: AsciiString,
+    inner: AsciiString,
 }
 
 impl Decoder for CommentMeta {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut message = vec![read_byte_after(reader, is_space)?
-            .ok_or_else(|| Error::MissingToken("<message>".into()))?];
-        message.extend(read_bytes_before_newline(reader, 64)?);
-        let message = message.into_ascii_string().map_err(|err| {
+        let mut inner = vec![read_byte_after(reader, is_space)?
+            .ok_or_else(|| Error::MissingToken("<comment>".into()))?];
+        inner.extend(read_bytes_before_newline(reader, 64)?);
+        let inner = inner.into_ascii_string().map_err(|err| {
             Error::InvalidAscii(
                 String::from_utf8_lossy(&err.into_source()).into_owned(),
             )
         })?;
 
-        Ok(Self { message })
-    }
-}
-
-impl Default for CommentMeta {
-    #[inline]
-    fn default() -> Self {
-        let message = "default".into_ascii_string().expect("Unreachable");
-        Self { message }
+        Ok(Self { inner })
     }
 }
 
@@ -57,8 +51,37 @@ impl Encoder for CommentMeta {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        writer.write_all(self.message.as_bytes())?;
+        writer.write_all(self.as_bytes())?;
         Ok(writer.write_all(NEWLINE)?)
+    }
+}
+
+impl fmt::Debug for CommentMeta {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.inner)
+    }
+}
+
+impl From<AsciiString> for CommentMeta {
+    #[inline]
+    fn from(inner: AsciiString) -> Self {
+        Self { inner }
+    }
+}
+
+impl ops::Deref for CommentMeta {
+    type Target = AsciiString;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for CommentMeta {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
@@ -73,7 +96,7 @@ mod tests {
         let reader = &mut Cursor::new(source);
 
         let target = source.len() - 1;
-        let output = CommentMeta::decode(reader).unwrap().message.len();
+        let output = CommentMeta::decode(reader).unwrap().len();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"    ");
@@ -88,14 +111,5 @@ mod tests {
 
         let source = &mut Cursor::new("\u{ae}");
         CommentMeta::decode(source).unwrap_err();
-    }
-
-    #[test]
-    fn default() {
-        use super::*;
-
-        let target = "default";
-        let output = CommentMeta::default().message;
-        assert_eq!(output, target);
     }
 }

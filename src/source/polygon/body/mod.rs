@@ -1,55 +1,58 @@
 pub mod data;
 
-pub use super::object::Id;
 pub use crate::error::Error;
 pub use data::*;
-pub use indexmap::IndexMap;
 
-use super::{impl_map_accessors, impl_variant_matchers};
+use super::impl_variant_matchers;
+use std::ops;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Body {
-    data_map: IndexMap<Id, Data>,
+    inner: Vec<Vec<Data>>,
 }
 
 impl Body {
-    impl_map_accessors!(Data, List, Scalar);
+    #[inline]
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: Vec::with_capacity(capacity),
+        }
+    }
 
     #[inline]
-    pub fn property_count(&self) -> usize {
-        self.data_map.len()
+    pub fn iters(
+        &self
+    ) -> impl Iterator<Item = impl Iterator<Item = &Data>> {
+        self.iter().map(|element| element.iter())
+    }
+
+    #[inline]
+    pub fn iters_mut(
+        &mut self
+    ) -> impl Iterator<Item = impl Iterator<Item = &mut Data>> {
+        self.iter_mut().map(|element| element.iter_mut())
     }
 }
 
-impl_body_data_accessors!(List, Scalar);
-macro_rules! impl_body_data_accessors {
-    ($( $data:ident ),* ) => {
-        paste::paste! {
-            impl Body {
-                $(
-                    #[inline]
-                    pub fn [<get_or_init_ $data:snake _mut>](
-                        &mut self,
-                        id: &Id,
-                        capacity: usize,
-                    ) -> Option<&mut [<$data Data>]> {
-                        use DataVariant::*;
-
-                        let id = *id;
-                        self.data_map
-                            .entry(id)
-                            .or_insert_with(|| Data {
-                                id,
-                                variant: [<$data>]([<$data Data>]::with_capacity(
-                                    capacity,
-                                )),
-                            })
-                            .variant
-                            .[<as_ $data:snake _mut>]()
-                    }
-                )*
-            }
-        }
-    };
+impl From<Vec<Vec<Data>>> for Body {
+    #[inline]
+    fn from(inner: Vec<Vec<Data>>) -> Self {
+        Self { inner }
+    }
 }
-use impl_body_data_accessors;
+
+impl ops::Deref for Body {
+    type Target = Vec<Vec<Data>>;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl ops::DerefMut for Body {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}

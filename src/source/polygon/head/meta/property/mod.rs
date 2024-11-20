@@ -22,7 +22,7 @@ pub use scalar::*;
 ///
 /// - [`AsciiString`]
 /// - [`PropertyMetaVariant`]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct PropertyMeta {
     pub name: AsciiString,
     pub variant: PropertyMetaVariant,
@@ -80,15 +80,6 @@ impl Decoder for PropertyMetaVariant {
     }
 }
 
-impl Default for PropertyMeta {
-    #[inline]
-    fn default() -> Self {
-        let name = "default".into_ascii_string().expect("Unreachable");
-        let variant = Default::default();
-        Self { name, variant }
-    }
-}
-
 impl Default for PropertyMetaVariant {
     #[inline]
     fn default() -> Self {
@@ -125,6 +116,22 @@ impl Encoder for PropertyMetaVariant {
                 list.encode(writer)
             },
         }
+    }
+}
+
+impl ops::Deref for PropertyMeta {
+    type Target = PropertyMetaVariant;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.variant
+    }
+}
+
+impl ops::DerefMut for PropertyMeta {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.variant
     }
 }
 
@@ -247,10 +254,6 @@ mod tests {
     #[test]
     fn default() {
         use super::*;
-
-        let target = "default";
-        let output = PropertyMeta::default().name;
-        assert_eq!(output, target);
 
         let target = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default());
         let output = PropertyMetaVariant::default();

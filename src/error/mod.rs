@@ -1,7 +1,4 @@
-use crate::source::polygon::{
-    head::{FormatMetaVariant, Head},
-    object::Id,
-};
+use crate::source::polygon::head::{FormatMetaVariant, Head};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -46,9 +43,6 @@ pub enum Error {
 
     #[error("Mismatched tensor shape: {0:?}. It should be {1:?}.")]
     MismatchedTensorShape(Vec<usize>, Vec<usize>),
-
-    #[error("Missing {0} id: {1:?}")]
-    MissingId(String, Id),
 
     #[error("Missing token: {0:?}")]
     MissingToken(String),

@@ -63,7 +63,7 @@ static SCALAR_PROPERTIES: LazyLock<
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-#[derive(Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ScalarPropertyMeta {
     pub kind: AsciiString,
     pub size: usize,
@@ -159,19 +159,12 @@ impl Decoder for ScalarPropertyMeta {
     }
 }
 
-impl Default for ScalarPropertyMeta {
-    #[inline]
-    fn default() -> Self {
-        FLOAT.to_owned()
-    }
-}
-
 impl fmt::Debug for ScalarPropertyMeta {
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        write!(f, "\"{}\"", self.kind)
+        write!(f, "{}", self.kind)
     }
 }
 
@@ -237,13 +230,6 @@ mod tests {
 
         let source = &mut Cursor::new(b"");
         ScalarPropertyMeta::decode(source).unwrap_err();
-    }
-
-    #[test]
-    fn default() {
-        use super::*;
-
-        ScalarPropertyMeta::search(ScalarPropertyMeta::default().kind).unwrap();
     }
 
     #[test]

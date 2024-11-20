@@ -1,5 +1,7 @@
 pub use super::*;
 
+use std::fmt;
+
 /// ## Syntax
 ///
 /// ```plaintext
@@ -10,7 +12,7 @@ pub use super::*;
 /// ### Syntax Reference
 ///
 /// - [`ScalarPropertyMeta`]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ListPropertyMeta {
     pub count: ScalarPropertyMeta,
     pub value: ScalarPropertyMeta,
@@ -27,16 +29,6 @@ impl Decoder for ListPropertyMeta {
     }
 }
 
-impl Default for ListPropertyMeta {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            count: UCHAR.to_owned(),
-            value: INT.to_owned(),
-        }
-    }
-}
-
 impl Encoder for ListPropertyMeta {
     type Err = Error;
 
@@ -50,14 +42,8 @@ impl Encoder for ListPropertyMeta {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn default() {
-        use super::*;
-
-        let property = ListPropertyMeta::default();
-        ScalarPropertyMeta::search(property.count.kind).unwrap();
-        ScalarPropertyMeta::search(property.value.kind).unwrap();
+impl fmt::Debug for ListPropertyMeta {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "list<{:?}, {:?}>", self.count, self.value)
     }
 }

@@ -141,6 +141,22 @@ impl Encoder for FormatMetaVariant {
     }
 }
 
+impl ops::Deref for FormatMeta {
+    type Target = FormatMetaVariant;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.variant
+    }
+}
+
+impl ops::DerefMut for FormatMeta {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.variant
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -205,17 +221,5 @@ mod tests {
 
         let source = &mut Cursor::new(b"");
         FormatMeta::decode(source).unwrap_err();
-    }
-
-    #[test]
-    fn default() {
-        use super::*;
-
-        let target = FormatMetaVariant::default();
-        let output = FormatMeta::default();
-        assert_eq!(output.variant, target);
-
-        let target = "1.0";
-        assert_eq!(output.version, target);
     }
 }

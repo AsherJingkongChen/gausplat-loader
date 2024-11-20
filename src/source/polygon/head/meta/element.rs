@@ -20,7 +20,7 @@ pub use super::*;
 ///
 /// - [`AsciiString`]
 /// - [`usize`]
-#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct ElementMeta {
     pub name: AsciiString,
     pub size: usize,
@@ -49,15 +49,6 @@ impl Decoder for ElementMeta {
             .parse()?;
 
         Ok(Self { name, size })
-    }
-}
-
-impl Default for ElementMeta {
-    #[inline]
-    fn default() -> Self {
-        let name = "default".into_ascii_string().expect("Unreachable");
-        let size = Default::default();
-        Self { name, size }
     }
 }
 
@@ -126,17 +117,5 @@ mod tests {
 
         let source = &mut Cursor::new(b"unicode \x8e\xcd\n");
         ElementMeta::decode(source).unwrap_err();
-    }
-
-    #[test]
-    fn default() {
-        use super::*;
-
-        let target = "default";
-        let output = ElementMeta::default();
-        assert_eq!(output.name, target);
-
-        let target = 0;
-        assert_eq!(output.size, target);
     }
 }

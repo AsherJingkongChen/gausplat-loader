@@ -1,18 +1,16 @@
-pub mod id;
-
-pub use super::{body, head, Body, Head};
+pub use super::*;
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
-pub use id::*;
-pub use indexmap::IndexMap;
 
 use crate::function::read_bytes;
+use body::*;
 use byteorder::{ReadBytesExt, WriteBytesExt, BE, LE};
+use head::*;
 use std::io::{Read, Write};
 
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Object {
     pub head: Head,
     pub body: Body,
@@ -22,58 +20,76 @@ impl Decoder for Object {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
-
         let head = Head::decode(reader)?;
         assert!(!head.is_format_ascii(), "TODO: Decoding on ascii format");
 
-        let mut body = Body::default();
+        let mut body = Body::with_capacity(2);
 
-        head.iter_element_and_property().try_for_each(
-            |((_, element), properties)| {
-                let property_variants = properties
-                    .map(|(id, property)| (id, &property.variant))
-                    .collect::<Box<[_]>>();
+        head.elements_and_properties().try_for_each(
+            |(element, properties)| -> Result<(), Self::Err> {
+                let properties = properties.collect::<Vec<_>>();
 
-                (0..element.size).try_for_each(|_| {
-                    property_variants.iter().try_for_each(|(id, property)| {
-                        match property {
-                            Scalar(scalar) => {
-                                let step = scalar.size;
-                                let value = read_bytes(reader, step)?;
-
-                                let capacity = element.size * scalar.size;
-                                body.get_or_init_scalar_mut(id, capacity)
-                                    .expect("Unreachable")
-                                    .extend(value);
-                            },
-                            List(list) => {
-                                let step = list.count.size;
-                                let count: usize = match head.get_format() {
-                                    BinaryLittleEndian => {
-                                        reader.read_uint::<LE>(step)
+                let data = (0..element.size).try_fold(
+                    properties
+                        .iter()
+                        .map(|property| {
+                            match &***property {
+                                PropertyMetaVariant::Scalar(scalar) => {
+                                    DataVariant::Scalar(
+                                        ScalarData::with_capacity(
+                                            element.size * scalar.size,
+                                        ),
+                                    )
+                                },
+                                PropertyMetaVariant::List(list) => {
+                                    DataVariant::List(ListData::with_capacity(
+                                        element.size * list.value.size,
+                                    ))
+                                },
+                            }
+                            .into()
+                        })
+                        .collect(),
+                    |mut data, _| -> Result<Vec<Data>, Self::Err> {
+                        properties.iter().zip(data.iter_mut()).try_for_each(
+                            |(property, datum)| -> Result<(), Self::Err> {
+                                match &***property {
+                                    PropertyMetaVariant::Scalar(scalar) => {
+                                        let step = scalar.size;
+                                        let value = read_bytes(reader, step)?;
+                                        datum
+                                            .as_scalar_mut()
+                                            .expect("Unreachable")
+                                            .extend(value);
                                     },
-                                    Ascii => unreachable!(),
-                                    BinaryBigEndian => {
-                                        reader.read_uint::<BE>(step)
+                                    PropertyMetaVariant::List(list) => {
+                                        let step = list.count.size;
+                                        let count: usize =
+                                            match head.get_format() {
+                                                BinaryLittleEndian => {
+                                                    reader.read_uint::<LE>(step)
+                                                },
+                                                Ascii => unreachable!(),
+                                                BinaryBigEndian => {
+                                                    reader.read_uint::<BE>(step)
+                                                },
+                                            }?
+                                            .try_into()?;
+                                        let step = count * list.value.size;
+                                        let value = read_bytes(reader, step)?;
+                                        datum
+                                            .as_list_mut()
+                                            .expect("Unreachable")
+                                            .push(value.into());
                                     },
-                                }?
-                                .try_into()?;
-                                let step = count * list.value.size;
-                                let value = read_bytes(reader, step)?;
-
-                                let capacity = element.size * list.value.size;
-                                body.get_or_init_list_mut(id, capacity)
-                                    .expect("Unreachable")
-                                    .push(value.into());
+                                }
+                                Ok(())
                             },
-                        };
-
-                        Ok::<(), Self::Err>(())
-                    })
-                })?;
-
-                Ok::<(), Self::Err>(())
+                        )?;
+                        Ok(data)
+                    },
+                )?;
+                Ok(body.push(data))
             },
         )?;
 
@@ -88,67 +104,71 @@ impl Encoder for Object {
         &self,
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
-        use head::{FormatMetaVariant::*, PropertyMetaVariant::*};
-
         self.head.encode(writer)?;
         assert!(
             !self.head.is_format_ascii(),
             "TODO: Encoding on ascii format"
         );
 
-        self.head.iter_element_and_property().try_for_each(
-            |((_, element), properties)| {
-                let property_variants = properties
-                    .map(|(id, property)| (id, &property.variant))
-                    .collect::<Box<[_]>>();
+        self.head
+            .elements_and_properties()
+            .zip(self.body.iters())
+            .try_for_each(
+                |((element, properties), data)| -> Result<(), Self::Err> {
+                    let properties = properties.collect::<Vec<_>>();
+                    let data = data.collect::<Vec<_>>();
 
-                (0..element.size).try_for_each(|element_index| {
-                    property_variants.iter().try_for_each(|(id, property)| {
-                        match property {
-                            Scalar(scalar) => {
-                                let step = scalar.size;
-                                let offset = element_index * step;
-                                let value = &self
-                                    .body
-                                    .get_scalar(id)
-                                    .expect("Unreachable")
-                                    [offset..offset + step];
-
-                                writer.write_all(value)?;
-                            },
-                            List(list) => {
-                                let value = self
-                                    .body
-                                    .get_list(id)
-                                    .expect("Unreachable")
-                                    .get(element_index)
-                                    .expect("Unreachable");
-                                let count =
-                                    (value.len() / list.value.size) as u64;
-                                let step = list.count.size;
-
-                                match self.head.get_format() {
-                                    BinaryLittleEndian => {
-                                        writer.write_uint::<LE>(count, step)?;
-                                    },
-                                    Ascii => unreachable!(),
-                                    BinaryBigEndian => {
-                                        writer.write_uint::<BE>(count, step)?;
-                                    },
-                                }
-
-                                writer.write_all(value)?;
-                            },
-                        }
-
-                        Ok::<(), Self::Err>(())
-                    })
-                })?;
-
-                Ok::<(), Self::Err>(())
-            },
-        )?;
-
+                    (0..element.size).try_for_each(
+                        |element_index| -> Result<(), Self::Err> {
+                            properties.iter().zip(data.iter()).try_for_each(
+                                |(property, datum)| -> Result<(), Self::Err> {
+                                    match &***property {
+                                        PropertyMetaVariant::Scalar(scalar) => {
+                                            let step = scalar.size;
+                                            let offset = element_index * step;
+                                            let value = datum
+                                                .as_scalar()
+                                                .expect("Unreachable")
+                                                .get(offset..offset + step)
+                                                .expect("TODO");
+                                            writer.write_all(value)?;
+                                        },
+                                        PropertyMetaVariant::List(list) => {
+                                            let value = datum
+                                                .as_list()
+                                                .expect("Unreachable")
+                                                .get(element_index)
+                                                .expect("TODO");
+                                            let count = value
+                                                .len()
+                                                .div_euclid(list.value.size)
+                                                as u64;
+                                            let step = list.count.size;
+                                            match self.head.get_format() {
+                                                BinaryLittleEndian => {
+                                                    writer.write_uint::<LE>(
+                                                        count, step,
+                                                    )?;
+                                                },
+                                                Ascii => unreachable!(),
+                                                BinaryBigEndian => {
+                                                    writer.write_uint::<BE>(
+                                                        count, step,
+                                                    )?;
+                                                },
+                                            }
+                                            writer.write_all(value)?;
+                                        },
+                                    };
+                                    Ok(())
+                                },
+                            )?;
+                            Ok(())
+                        },
+                    )?;
+                    Ok(())
+                },
+            )?;
         Ok(())
     }
 }
@@ -212,18 +232,37 @@ mod tests {
         let reader = &mut Cursor::new(source);
         let object = Object::decode(reader).unwrap();
 
-        let target = 2;
-        let output = object.head.iter_element().count();
+        let target = 3;
+        let output =
+            object.head.iter().filter(|meta| meta.is_element()).count();
         assert_eq!(output, target);
-
-        println!("{:#?}", object);
 
         let target = 11;
-        let output = object.head.iter_property().count();
+        let output =
+            object.head.iter().filter(|meta| meta.is_property()).count();
         assert_eq!(output, target);
 
-        let target = 5;
-        let output = object.body.property_count();
+        let target = 11;
+        let output = object.body.iters().flatten().count();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn decode_and_encode_on_empty_element() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/empty-element.binary-le.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let object = Object::decode(reader).unwrap();
+
+        let mut writer = Cursor::new(vec![]);
+        let target = source;
+        object.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+
         assert_eq!(output, target);
     }
 }
