@@ -32,6 +32,11 @@ impl Object {
     ) -> Self {
         Self { head, body }
     }
+
+    #[inline]
+    pub fn into_inner(self) -> (Head, Body) {
+        (self.head, self.body)
+    }
 }
 
 // Filtered accessors
@@ -147,7 +152,7 @@ impl Object {
     }
 
     #[inline]
-    pub fn get_property_with_dat_mut<K: AsRef<[u8]>>(
+    pub fn get_property_with_data_mut<K: AsRef<[u8]>>(
         &mut self,
         element_name: K,
         property_name: K,
@@ -195,6 +200,77 @@ impl Object {
         &mut self
     ) -> impl Iterator<Item = (&mut PropertyMeta, &mut PropertyData)> {
         self.head.iter_property_mut().zip(self.body.iter_data_mut())
+    }
+}
+
+// Filtered removers
+impl Object {
+    #[inline]
+    pub fn remove_comment<K: AsRef<[u8]>>(
+        &mut self,
+        part: K,
+    ) -> Option<CommentMeta> {
+        let part = std::str::from_utf8(part.as_ref()).ok()?;
+        let index = self
+            .iter_comment_with_index()
+            .find(|(_, comment)| comment.as_str().contains(part))?
+            .0;
+        self.remove(index).into_inner().into_comment()
+    }
+
+    #[inline]
+    pub fn remove_element_with_data<K: AsRef<[u8]>>(
+        &mut self,
+        name: K,
+    ) -> Option<(ElementMeta, ElementData)> {
+        let name = name.as_ref().as_ascii_str().ok()?;
+        let index = self
+            .iter_element_with_index()
+            .find(|(_, element)| element.name == name)?
+            .0;
+        Some((
+            self.remove(index).into_inner().into_element()?,
+            self.body.remove(index),
+        ))
+    }
+
+    #[inline]
+    pub fn remove_property_with_data<K: AsRef<[u8]>>(
+        &mut self,
+        element_name: K,
+        property_name: K,
+    ) -> Option<(PropertyMeta, PropertyData)> {
+        let element_name = element_name.as_ref().as_ascii_str().ok()?;
+        let property_name = property_name.as_ref().as_ascii_str().ok()?;
+        let (element_offset, property_offset, property_index) = self
+            .iter_element_then_property_with_index()
+            .enumerate()
+            .filter(|(_, ((_, element), _))| element.name == element_name)
+            .find_map(|(element_offset, ((_, _), properties))| {
+                properties
+                    .enumerate()
+                    .find(|(_, (_, property))| property.name == property_name)
+                    .map(|(property_offset, (property_index, _))| {
+                        (element_offset, property_offset, property_index)
+                    })
+            })?;
+        Some((
+            self.remove(property_index).into_inner().into_property()?,
+            self.body.get_mut(element_offset)?.remove(property_offset),
+        ))
+    }
+
+    #[inline]
+    pub fn remove_obj_info<K: AsRef<[u8]>>(
+        &mut self,
+        part: K,
+    ) -> Option<ObjInfoMeta> {
+        let part = std::str::from_utf8(part.as_ref()).ok()?;
+        let index = self
+            .iter_obj_info_with_index()
+            .find(|(_, obj_info)| obj_info.as_str().contains(part))?
+            .0;
+        self.remove(index).into_inner().into_obj_info()
     }
 }
 
@@ -313,7 +389,7 @@ impl Encoder for Object {
             .try_for_each(|((element, properties), data)| -> Result<(), Self::Err> {
                 let properties = properties.collect::<Vec<_>>();
                 (0..element.size).try_for_each(
-                    |element_index| -> Result<(), Self::Err> {
+                    |value_index| -> Result<(), Self::Err> {
                         properties.iter().zip(data.iter()).try_for_each(
                             |(property, datum)| -> Result<(), Self::Err> {
                                 match &***property {
@@ -321,7 +397,7 @@ impl Encoder for Object {
                                         let datum =
                                             datum.as_scalar().expect("Unreachable");
                                         let step = scalar.size;
-                                        let offset = element_index * step;
+                                        let offset = value_index * step;
                                         let value = datum
                                             .get(offset..offset + step)
                                             .ok_or_else(|| {
@@ -341,14 +417,13 @@ impl Encoder for Object {
                                     },
                                     PropertyMetaVariant::List(list) => {
                                         let datum = datum.as_list().expect("Unreachable");
-                                        let value = datum.get(element_index).ok_or_else(
-                                            || {
+                                        let value =
+                                            datum.get(value_index).ok_or_else(|| {
                                                 Error::OutOfBound(
-                                                    element_index,
+                                                    value_index,
                                                     datum.len(),
                                                 )
-                                            },
-                                        )?;
+                                            })?;
                                         let value_step = list.value.size;
                                         let count = (value.len() / value_step) as u64;
                                         let count_step = list.count.size;
@@ -523,5 +598,92 @@ mod tests {
         let output = writer.into_inner();
 
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn decode_and_encode_on_zero_filled() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../../examples/data/polygon/another-cube.greg-turk.binary-le.ply"
+        );
+        let target = include_bytes!(
+            "../../../../examples/data/polygon/another-cube.greg-turk.zeros.binary-le.ply"
+        );
+
+        let reader = &mut Cursor::new(source);
+        let (head, mut body) = Object::decode(reader).unwrap().into_inner();
+
+        body.iter_data_mut().for_each(|data| match &mut **data {
+            DataVariant::List(list) => {
+                list.iter_mut().for_each(|value| {
+                    value.fill(0);
+                });
+            },
+            DataVariant::Scalar(scalar) => {
+                scalar.fill(0);
+            },
+        });
+        let output = Object::new(head, body);
+        output
+            .get_element_with_data("vertex")
+            .unwrap()
+            .1
+            .iter()
+            .for_each(|data| {
+                let data = data.as_scalar().unwrap();
+                if let Ok(data) = data.cast::<f32>() {
+                    data.iter().for_each(|value| {
+                        assert_eq!(*value, 0.0);
+                    });
+                }
+                if let Ok(data) = data.cast::<u8>() {
+                    data.iter().for_each(|value| {
+                        assert_eq!(*value, 0);
+                    });
+                }
+            });
+
+        let mut writer = Cursor::new(vec![]);
+        output.encode(&mut writer).unwrap();
+        let output = writer.into_inner();
+
+        output.iter().zip(target.iter()).enumerate().for_each(
+            |(index, (output, target))| {
+                assert_eq!(output, target, "index: {}", index);
+            },
+        );
+    }
+
+    #[test]
+    fn encode_and_get_or_remove_properties_on_triangle() {
+        use super::*;
+        use std::io::Cursor;
+
+        let target =
+            include_bytes!("../../../../examples/data/polygon/triangle.binary-le.ply");
+        let reader = &mut Cursor::new(target);
+        let mut object = Object::decode(reader).unwrap();
+
+        let (meta, data) = object.remove_property_with_data("vertex", "x").unwrap();
+        let data = data.into_inner().into_scalar().unwrap();
+
+        assert_eq!(meta.name, "x");
+        assert_eq!(data.len(), 12);
+        assert_eq!(
+            data.cast::<f32>().unwrap(),
+            [0.120001904666423798, 0.0, -0.23999999463558197]
+        );
+
+        let (meta, data) = object.get_property_with_data("vertex", "y").unwrap();
+        let data = data.as_scalar().unwrap();
+
+        assert_eq!(meta.name, "y");
+        assert_eq!(data.len(), 12);
+        assert_eq!(
+            data.cast::<f32>().unwrap(),
+            [-0.119999997317790985, 0.0, 1.17549435082228751e-38]
+        );
     }
 }

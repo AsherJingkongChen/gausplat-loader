@@ -68,8 +68,8 @@ impl Head {
     }
 
     #[inline]
-    pub fn into_inner(self) -> Vec<Meta> {
-        self.inner
+    pub fn into_inner(self) -> (FormatMeta, Vec<Meta>) {
+        (self.format, self.inner)
     }
 
     #[inline]
@@ -143,25 +143,54 @@ impl Head {
     pub fn iter_element_then_property(
         &self
     ) -> impl Iterator<Item = (&ElementMeta, impl Iterator<Item = &PropertyMeta>)> {
-        self.iter().enumerate().filter_map(|(index, meta)| {
-            let element = meta.as_element()?;
-            let properties = self
-                .iter()
-                .skip(index + 1)
-                .take_while(|meta| !meta.is_element())
-                .filter_map(|meta| meta.as_property());
-            Some((element, properties))
-        })
+        self.iter_element_then_property_with_index()
+            .map(|((_, element), properties)| {
+                (element, properties.map(|(_, property)| property))
+            })
     }
 
     #[inline]
     pub fn iter_element_and_property(
         &self
     ) -> impl Iterator<Item = (&ElementMeta, &PropertyMeta)> {
-        self.iter_element_then_property()
-            .flat_map(|(element, properties)| {
-                properties.map(move |property| (element, property))
-            })
+        self.iter_element_and_property_with_index()
+            .map(|(_, element, _, property)| (element, property))
+    }
+
+    #[inline]
+    pub fn iter_element_then_property_with_index(
+        &self
+    ) -> impl Iterator<
+        Item = (
+            (usize, &ElementMeta),
+            impl Iterator<Item = (usize, &PropertyMeta)>,
+        ),
+    > {
+        self.iter().enumerate().filter_map(|(element_index, meta)| {
+            let element = meta.as_element()?;
+            let properties = self
+                .iter()
+                .enumerate()
+                .skip(element_index + 1)
+                .take_while(|(_, meta)| !meta.is_element())
+                .filter_map(|(property_index, meta)| {
+                    Some((property_index, meta.as_property()?))
+                });
+            Some(((element_index, element), properties))
+        })
+    }
+
+    #[inline]
+    pub fn iter_element_and_property_with_index(
+        &self
+    ) -> impl Iterator<Item = (usize, &ElementMeta, usize, &PropertyMeta)> {
+        self.iter_element_then_property_with_index().flat_map(
+            |((element_index, element), properties)| {
+                properties.map(move |(property_index, property)| {
+                    (element_index, element, property_index, property)
+                })
+            },
+        )
     }
 }
 
