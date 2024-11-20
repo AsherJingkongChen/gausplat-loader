@@ -29,11 +29,6 @@ macro_rules! impl_variant_matchers {
             impl [<$subject Variant>] {
                 $(
                     #[inline]
-                    pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        matches!(self, Self::$variant(_))
-                    }
-
-                    #[inline]
                     pub const fn [<as_ $variant:snake>](&self) -> Option<&[<$variant $subject>]> {
                         match self {
                             Self::$variant(data) => Some(data),
@@ -41,9 +36,21 @@ macro_rules! impl_variant_matchers {
                         }
                     }
 
-
                     #[inline]
                     pub fn [<as_ $variant:snake _mut>](&mut self) -> Option<&mut [<$variant $subject>]> {
+                        match self {
+                            Self::$variant(data) => Some(data),
+                            _ => None,
+                        }
+                    }
+
+                    #[inline]
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
+                        matches!(self, Self::$variant(_))
+                    }
+
+                    #[inline]
+                    pub fn [<into_ $variant:snake>](self) -> Option<[<$variant $subject>]> {
                         match self {
                             Self::$variant(data) => Some(data),
                             _ => None,

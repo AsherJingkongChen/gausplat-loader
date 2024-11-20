@@ -10,6 +10,11 @@ pub struct ListData {
 
 impl ListData {
     #[inline]
+    pub fn into_inner(self) -> Vec<Box<[u8]>> {
+        self.inner
+    }
+
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             inner: Vec::with_capacity(capacity),
@@ -17,9 +22,7 @@ impl ListData {
     }
 
     #[inline]
-    pub fn iter_cast<T: Pod>(
-        &self
-    ) -> impl Iterator<Item = Result<&[T], Error>> {
+    pub fn iter_cast<T: Pod>(&self) -> impl Iterator<Item = Result<&[T], Error>> {
         self.iter().map(|bytes| Ok(try_cast_slice(bytes)?))
     }
 

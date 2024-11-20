@@ -20,6 +20,11 @@ impl Body {
     }
 
     #[inline]
+    pub fn into_inner(self) -> Vec<ElementData> {
+        self.inner
+    }
+
+    #[inline]
     pub fn iter_data(&self) -> impl Iterator<Item = &Data> {
         self.iter().flatten()
     }

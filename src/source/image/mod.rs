@@ -112,8 +112,7 @@ mod tests {
         use super::*;
         use burn_ndarray::NdArray;
 
-        let source =
-            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let source = include_bytes!("../../../examples/data/image/example.png").to_vec();
         let mut image = Image {
             image_encoded: source,
             image_file_path: "example.png".into(),
@@ -137,8 +136,7 @@ mod tests {
     fn decode_dimensions() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let source = include_bytes!("../../../examples/data/image/example.png").to_vec();
         let image = Image {
             image_encoded: source,
             image_file_path: "example.png".into(),
@@ -155,8 +153,7 @@ mod tests {
         use super::*;
         use burn_ndarray::NdArray;
 
-        let source =
-            include_bytes!("../../../examples/data/image/rainbow-8x8.png");
+        let source = include_bytes!("../../../examples/data/image/rainbow-8x8.png");
         let image = Image {
             image_encoded: source.to_vec(),
             image_file_path: "rainbow-8x8.png".into(),

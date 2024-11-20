@@ -21,6 +21,13 @@ pub enum DataVariant {
 
 impl_variant_matchers! { Data, List, Scalar }
 
+impl Data {
+    #[inline]
+    pub fn into_inner(self) -> DataVariant {
+        self.variant
+    }
+}
+
 impl Default for DataVariant {
     #[inline]
     fn default() -> Self {

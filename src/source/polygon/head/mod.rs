@@ -10,8 +10,8 @@ pub use meta::*;
 use super::impl_variant_matchers;
 use crate::function::{
     decode::{
-        is_space, read_byte_after, read_bytes_before,
-        read_bytes_before_newline, read_bytes_const,
+        is_space, read_byte_after, read_bytes_before, read_bytes_before_newline,
+        read_bytes_const,
     },
     encode::{NEWLINE, SPACE},
 };
@@ -68,6 +68,11 @@ impl Head {
     }
 
     #[inline]
+    pub fn into_inner(self) -> Vec<Meta> {
+        self.inner
+    }
+
+    #[inline]
     pub const fn get_format(&self) -> FormatMetaVariant {
         self.format.variant
     }
@@ -90,12 +95,9 @@ impl Head {
         &mut self,
         version: V,
     ) -> Result<(), Error> {
-        self.format.version =
-            version.as_ref().into_ascii_string().map_err(|err| {
-                Error::InvalidAscii(
-                    String::from_utf8_lossy(err.into_source()).into_owned(),
-                )
-            })?;
+        self.format.version = version.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
+        })?;
         Ok(())
     }
 }
@@ -118,6 +120,16 @@ macro_rules! impl_head_filtered_iterators {
                     ) -> impl Iterator<Item = &mut [<$variant Meta>]> {
                         self.iter_mut().filter_map(|meta| meta.[<as_ $variant:snake _mut>]())
                     }
+
+                    #[inline]
+                    pub fn [<iter_ $variant:snake _with_index>](
+                        &self
+                    ) -> impl Iterator<Item = (usize, &[<$variant Meta>])> {
+                        self.iter().enumerate().filter_map(|(index, meta)| Some((
+                            index,
+                            meta.[<as_ $variant:snake>]()?,
+                        )))
+                    }
                 )*
             }
         }
@@ -130,8 +142,7 @@ impl Head {
     #[inline]
     pub fn iter_element_then_property(
         &self
-    ) -> impl Iterator<Item = (&ElementMeta, impl Iterator<Item = &PropertyMeta>)>
-    {
+    ) -> impl Iterator<Item = (&ElementMeta, impl Iterator<Item = &PropertyMeta>)> {
         self.iter().enumerate().filter_map(|(index, meta)| {
             let element = meta.as_element()?;
             let properties = self
@@ -186,7 +197,7 @@ impl Decoder for Head {
         }
 
         let mut head = Head::new(FormatMeta::decode(reader)?);
-        
+
         let mut had_element = false;
         loop {
             let keyword_prefix = read_bytes_const(reader)?;
@@ -200,9 +211,7 @@ impl Decoder for Head {
                                 Err(Error::MissingToken("element ".into()))?;
                             }
 
-                            head.push(
-                                Property(PropertyMeta::decode(reader)?).into(),
-                            );
+                            head.push(Property(PropertyMeta::decode(reader)?).into());
 
                             Ok(())
                         },
@@ -213,9 +222,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"ement " => {
-                            head.push(
-                                Element(ElementMeta::decode(reader)?).into(),
-                            );
+                            head.push(Element(ElementMeta::decode(reader)?).into());
                             had_element = true;
                             Ok(())
                         },
@@ -226,9 +233,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"d_header" => {
-                            match read_bytes_before_newline(reader, 0)?
-                                .as_slice()
-                            {
+                            match read_bytes_before_newline(reader, 0)?.as_slice() {
                                 b"" => break,
                                 keyword_suffix_rest => {
                                     Err([&keyword_suffix, keyword_suffix_rest]
@@ -244,9 +249,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"mment " => {
-                            head.push(
-                                Comment(CommentMeta::decode(reader)?).into(),
-                            );
+                            head.push(Comment(CommentMeta::decode(reader)?).into());
                             Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
@@ -256,9 +259,7 @@ impl Decoder for Head {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"j_info " => {
-                            head.push(
-                                ObjInfo(ObjInfoMeta::decode(reader)?).into(),
-                            );
+                            head.push(ObjInfo(ObjInfoMeta::decode(reader)?).into());
                             Ok(())
                         },
                         _ => Err(keyword_suffix.into()),
@@ -339,9 +340,8 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!(
-            "../../../../examples/data/polygon/valid-keyword.ascii.ply"
-        );
+        let source =
+            include_bytes!("../../../../examples/data/polygon/valid-keyword.ascii.ply");
         let reader = &mut Cursor::new(source);
         let output = Head::decode(reader).unwrap();
 
@@ -371,9 +371,8 @@ mod tests {
         use super::*;
         use std::io::{Cursor, ErrorKind};
 
-        let source = include_bytes!(
-            "../../../../examples/data/polygon/empty-head.ascii.ply"
-        );
+        let source =
+            include_bytes!("../../../../examples/data/polygon/empty-head.ascii.ply");
 
         let reader = &mut Cursor::new(source);
         let target = Head::default();
@@ -389,9 +388,8 @@ mod tests {
         let output = Head::decode(reader).unwrap();
         assert_eq!(output, target);
 
-        let reader = &mut Cursor::new(
-            [&source[..source.len() - 1], b" not newline"].concat(),
-        );
+        let reader =
+            &mut Cursor::new([&source[..source.len() - 1], b" not newline"].concat());
         Head::decode(reader).unwrap_err();
 
         let reader = &mut Cursor::new(b"ply\nend_header\n");
@@ -406,9 +404,8 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!(
-            "../../../../examples/data/polygon/empty-head.ascii.ply"
-        );
+        let source =
+            include_bytes!("../../../../examples/data/polygon/empty-head.ascii.ply");
 
         let reader = &mut Cursor::new([b"plh", &source[3..]].concat());
         Head::decode(reader).unwrap_err();
@@ -475,13 +472,13 @@ mod tests {
         let mut head = Head::decode(reader).unwrap();
 
         let target = 2;
-        let output = head.iter().filter(|meta| meta.is_comment()).count();
+        let output = head.iter_comment().count();
         assert_eq!(output, target);
 
         head.retain(|meta| !meta.is_comment());
 
         let target = 0;
-        let output = head.iter().filter(|meta| meta.is_comment()).count();
+        let output = head.iter_comment().count();
         assert_eq!(output, target);
     }
 }

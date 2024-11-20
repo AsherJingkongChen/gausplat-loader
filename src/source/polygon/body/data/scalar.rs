@@ -15,6 +15,11 @@ impl ScalarData {
     }
 
     #[inline]
+    pub fn into_inner(self) -> Vec<u8> {
+        self.inner
+    }
+
+    #[inline]
     pub fn cast<T: Pod>(&self) -> Result<&[T], Error> {
         Ok(bytemuck::try_cast_slice(self)?)
     }

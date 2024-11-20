@@ -47,6 +47,9 @@ pub enum Error {
     #[error("Missing token: {0:?}")]
     MissingToken(String),
 
+    #[error("Out of bound: {0} is out of {1}")]
+    OutOfBound(usize, usize),
+
     #[error("Parse int error: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),
 }

@@ -266,9 +266,7 @@ where
 {
     /// Create an [`IndexMap`] from the sequence of key-value pairs in the parallel iterable.
     #[inline]
-    fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(
-        iterable: I
-    ) -> Self {
+    fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(iterable: I) -> Self {
         Self {
             inner: IndexMapInner::from_par_iter(iterable),
             rng: StdRng::from_entropy(),
@@ -324,12 +322,8 @@ mod tests {
     fn from_and_into_iter() {
         use super::*;
 
-        let map = IndexMap::<u8, f32>::from_iter([
-            (0, 0.1),
-            (3, 0.4),
-            (1, 0.2),
-            (4, 0.5),
-        ]);
+        let map =
+            IndexMap::<u8, f32>::from_iter([(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)]);
 
         let target = 4;
         let output = map.len();
@@ -348,12 +342,8 @@ mod tests {
     fn from_and_into_par_iter() {
         use super::*;
 
-        let map = IndexMap::<u8, f32>::from_par_iter([
-            (0, 0.1),
-            (3, 0.4),
-            (1, 0.2),
-            (4, 0.5),
-        ]);
+        let map =
+            IndexMap::<u8, f32>::from_par_iter([(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)]);
 
         let target = 4;
         let output = map.len();
@@ -429,8 +419,7 @@ mod tests {
     fn seed_and_random_iter() {
         use super::*;
 
-        let mut map: IndexMap<_, _> =
-            [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
+        let mut map: IndexMap<_, _> = [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
 
         let values_1 = map
             .seed(0)
@@ -470,8 +459,7 @@ mod tests {
         map.seed(0);
 
         let keys_1 = map.shuffle().keys().copied().collect::<Vec<_>>();
-        let keys_2 =
-            map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
+        let keys_2 = map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
         let values = map
             .to_owned()
             .shuffle()

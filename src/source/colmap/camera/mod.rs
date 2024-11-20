@@ -116,9 +116,7 @@ impl Encoder for Camera {
         writer.write_u64::<LE>(self.width)?;
         writer.write_u64::<LE>(self.height)?;
         match self.variant {
-            SimplePinhole { focal_length } => {
-                writer.write_f64::<LE>(focal_length)
-            },
+            SimplePinhole { focal_length } => writer.write_f64::<LE>(focal_length),
             Pinhole {
                 focal_length_x,
                 focal_length_y,

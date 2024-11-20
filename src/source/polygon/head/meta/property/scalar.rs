@@ -33,19 +33,18 @@ define_scalar_property!(ULONG, 8);
 
 /// A hash map whose key is the kind of scalar property,
 /// which is guaranteed to be an ASCII string.
-static SCALAR_PROPERTIES: LazyLock<
-    RwLock<HashMap<Box<[u8]>, ScalarPropertyMeta>>,
-> = LazyLock::new(|| {
-    [
-        &LIST, &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT,
-        &UINT16, &USHORT, &FLOAT, &FLOAT32, &INT, &INT32, &UINT, &UINT32,
-        &DOUBLE, &FLOAT64, &INT64, &LONG, &UINT64, &ULONG,
-    ]
-    .into_iter()
-    .map(|p| (p.kind.as_bytes().into(), (*p).to_owned()))
-    .collect::<HashMap<_, _>>()
-    .into()
-});
+static SCALAR_PROPERTIES: LazyLock<RwLock<HashMap<Box<[u8]>, ScalarPropertyMeta>>> =
+    LazyLock::new(|| {
+        [
+            &LIST, &CHAR, &INT8, &UCHAR, &UINT8, &FLOAT16, &HALF, &INT16, &SHORT,
+            &UINT16, &USHORT, &FLOAT, &FLOAT32, &INT, &INT32, &UINT, &UINT32, &DOUBLE,
+            &FLOAT64, &INT64, &LONG, &UINT64, &ULONG,
+        ]
+        .into_iter()
+        .map(|p| (p.kind.as_bytes().into(), (*p).to_owned()))
+        .collect::<HashMap<_, _>>()
+        .into()
+    });
 
 /// ## Syntax
 ///
@@ -76,9 +75,7 @@ impl ScalarPropertyMeta {
         size: usize,
     ) -> Result<Self, Error> {
         let kind = kind.as_ref().into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
         })?;
         Ok(Self { kind, size })
     }
@@ -149,9 +146,7 @@ impl Decoder for ScalarPropertyMeta {
         kind.extend(read_bytes_before(reader, is_space, 8)?);
 
         Self::search(kind.as_slice()).ok_or_else(|| {
-            Error::InvalidPolygonPropertyKind(
-                String::from_utf8_lossy(&kind).into_owned(),
-            )
+            Error::InvalidPolygonPropertyKind(String::from_utf8_lossy(&kind).into_owned())
         })
     }
 }

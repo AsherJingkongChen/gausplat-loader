@@ -128,8 +128,7 @@ mod tests {
     fn read() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/hello-world/ascii.txt");
+        let source = include_bytes!("../../../examples/data/hello-world/ascii.txt");
         let mut file = File {
             path: Default::default(),
             inner: std::io::Cursor::new(source),
@@ -144,8 +143,7 @@ mod tests {
     fn write_and_rewind() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/hello-world/ascii.txt");
+        let source = include_bytes!("../../../examples/data/hello-world/ascii.txt");
         let mut file = File::<std::io::Cursor<Vec<u8>>>::default();
 
         let target = source;

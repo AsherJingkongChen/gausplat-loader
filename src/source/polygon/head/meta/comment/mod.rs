@@ -30,11 +30,14 @@ impl CommentMeta {
     #[inline]
     pub fn new<S: AsRef<[u8]>>(inner: S) -> Result<Self, Error> {
         let inner = inner.as_ref().into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
         })?;
         Ok(Self { inner })
+    }
+
+    #[inline]
+    pub fn into_inner(self) -> AsciiString {
+        self.inner
     }
 }
 
@@ -46,9 +49,7 @@ impl Decoder for CommentMeta {
             .ok_or_else(|| Error::MissingToken("<comment>".into()))?];
         inner.extend(read_bytes_before_newline(reader, 64)?);
         let inner = inner.into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(&err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(&err.into_source()).into_owned())
         })?;
 
         Ok(Self { inner })

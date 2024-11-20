@@ -25,6 +25,13 @@ pub enum MetaVariant {
 
 impl_variant_matchers! { Meta, Comment, Element, ObjInfo, Property }
 
+impl Meta {
+    #[inline]
+    pub fn into_inner(self) -> MetaVariant {
+        self.variant
+    }
+}
+
 impl Default for MetaVariant {
     #[inline]
     fn default() -> Self {

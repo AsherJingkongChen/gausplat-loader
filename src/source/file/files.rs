@@ -38,8 +38,7 @@ impl Opener for Files<fs::File> {
             .into_iter()
             .filter(|entry| {
                 entry.as_ref().is_ok_and(|entry| {
-                    entry.file_type().is_file()
-                        && matcher.is_match(entry.path())
+                    entry.file_type().is_file() && matcher.is_match(entry.path())
                 })
             })
             .map(|entry| {

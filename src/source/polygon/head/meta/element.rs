@@ -34,18 +34,14 @@ impl Decoder for ElementMeta {
             .ok_or_else(|| Error::MissingToken("<name>".into()))?];
         name.extend(read_bytes_before(reader, is_space, 16)?);
         let name = name.into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(&err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(&err.into_source()).into_owned())
         })?;
 
         let mut size = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<size>".into()))?];
         size.extend(read_bytes_before_newline(reader, 16)?);
         let size = std::str::from_utf8(&size)
-            .map_err(|_| {
-                Error::InvalidUtf8(String::from_utf8_lossy(&size).into_owned())
-            })?
+            .map_err(|_| Error::InvalidUtf8(String::from_utf8_lossy(&size).into_owned()))?
             .parse()?;
 
         Ok(Self { name, size })

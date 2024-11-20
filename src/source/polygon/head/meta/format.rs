@@ -52,17 +52,23 @@ impl FormatMeta {
         version: V,
     ) -> Result<Self, Error> {
         let version = version.as_ref().into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(&err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(&err.into_source()).into_owned())
         })?;
         Ok(Self { variant, version })
     }
 }
 
 impl FormatMetaVariant {
-    pub const DOMAIN: [&str; 3] =
-        ["ascii", "binary_big_endian", "binary_little_endian"];
+    pub const DOMAIN: [&str; 3] = ["ascii", "binary_big_endian", "binary_little_endian"];
+
+    #[inline]
+    pub const fn is_native_byte_order(&self) -> bool {
+        match self {
+            BinaryLittleEndian => cfg!(target_endian = "little"),
+            Ascii => true,
+            BinaryBigEndian => cfg!(target_endian = "big"),
+        }
+    }
 }
 
 impl Decoder for FormatMeta {
@@ -81,9 +87,7 @@ impl Decoder for FormatMeta {
             .ok_or_else(|| Error::MissingToken("<version>".into()))?];
         version.extend(read_bytes_before_newline(reader, 16)?);
         let version = version.into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(
-                String::from_utf8_lossy(&err.into_source()).into_owned(),
-            )
+            Error::InvalidAscii(String::from_utf8_lossy(&err.into_source()).into_owned())
         })?;
 
         Ok(Self { variant, version })
@@ -94,10 +98,8 @@ impl Decoder for FormatMetaVariant {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let mut variant =
-            vec![read_byte_after(reader, is_space)?.ok_or_else(|| {
-                Error::MissingToken("<format-meta-variant>".into())
-            })?];
+        let mut variant = vec![read_byte_after(reader, is_space)?
+            .ok_or_else(|| Error::MissingToken("<format-meta-variant>".into()))?];
         variant.extend(read_bytes_before(reader, is_space, 20)?);
 
         Ok(match variant.as_slice() {
@@ -193,8 +195,7 @@ mod tests {
         let output = FormatMeta::decode(source).unwrap();
         assert_eq!(output, target);
 
-        let source =
-            &mut Cursor::new(b"format    binary_big_endian private    \n");
+        let source = &mut Cursor::new(b"format    binary_big_endian private    \n");
         let target = FormatMeta {
             variant: BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
