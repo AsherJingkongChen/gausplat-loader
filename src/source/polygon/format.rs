@@ -262,10 +262,10 @@ mod tests {
     }
 
     #[test]
-    fn encode_on_slice() {
+    fn encode_on_empty_slice() {
         use super::*;
 
-        Format::default().encode(&mut &mut [0][..]).unwrap_err();
+        Format::default().encode(&mut &mut [0; 9][..]).unwrap_err();
 
         let target = b"format ascii 1.0\n";
         let mut output = Vec::new();

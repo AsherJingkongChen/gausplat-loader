@@ -287,4 +287,19 @@ mod tests {
             variant => panic!("{variant:?}"),
         }
     }
+
+    #[test]
+    fn into_property_block_variant() {
+        use super::*;
+
+        let info = ListPropertyBlockInfo {
+            count: UCHAR.to_owned(),
+            value: INT.to_owned(),
+        };
+
+        let target = true;
+        let output: PropertyBlockVariant = info.into();
+        let output = &output.as_list().unwrap().data;
+        assert_eq!(output.is_empty(), target);
+    }
 }

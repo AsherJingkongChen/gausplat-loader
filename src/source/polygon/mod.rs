@@ -24,7 +24,6 @@ pub use crate::{
 };
 pub use block::*;
 pub use format::*;
-pub use indexmap::{IndexMap, IndexSet};
 
 use crate::function::{
     decode::{
@@ -256,7 +255,7 @@ impl Decoder for Object {
                             match format {
                                 Ascii => {
                                     // TODO: Decoding scalar for ascii format.
-                                    unimplemented!()
+                                    todo!()
                                 },
                                 _ => {
                                     // Decoding the scalar property datum in binary format.
@@ -272,7 +271,7 @@ impl Decoder for Object {
                         List(ListPropertyBlock { data, info }) => match format {
                             Ascii => {
                                 // TODO: Decoding list for ascii format.
-                                unimplemented!()
+                                todo!()
                             },
                             _ => {
                                 // Decoding the list property datum in binary format.
@@ -296,7 +295,7 @@ impl Decoder for Object {
                                         .chunks_exact_mut(info.value.step)
                                         .for_each(|datum| datum.reverse());
                                 }
-                                data.push(datum.into());
+                                data.push(datum);
                             },
                         },
                     }
@@ -389,11 +388,12 @@ impl Encoder for Object {
                             let end = start + info.step;
                             let datum = data
                                 .get(start..end)
-                                .ok_or_else(|| Error::OutOfBound(end - 1, data.len()))?;
+                                .ok_or_else(|| Error::OutOfBounds(end - 1, data.len()))?;
 
                             match format {
                                 Ascii => {
-                                    unimplemented!()
+                                    // TODO: Encoding scalar for ascii format.
+                                    todo!()
                                 },
                                 _ => {
                                     // Encoding the scalar property datum in binary format.
@@ -412,7 +412,7 @@ impl Encoder for Object {
                             // Reading the list property datum.
 
                             let datum = data.get(element_index).ok_or_else(|| {
-                                Error::OutOfBound(element_index, data.len())
+                                Error::OutOfBounds(element_index, data.len())
                             })?;
                             if datum.len() % info.value.step != 0 {
                                 Err(Error::MisalignedBytes(data.len(), info.value.step))?;
@@ -421,7 +421,7 @@ impl Encoder for Object {
                             let count = (datum.len() / info.value.step).to_le_bytes();
                             let count =
                                 count.get(..info.count.step).ok_or_else(|| {
-                                    Error::OutOfBound(
+                                    Error::OutOfBounds(
                                         info.count.step,
                                         size_of_val(&count),
                                     )
@@ -429,7 +429,8 @@ impl Encoder for Object {
 
                             match format {
                                 Ascii => {
-                                    unimplemented!()
+                                    // TODO: Encoding list for ascii format.
+                                    todo!()
                                 },
                                 _ => {
                                     // Encoding the list property datum in binary format.
@@ -454,7 +455,6 @@ impl Encoder for Object {
                 }
             }
         }
-
         Ok(())
     }
 }
@@ -498,18 +498,7 @@ macro_rules! impl_variant_matchers {
 
                     #[inline]
                     pub const fn [<is_ $variant:snake>](&self) -> bool {
-                        match self {
-                            Self::$variant(_) => true,
-                            _ => false,
-                        }
-                    }
-
-                    #[inline]
-                    pub fn [<into_ $variant:snake>](self) -> Option<[<$variant $subject>]> {
-                        match self {
-                            Self::$variant(data) => Some(data),
-                            _ => None,
-                        }
+                        matches!(self, Self::$variant(_))
                     }
                 )*
             }
@@ -600,6 +589,38 @@ mod tests {
     }
 
     #[test]
+    fn decode_on_invalid_keyword() {
+        use super::*;
+        use std::io::Cursor;
+
+        let header = &b"ply\nformat ascii 1.0\n"[..];
+
+        let source = &mut Cursor::new([header, b"invalid\n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"invalid \n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"commemt \n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"elenemt \n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"end_header \n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"end_haeder\n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"obj-info \n"].concat());
+        Object::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new([header, b"proprety \n"].concat());
+        Object::decode(source).unwrap_err();
+    }
+
+    #[test]
     fn decode_on_invalid_signature() {
         use super::*;
         use std::io::Cursor;
@@ -610,6 +631,15 @@ mod tests {
         let reader = &mut Cursor::new([b"plh", &source[3..]].concat());
         Object::decode(reader).unwrap_err();
 
+        let reader = &mut Cursor::new(b"  ply\n");
+        Object::decode(reader).unwrap_err();
+
+        let reader = &mut Cursor::new(b"ply  \n");
+        Object::decode(reader).unwrap_err();
+
+        let reader = &mut Cursor::new(b"ply  ");
+        Object::decode(reader).unwrap_err();
+
         let reader = &mut Cursor::new([b"ply\r\n", &source[4..]].concat());
         let target = Object::default();
         let output = Object::decode(reader).unwrap();
@@ -617,7 +647,7 @@ mod tests {
     }
 
     #[test]
-    fn deocde_on_le_and_encode_on_be() {
+    fn decode_on_le_and_encode_on_be() {
         use super::*;
         use std::io::Cursor;
 
@@ -666,6 +696,21 @@ mod tests {
                 assert_eq!(output, target, "index: {}", index);
             },
         );
+    }
+
+    #[test]
+    fn decode_on_binary_be_incomplete() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../examples/data/polygon/another-cube.greg-turk.binary-be.ply"
+        );
+
+        for index in 0..(source.len() - 1) {
+            let reader = &mut Cursor::new(&source[..index]);
+            Object::decode(reader).unwrap_err();
+        }
     }
 
     #[test]
@@ -775,6 +820,7 @@ mod tests {
 
     #[test]
     fn decode_and_cast_on_triangle() {
+        // TODO: Implement multi-byte casting.
         // use super::*;
         // use std::io::Cursor;
 
@@ -805,7 +851,72 @@ mod tests {
     }
 
     #[test]
-    fn encode_misplaced_property() {
+    fn decode_and_encode_on_duplicate_format() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source =
+            include_bytes!("../../../examples/data/polygon/duplicate-format.ascii.ply");
+        let reader = &mut Cursor::new(source);
+        Object::decode(reader).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_misaligned_lists() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../examples/data/polygon/another-cube.greg-turk.binary-le.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let mut output = Object::decode(reader).unwrap();
+
+        output
+            .iter_mut()
+            .filter_map(|block| Some(&mut block.as_property_mut()?.as_list_mut()?.data))
+            .for_each(|data| {
+                data.iter_mut().for_each(|datum| datum.push(1));
+            });
+
+        let mut writer = Cursor::new(vec![]);
+        let target = true;
+        let output = matches!(
+            output.encode(&mut writer).unwrap_err(),
+            Error::MisalignedBytes(_, _)
+        );
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn encode_on_out_of_bound() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = include_bytes!(
+            "../../../examples/data/polygon/another-cube.greg-turk.binary-le.ply"
+        );
+        let reader = &mut Cursor::new(source);
+        let mut output = Object::decode(reader).unwrap();
+
+        output
+            .iter_mut()
+            .filter_map(|block| Some(&mut block.as_element_mut()?.size))
+            .for_each(|size| {
+                *size += 1;
+            });
+
+        let mut writer = Cursor::new(vec![]);
+        let target = true;
+        let output = matches!(
+            output.encode(&mut writer).unwrap_err(),
+            Error::OutOfBounds(_, _)
+        );
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn encode_on_misplaced_property() {
         use super::*;
         use std::io::Cursor;
 
@@ -821,6 +932,13 @@ mod tests {
 
         let mut writer = Cursor::new(vec![]);
         output.encode(&mut writer).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_empty_slice() {
+        use super::*;
+
+        Object::default().encode(&mut &mut [0; 25][..]).unwrap_err();
     }
 
     #[test]

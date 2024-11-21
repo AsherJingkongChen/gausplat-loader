@@ -36,13 +36,6 @@ impl ops::Deref for ScalarPropertyBlock {
     }
 }
 
-impl ops::DerefMut for ScalarPropertyBlock {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.info
-    }
-}
-
 #[cfg(test)]
 mod test {
     #[test]

@@ -220,7 +220,7 @@ mod tests {
         let source = &mut Cursor::new(b"uchar\n");
         ScalarPropertyBlockInfo::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(b"example ");
+        let source = &mut Cursor::new(b"example1 ");
         ScalarPropertyBlockInfo::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
@@ -243,22 +243,22 @@ mod tests {
         assert_eq!(output, target);
 
         let target = None;
-        let output = ScalarPropertyBlockInfo::search("example");
+        let output = ScalarPropertyBlockInfo::search("example2");
         assert_eq!(output, target);
 
         let target = None;
-        let output = ScalarPropertyBlockInfo::register("example", 1).unwrap();
+        let output = ScalarPropertyBlockInfo::register("example2", 1).unwrap();
         assert_eq!(output, target);
 
-        let target = ScalarPropertyBlockInfo::new("example", 1).unwrap();
-        let output = ScalarPropertyBlockInfo::search("example").unwrap();
+        let target = ScalarPropertyBlockInfo::new("example2", 1).unwrap();
+        let output = ScalarPropertyBlockInfo::search("example2").unwrap();
         assert_eq!(output, target);
 
-        let output = ScalarPropertyBlockInfo::unregister("example").unwrap();
+        let output = ScalarPropertyBlockInfo::unregister("example2").unwrap();
         assert_eq!(output, target);
 
         let target = None;
-        let output = ScalarPropertyBlockInfo::search("example");
+        let output = ScalarPropertyBlockInfo::search("example2");
         assert_eq!(output, target);
     }
 

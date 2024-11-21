@@ -31,13 +31,6 @@ impl ops::Deref for ListPropertyBlock {
     }
 }
 
-impl ops::DerefMut for ListPropertyBlock {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.info
-    }
-}
-
 #[cfg(test)]
 mod tests {
     #[test]
