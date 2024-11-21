@@ -3,14 +3,14 @@ pub use super::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <element-meta> :=
-///     | [{" "}] <name> [{" "}] <size> <newline>
+/// <element-block> :=
+///     | <name> <size> <newline>
 ///
 /// <name> :=
-///     | <ascii-string> " "
+///     | [{" "}] <ascii-string> " "
 ///
 /// <size> :=
-///     | <usize>
+///     | [{" "}] <usize>
 ///
 /// <newline> :=
 ///     | ["\r"] "\n"
@@ -21,12 +21,12 @@ pub use super::*;
 /// - [`AsciiString`]
 /// - [`usize`]
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ElementMeta {
+pub struct ElementBlock {
     pub name: AsciiString,
     pub size: usize,
 }
 
-impl Decoder for ElementMeta {
+impl Decoder for ElementBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
@@ -48,7 +48,7 @@ impl Decoder for ElementMeta {
     }
 }
 
-impl Encoder for ElementMeta {
+impl Encoder for ElementBlock {
     type Err = Error;
 
     #[inline]
@@ -64,6 +64,22 @@ impl Encoder for ElementMeta {
     }
 }
 
+impl ops::Deref for ElementBlock {
+    type Target = AsciiString;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.name
+    }
+}
+
+impl ops::DerefMut for ElementBlock {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.name
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -73,25 +89,25 @@ mod tests {
 
         let source = &mut Cursor::new(b"color 7\n");
         let target = "color";
-        let output = ElementMeta::decode(source).unwrap();
+        let output = ElementBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
         let target = 7;
         assert_eq!(output.size, target);
 
         let source = &mut Cursor::new(b"rgb 888 100\n");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"     point    ");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"vertex 3 \n");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b" ");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
     }
 
     #[test]
@@ -100,7 +116,7 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new("\u{ae} 3\n".as_bytes());
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
     }
 
     #[test]
@@ -109,9 +125,9 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"none -1\n");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"unicode \x8e\xcd\n");
-        ElementMeta::decode(source).unwrap_err();
+        ElementBlock::decode(source).unwrap_err();
     }
 }

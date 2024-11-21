@@ -1,4 +1,4 @@
-use crate::source::polygon::head::{FormatMetaVariant, Head};
+use crate::source::polygon::{FormatVariant, Object};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -25,21 +25,24 @@ pub enum Error {
 
     #[error(
         "Invalid polygon keyword: {0:?}. It should be one of {:?}.",
-        Head::KEYWORDS
+        Object::KEYWORDS
     )]
     InvalidPolygonKeyword(String),
 
     #[error(
-        "Invalid polygon format meta variant: {0:?}. It should be one of {:?}.",
-        FormatMetaVariant::DOMAIN
+        "Invalid polygon format variant: {0:?}. It should be one of {:?}.",
+        FormatVariant::DOMAIN
     )]
-    InvalidPolygonFormatMetaVariant(String),
+    InvalidPolygonFormatVariant(String),
 
     #[error("Invalid polygon property kind: {0:?}")]
     InvalidPolygonPropertyKind(String),
 
     #[error("Invalid UTF-8 string: {0:?}")]
     InvalidUtf8(String),
+
+    #[error("Misaligned bytes: size of {0} is not aligned to {1}")]
+    MisalignedBytes(usize, usize),
 
     #[error("Mismatched tensor shape: {0:?}. It should be {1:?}.")]
     MismatchedTensorShape(Vec<usize>, Vec<usize>),

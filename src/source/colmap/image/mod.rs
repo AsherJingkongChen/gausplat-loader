@@ -46,7 +46,7 @@ impl Decoder for Image {
         let camera_id = reader.read_u32::<LE>()?;
 
         let file_name = read_bytes_before(reader, |b| b == 0, 64)?;
-        // SAFETY: The result of `read_bytes_before` does not include the null terminator.
+        // SAFETY: The result of `read_bytes_before` never include the null terminator.
         let file_name = unsafe { CString::from_vec_unchecked(file_name) };
 
         // Skip points

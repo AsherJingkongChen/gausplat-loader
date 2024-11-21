@@ -36,13 +36,10 @@ impl Opener for Files<fs::File> {
             .contents_first(true)
             .follow_links(true)
             .into_iter()
-            .filter(|entry| {
-                entry.as_ref().is_ok_and(|entry| {
-                    entry.file_type().is_file() && matcher.is_match(entry.path())
-                })
-            })
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.file_type().is_file() && matcher.is_match(entry.path()))
             .map(|entry| {
-                let path = entry.as_ref().expect("Unreachable").path();
+                let path = entry.path();
                 Ok((path.to_owned(), File::open(path)?))
             })
             .collect();
@@ -112,7 +109,7 @@ mod tests {
     fn open_on_invalid_utf8() {
         use super::*;
 
-        // SAFETY: The string is deliberately invalid UTF-8.
+        // SAFETY: This is a deliberately invalid UTF-8 string literal.
         let source = unsafe {
             std::ffi::OsStr::from_encoded_bytes_unchecked(
                 b"examples/data/hello-world/\x8e\xcd*",

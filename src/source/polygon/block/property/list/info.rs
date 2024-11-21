@@ -1,35 +1,33 @@
 pub use super::*;
 
-use std::fmt;
-
 /// ## Syntax
 ///
 /// ```plaintext
-/// <list-property-meta> :=
-///     | <scalar-property-meta> <scalar-property-meta>
+/// <list-property-block> :=
+///     | <scalar-property-block> <scalar-property-block>
 /// ```
 ///
 /// ### Syntax Reference
 ///
-/// - [`ScalarPropertyMeta`]
+/// - [`ScalarPropertyBlockInfo`]
 #[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct ListPropertyMeta {
-    pub count: ScalarPropertyMeta,
-    pub value: ScalarPropertyMeta,
+pub struct ListPropertyBlockInfo {
+    pub count: ScalarPropertyBlockInfo,
+    pub value: ScalarPropertyBlockInfo,
 }
 
-impl Decoder for ListPropertyMeta {
+impl Decoder for ListPropertyBlockInfo {
     type Err = Error;
 
     #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let count = ScalarPropertyMeta::decode(reader)?;
-        let value = ScalarPropertyMeta::decode(reader)?;
+        let count = ScalarPropertyBlockInfo::decode(reader)?;
+        let value = ScalarPropertyBlockInfo::decode(reader)?;
         Ok(Self { count, value })
     }
 }
 
-impl Encoder for ListPropertyMeta {
+impl Encoder for ListPropertyBlockInfo {
     type Err = Error;
 
     #[inline]
@@ -42,7 +40,7 @@ impl Encoder for ListPropertyMeta {
     }
 }
 
-impl fmt::Debug for ListPropertyMeta {
+impl fmt::Debug for ListPropertyBlockInfo {
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,

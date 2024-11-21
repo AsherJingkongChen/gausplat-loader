@@ -8,11 +8,11 @@ pub use scalar::*;
 /// ## Syntax
 ///
 /// ```plaintext
-/// <property-meta> :=
-///     | <property-meta-variant> [{" "}] <name> <newline>
+/// <property-block> :=
+///     | <property-block-variant> <name> <newline>
 ///
 /// <name> :=
-///     | <ascii-string>
+///     | [{" "}] <ascii-string>
 ///
 /// <newline> :=
 ///     | ["\r"] "\n"
@@ -21,38 +21,38 @@ pub use scalar::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`PropertyMetaVariant`]
+/// - [`PropertyBlockVariant`]
 #[derive(Clone, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct PropertyMeta {
+pub struct PropertyBlock {
     pub name: AsciiString,
-    pub variant: PropertyMetaVariant,
+    pub variant: PropertyBlockVariant,
 }
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <property-meta-variant> :=
-///     | [{" "}] "list" " " <list-property-meta>
-///     | <scalar-property-meta>
+/// <property-block-variant> :=
+///     | [{" "}] "list" " " <list-property-block>
+///     | <scalar-property-block>
 /// ```
 ///
 /// ### Syntax Reference
 ///
-/// - [`ListPropertyMeta`]
-/// - [`ScalarPropertyMeta`]
+/// - [`ListPropertyBlockInfo`]
+/// - [`ScalarPropertyBlockInfo`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum PropertyMetaVariant {
-    List(ListPropertyMeta),
-    Scalar(ScalarPropertyMeta),
+pub enum PropertyBlockVariant {
+    List(ListPropertyBlock),
+    Scalar(ScalarPropertyBlock),
 }
 
-impl_variant_matchers! { PropertyMeta, List, Scalar }
+impl_variant_matchers! { PropertyBlock, List, Scalar }
 
-impl Decoder for PropertyMeta {
+impl Decoder for PropertyBlock {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let variant = PropertyMetaVariant::decode(reader)?;
+        let variant = PropertyBlockVariant::decode(reader)?;
 
         let mut name = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<name>".into()))?];
@@ -65,27 +65,34 @@ impl Decoder for PropertyMeta {
     }
 }
 
-impl Decoder for PropertyMetaVariant {
+impl Decoder for PropertyBlockVariant {
     type Err = Error;
 
     #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
-        let list_or_scalar = ScalarPropertyMeta::decode(reader)?;
-        Ok(match list_or_scalar.kind.as_bytes() {
-            b"list" => Self::List(ListPropertyMeta::decode(reader)?),
-            _ => Self::Scalar(list_or_scalar),
+        let info = ScalarPropertyBlockInfo::decode(reader)?;
+        Ok(match info.kind.as_bytes() {
+            b"list" => {
+                let data = Default::default();
+                let info = ListPropertyBlockInfo::decode(reader)?;
+                Self::List(ListPropertyBlock { data, info })
+            },
+            _ => {
+                let data = Default::default();
+                Self::Scalar(ScalarPropertyBlock { data, info })
+            },
         })
     }
 }
 
-impl Default for PropertyMetaVariant {
+impl Default for PropertyBlockVariant {
     #[inline]
     fn default() -> Self {
         Self::Scalar(Default::default())
     }
 }
 
-impl Encoder for PropertyMeta {
+impl Encoder for PropertyBlock {
     type Err = Error;
 
     #[inline]
@@ -99,7 +106,7 @@ impl Encoder for PropertyMeta {
     }
 }
 
-impl Encoder for PropertyMetaVariant {
+impl Encoder for PropertyBlockVariant {
     type Err = Error;
 
     #[inline]
@@ -108,28 +115,12 @@ impl Encoder for PropertyMetaVariant {
         writer: &mut impl Write,
     ) -> Result<(), Self::Err> {
         match self {
-            Self::Scalar(scalar) => scalar.encode(writer),
+            Self::Scalar(scalar) => scalar.info.encode(writer),
             Self::List(list) => {
                 writer.write_all(b"list ")?;
-                list.encode(writer)
+                list.info.encode(writer)
             },
         }
-    }
-}
-
-impl ops::Deref for PropertyMeta {
-    type Target = PropertyMetaVariant;
-
-    #[inline]
-    fn deref(&self) -> &Self::Target {
-        &self.variant
-    }
-}
-
-impl ops::DerefMut for PropertyMeta {
-    #[inline]
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.variant
     }
 }
 
@@ -141,27 +132,29 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"list uchar int vertex_indices\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
+
         let target = "vertex_indices";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::List(ListPropertyMeta {
+        let target = ListPropertyBlockInfo {
             count: UCHAR.to_owned(),
             value: INT.to_owned(),
-        });
-        assert_eq!(output.variant, target);
+        };
+        assert_eq!(output.as_list().unwrap().info, target);
 
         let source = &mut Cursor::new(b"list ushort uint    point_indices\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
+
         let target = "point_indices";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::List(ListPropertyMeta {
+        let target = ListPropertyBlockInfo {
             count: USHORT.to_owned(),
             value: UINT.to_owned(),
-        });
-        assert_eq!(output.variant, target);
+        };
+        assert_eq!(output.as_list().unwrap().info, target);
 
         let source = &mut Cursor::new(b"listuchar int vertex_indices\n");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
     }
 
     #[test]
@@ -170,68 +163,68 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"float 32x\r\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         let target = "32x";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(FLOAT.to_owned());
-        assert_eq!(output.variant, target);
+        let target = FLOAT.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"float32 x\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         let target = "x";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(FLOAT32.to_owned());
-        assert_eq!(output.variant, target);
+        let target = FLOAT32.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"int    y\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         let target = "y";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(INT.to_owned());
-        assert_eq!(output.variant, target);
+        let target = INT.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"int    y\n");
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         let target = "y";
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(INT.to_owned());
-        assert_eq!(output.variant, target);
+        let target = INT.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"int    y    \r\n");
         let target = "y    ";
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(INT.to_owned());
-        assert_eq!(output.variant, target);
+        let target = INT.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"         int y\n");
         let target = "y";
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(INT.to_owned());
-        assert_eq!(output.variant, target);
+        let target = INT.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"uchar  \n");
         let target = "\n";
-        let output = PropertyMeta::decode(source).unwrap();
+        let output = PropertyBlock::decode(source).unwrap();
         assert_eq!(output.name, target);
-        let target = PropertyMetaVariant::Scalar(UCHAR.to_owned());
-        assert_eq!(output.variant, target);
+        let target = UCHAR.to_owned();
+        assert_eq!(output.as_scalar().unwrap().info, target);
 
         let source = &mut Cursor::new(b"\nuchar\n");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"uchar   ");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"uchar ");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"uchar");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        PropertyMeta::decode(source).unwrap_err();
+        PropertyBlock::decode(source).unwrap_err();
     }
 
     #[test]
@@ -241,7 +234,7 @@ mod tests {
 
         let source = &mut Cursor::new(b"float \xc2\xae\n");
         let target = "\u{ae}".to_owned();
-        let output = PropertyMeta::decode(source).unwrap_err();
+        let output = PropertyBlock::decode(source).unwrap_err();
 
         match output {
             Error::InvalidAscii(output) => assert_eq!(output, target),
@@ -253,8 +246,9 @@ mod tests {
     fn default() {
         use super::*;
 
-        let target = PropertyMetaVariant::Scalar(ScalarPropertyMeta::default());
-        let output = PropertyMetaVariant::default();
-        assert_eq!(output, target);
+        match PropertyBlockVariant::default() {
+            PropertyBlockVariant::Scalar(_) => {},
+            variant => panic!("{variant:?}"),
+        }
     }
 }

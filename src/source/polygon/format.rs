@@ -1,11 +1,11 @@
 pub use super::*;
-pub use FormatMetaVariant::*;
+pub use FormatVariant::*;
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <format-meta> :=
-///     | "format " <format-meta-variant> [{" "}] <version> <newline>
+/// <format> :=
+///     | "format " <format-variant> [{" "}] <version> <newline>
 ///
 /// <version> :=
 ///     | <ascii-string>
@@ -17,71 +17,88 @@ pub use FormatMetaVariant::*;
 /// ### Syntax Reference
 ///
 /// - [`AsciiString`]
-/// - [`FormatMetaVariant`]
+/// - [`FormatVariant`]
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub struct FormatMeta {
-    pub variant: FormatMetaVariant,
+pub struct Format {
+    pub variant: FormatVariant,
     pub version: AsciiString,
 }
 
 /// ## Syntax
 ///
 /// ```plaintext
-/// <format-meta-variant> :=
-///     | [{" "}] <format> " "
+/// <format-variant> :=
+///     | [{" "}] <format-type> " "
 ///
-/// <format> :=
+/// <format-type> :=
 ///     | "ascii"
 ///     | "binary_big_endian"
 ///     | "binary_little_endian"
 /// ```
 #[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum FormatMetaVariant {
+pub enum FormatVariant {
     #[default]
     Ascii,
     BinaryBigEndian,
     BinaryLittleEndian,
 }
 
-impl FormatMeta {
+impl Format {
     pub const KEYWORD: &[u8; 7] = b"format ";
 
     #[inline]
     pub fn new<V: AsRef<[u8]>>(
-        variant: FormatMetaVariant,
+        variant: FormatVariant,
         version: V,
     ) -> Result<Self, Error> {
         let version = version.as_ref().into_ascii_string().map_err(|err| {
-            Error::InvalidAscii(String::from_utf8_lossy(&err.into_source()).into_owned())
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
         })?;
         Ok(Self { variant, version })
     }
 }
 
-impl FormatMetaVariant {
+macro_rules! impl_variant_checkers {
+    ($subject:ident, $( $variant:ident ),* ) => {
+        paste::paste! {
+            impl [<$subject Variant>] {
+                $(
+                    #[inline]
+                    pub const fn [<is_ $variant:snake>](&self) -> bool {
+                        matches!(self, [<$subject Variant>]::$variant)
+                    }
+                )*
+            }
+        }
+    };
+}
+impl_variant_checkers! { Format, Ascii, BinaryBigEndian, BinaryLittleEndian }
+
+impl FormatVariant {
     pub const DOMAIN: [&str; 3] = ["ascii", "binary_big_endian", "binary_little_endian"];
 
     #[inline]
-    pub const fn is_native_byte_order(&self) -> bool {
+    pub const fn is_binary_native_endian(&self) -> bool {
         match self {
             BinaryLittleEndian => cfg!(target_endian = "little"),
-            Ascii => true,
+            Ascii => false,
             BinaryBigEndian => cfg!(target_endian = "big"),
         }
     }
 }
 
-impl Decoder for FormatMeta {
+impl Decoder for Format {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         if read_bytes_const(reader)? != *Self::KEYWORD {
-            Err(Error::MissingToken(
-                String::from_utf8(Self::KEYWORD.into()).expect("Unreachable"),
-            ))?;
+            // SAFETY: This is a UTF-8 string literal.
+            Err(Error::MissingToken(unsafe {
+                String::from_utf8(Self::KEYWORD.into()).unwrap_unchecked()
+            }))?;
         }
 
-        let variant = FormatMetaVariant::decode(reader)?;
+        let variant = FormatVariant::decode(reader)?;
 
         let mut version = vec![read_byte_after(reader, is_space)?
             .ok_or_else(|| Error::MissingToken("<version>".into()))?];
@@ -94,35 +111,36 @@ impl Decoder for FormatMeta {
     }
 }
 
-impl Decoder for FormatMetaVariant {
+impl Decoder for FormatVariant {
     type Err = Error;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let mut variant = vec![read_byte_after(reader, is_space)?
-            .ok_or_else(|| Error::MissingToken("<format-meta-variant>".into()))?];
+            .ok_or_else(|| Error::MissingToken("<format-block-variant>".into()))?];
         variant.extend(read_bytes_before(reader, is_space, 20)?);
 
         Ok(match variant.as_slice() {
             b"binary_little_endian" => BinaryLittleEndian,
             b"ascii" => Ascii,
             b"binary_big_endian" => BinaryBigEndian,
-            _ => Err(Error::InvalidPolygonFormatMetaVariant(
+            _ => Err(Error::InvalidPolygonFormatVariant(
                 String::from_utf8_lossy(&variant).into_owned(),
             ))?,
         })
     }
 }
 
-impl Default for FormatMeta {
+impl Default for Format {
     #[inline]
     fn default() -> Self {
         let variant = Default::default();
-        let version = "1.0".into_ascii_string().expect("Unreachable");
+        // SAFETY: This is an ASCII string literal.
+        let version = unsafe { "1.0".into_ascii_string().unwrap_unchecked() };
         Self { variant, version }
     }
 }
 
-impl Encoder for FormatMeta {
+impl Encoder for Format {
     type Err = Error;
 
     #[inline]
@@ -139,7 +157,7 @@ impl Encoder for FormatMeta {
     }
 }
 
-impl Encoder for FormatMetaVariant {
+impl Encoder for FormatVariant {
     type Err = Error;
 
     #[inline]
@@ -156,8 +174,8 @@ impl Encoder for FormatMetaVariant {
     }
 }
 
-impl ops::Deref for FormatMeta {
-    type Target = FormatMetaVariant;
+impl ops::Deref for Format {
+    type Target = FormatVariant;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -165,7 +183,7 @@ impl ops::Deref for FormatMeta {
     }
 }
 
-impl ops::DerefMut for FormatMeta {
+impl ops::DerefMut for Format {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.variant
@@ -180,60 +198,60 @@ mod tests {
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"format ascii 1.0\n");
-        let target = FormatMeta {
+        let target = Format {
             variant: Ascii,
             version: "1.0".into_ascii_string().unwrap(),
         };
-        let output = FormatMeta::decode(source).unwrap();
+        let output = Format::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"format binary_little_endian 1.0.1\n");
-        let target = FormatMeta {
+        let target = Format {
             variant: BinaryLittleEndian,
             version: "1.0.1".into_ascii_string().unwrap(),
         };
-        let output = FormatMeta::decode(source).unwrap();
+        let output = Format::decode(source).unwrap();
         assert_eq!(output, target);
 
         let source = &mut Cursor::new(b"format    binary_big_endian private    \n");
-        let target = FormatMeta {
+        let target = Format {
             variant: BinaryBigEndian,
             version: "private    ".into_ascii_string().unwrap(),
         };
-        let output = FormatMeta::decode(source).unwrap();
+        let output = Format::decode(source).unwrap();
         assert_eq!(output, target);
     }
 
     #[test]
-    fn decode_on_invalid_meta() {
+    fn decode_on_invalid_block() {
         use super::*;
         use std::io::Cursor;
 
         let source = &mut Cursor::new(b"format binary_big_endian     ");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format binary_middle_endian 1.0\n");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new("format ascii 1.0+\u{ae}\n".as_bytes());
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"formatascii 1.0\n");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format ascii");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"format ");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"fromat ");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"form");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(b"");
-        FormatMeta::decode(source).unwrap_err();
+        Format::decode(source).unwrap_err();
     }
 }
