@@ -26,6 +26,19 @@ pub struct ElementBlock {
     pub size: usize,
 }
 
+impl ElementBlock {
+    #[inline]
+    pub fn new<N: AsRef<[u8]>>(
+        name: N,
+        size: usize,
+    ) -> Result<Self, Error> {
+        let name = name.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
+        })?;
+        Ok(Self { name, size })
+    }
+}
+
 impl Decoder for ElementBlock {
     type Err = Error;
 
@@ -83,6 +96,19 @@ impl ops::DerefMut for ElementBlock {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn accessbility() {
+        use super::*;
+
+        let mut element = ElementBlock::new("vertex", 10).unwrap();
+        assert_eq!(element.name, "vertex");
+        assert_eq!(*element, "vertex");
+
+        *element = "vertex^2".into_ascii_string().unwrap();
+        element.size = 10 * 10;
+        assert_eq!(*element, "vertex^2");
+    }
+
+    #[test]
     fn decode() {
         use super::*;
         use std::io::Cursor;
@@ -129,5 +155,13 @@ mod tests {
 
         let source = &mut Cursor::new(b"unicode \x8e\xcd\n");
         ElementBlock::decode(source).unwrap_err();
+    }
+
+    #[test]
+    fn new_on_invalid_ascii_name() {
+        use super::*;
+
+        ElementBlock::new("\u{ae}", 0).unwrap_err();
+        ElementBlock::new("\u{a7}", 1).unwrap_err();
     }
 }

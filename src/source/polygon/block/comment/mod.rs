@@ -92,6 +92,20 @@ impl ops::DerefMut for CommentBlock {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn accessbility() {
+        use super::*;
+
+        let target = "Hello, World!";
+        let mut output = CommentBlock::new(target).unwrap();
+        assert_eq!(output.as_str(), target);
+        assert_eq!(*output, target);
+
+        *output = "Hello, Rust!".into_ascii_string().unwrap();
+        assert_eq!(output.as_str(), "Hello, Rust!");
+        assert_eq!(format!("{:?}", output), "\"Hello, Rust!\"");
+    }
+
+    #[test]
     fn decode() {
         use super::*;
         use std::io::Cursor;
@@ -115,5 +129,12 @@ mod tests {
 
         let source = &mut Cursor::new("\u{ae}");
         CommentBlock::decode(source).unwrap_err();
+    }
+
+    #[test]
+    fn new_on_invalid_ascii_message() {
+        use super::*;
+
+        CommentBlock::new("[\u{a5} ($$) \u{a5}]").unwrap_err();
     }
 }

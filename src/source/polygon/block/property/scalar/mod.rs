@@ -18,7 +18,12 @@ impl fmt::Debug for ScalarPropertyBlock {
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        write!(f, "{{ {:?} x{:?} }}", self.info, self.data.len())
+        write!(
+            f,
+            "{{ {:?} [{:?}] }}",
+            self.info,
+            self.data.len() / self.info.step
+        )
     }
 }
 
@@ -35,5 +40,19 @@ impl ops::DerefMut for ScalarPropertyBlock {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.info
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn debug() {
+        use super::*;
+
+        let block = ScalarPropertyBlock {
+            data: ScalarPropertyBlockData::from([0, 0, 0, 0, 0, 0, 0, 0]),
+            info: UINT32.to_owned(),
+        };
+        assert_eq!(format!("{:?}", block), r#"{ uint32 [2] }"#);
     }
 }

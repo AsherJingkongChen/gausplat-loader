@@ -48,6 +48,20 @@ pub enum PropertyBlockVariant {
 
 impl_variant_matchers! { PropertyBlock, List, Scalar }
 
+impl PropertyBlock {
+    #[inline]
+    pub fn new<N: AsRef<[u8]>, V: Into<PropertyBlockVariant>>(
+        name: N,
+        variant: V,
+    ) -> Result<Self, Error> {
+        let name = name.as_ref().into_ascii_string().map_err(|err| {
+            Error::InvalidAscii(String::from_utf8_lossy(err.into_source()).into_owned())
+        })?;
+        let variant = variant.into();
+        Ok(Self { name, variant })
+    }
+}
+
 impl Decoder for PropertyBlock {
     type Err = Error;
 
@@ -121,6 +135,26 @@ impl Encoder for PropertyBlockVariant {
                 list.info.encode(writer)
             },
         }
+    }
+}
+
+impl From<ListPropertyBlockInfo> for PropertyBlockVariant {
+    #[inline]
+    fn from(info: ListPropertyBlockInfo) -> Self {
+        Self::List(ListPropertyBlock {
+            data: Default::default(),
+            info,
+        })
+    }
+}
+
+impl From<ScalarPropertyBlockInfo> for PropertyBlockVariant {
+    #[inline]
+    fn from(info: ScalarPropertyBlockInfo) -> Self {
+        Self::Scalar(ScalarPropertyBlock {
+            data: Default::default(),
+            info,
+        })
     }
 }
 
@@ -240,6 +274,8 @@ mod tests {
             Error::InvalidAscii(output) => assert_eq!(output, target),
             error => panic!("{error:?}"),
         }
+
+        PropertyBlock::new("\u{ae}", FLOAT.to_owned()).unwrap_err();
     }
 
     #[test]

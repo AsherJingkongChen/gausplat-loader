@@ -45,6 +45,6 @@ impl fmt::Debug for ListPropertyBlockInfo {
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        write!(f, "list<{:?}, {:?}>", self.count, self.value)
+        write!(f, "{:?} <> {:?}", self.count, self.value)
     }
 }

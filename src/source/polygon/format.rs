@@ -133,10 +133,7 @@ impl Decoder for FormatVariant {
 impl Default for Format {
     #[inline]
     fn default() -> Self {
-        let variant = Default::default();
-        // SAFETY: This is an ASCII string literal.
-        let version = unsafe { "1.0".into_ascii_string().unwrap_unchecked() };
-        Self { variant, version }
+        FormatVariant::default().into()
     }
 }
 
@@ -171,6 +168,15 @@ impl Encoder for FormatVariant {
             BinaryBigEndian => b"binary_big_endian",
         })?;
         Ok(writer.write_all(SPACE)?)
+    }
+}
+
+impl From<FormatVariant> for Format {
+    #[inline]
+    fn from(variant: FormatVariant) -> Self {
+        // SAFETY: This is an ASCII string literal.
+        let version = unsafe { "1.0".into_ascii_string().unwrap_unchecked() };
+        Self { variant, version }
     }
 }
 
@@ -253,5 +259,35 @@ mod tests {
 
         let source = &mut Cursor::new(b"");
         Format::decode(source).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_slice() {
+        use super::*;
+
+        Format::default().encode(&mut &mut [0][..]).unwrap_err();
+
+        let target = b"format ascii 1.0\n";
+        let mut output = Vec::new();
+        Format::default().encode(&mut output).unwrap();
+        assert_eq!(output.as_slice(), target);
+    }
+
+    #[test]
+    fn new() {
+        use super::*;
+
+        let target = Format {
+            variant: Ascii,
+            version: "1.0".into_ascii_string().unwrap(),
+        };
+        let output = Format::new(Ascii, "1.0").unwrap();
+        assert_eq!(output, target);
+
+        let target = false;
+        let output = output.is_binary_native_endian();
+        assert_eq!(output, target);
+
+        Format::new(Default::default(), "\u{ae}").unwrap_err();
     }
 }

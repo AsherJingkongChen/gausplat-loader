@@ -29,3 +29,39 @@ impl Default for BlockVariant {
         Self::Comment(Default::default())
     }
 }
+
+impl From<CommentBlock> for Block {
+    #[inline]
+    fn from(variant: CommentBlock) -> Self {
+        let variant = BlockVariant::Comment(variant);
+        Self { variant }
+    }
+}
+
+impl From<ElementBlock> for Block {
+    #[inline]
+    fn from(variant: ElementBlock) -> Self {
+        let variant = BlockVariant::Element(variant);
+        Self { variant }
+    }
+}
+
+impl From<PropertyBlock> for Block {
+    #[inline]
+    fn from(variant: PropertyBlock) -> Self {
+        let variant = BlockVariant::Property(variant);
+        Self { variant }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn default() {
+        use super::*;
+
+        let target = BlockVariant::Comment(Default::default());
+        let output = BlockVariant::default();
+        assert_eq!(output, target);
+    }
+}

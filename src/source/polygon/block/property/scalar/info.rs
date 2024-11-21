@@ -154,8 +154,6 @@ impl Decoder for ScalarPropertyBlockInfo {
     }
 }
 
-// TODO: Decapsulation: All fields are public and no froms and intos, just derefs..
-
 impl fmt::Debug for ScalarPropertyBlockInfo {
     fn fmt(
         &self,

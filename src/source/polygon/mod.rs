@@ -130,6 +130,7 @@ impl Decoder for Object {
         // Decoding all blocks until the end of header.
 
         let mut had_element = false;
+
         loop {
             let keyword_prefix = read_bytes_const(reader)?;
             let variant = match &keyword_prefix {
@@ -325,24 +326,33 @@ impl Encoder for Object {
 
         // Encoding all blocks before the end of header.
 
-        self.iter().try_for_each(|block| match &**block {
-            Property(block) => {
-                writer.write_all(b"property ")?;
-                block.encode(writer)
-            },
-            Element(block) => {
-                writer.write_all(b"element ")?;
-                block.encode(writer)
-            },
-            Comment(block) => {
-                writer.write_all(b"comment ")?;
-                block.encode(writer)
-            },
-            ObjInfo(block) => {
-                writer.write_all(b"obj_info ")?;
-                block.encode(writer)
-            },
-        })?;
+        let mut had_element = false;
+
+        for block in self.iter() {
+            match &**block {
+                Property(block) => {
+                    if had_element {
+                        writer.write_all(b"property ")?;
+                        block.encode(writer)
+                    } else {
+                        Err(Error::MissingToken("element ".into()))?
+                    }
+                },
+                Element(block) => {
+                    had_element = true;
+                    writer.write_all(b"element ")?;
+                    block.encode(writer)
+                },
+                Comment(block) => {
+                    writer.write_all(b"comment ")?;
+                    block.encode(writer)
+                },
+                ObjInfo(block) => {
+                    writer.write_all(b"obj_info ")?;
+                    block.encode(writer)
+                },
+            }?;
+        }
 
         // Encoding the end of header.
 
@@ -549,9 +559,8 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!(
-            "../../../examples/data/polygon/misplaced-property.ascii.ply"
-        );
+        let source =
+            include_bytes!("../../../examples/data/polygon/misplaced-property.ascii.ply");
 
         let reader = &mut Cursor::new(source);
         Object::decode(reader).unwrap_err();
@@ -687,9 +696,8 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!(
-            "../../../examples/data/polygon/empty-element.binary-le.ply"
-        );
+        let source =
+            include_bytes!("../../../examples/data/polygon/empty-element.binary-le.ply");
         let reader = &mut Cursor::new(source);
         let object = Object::decode(reader).unwrap();
 
@@ -714,9 +722,8 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!(
-            "../../../examples/data/polygon/empty-element.binary-le.ply"
-        );
+        let source =
+            include_bytes!("../../../examples/data/polygon/empty-element.binary-le.ply");
         let reader = &mut Cursor::new(source);
         let object = Object::decode(reader).unwrap();
 
@@ -798,6 +805,25 @@ mod tests {
     }
 
     #[test]
+    fn encode_misplaced_property() {
+        use super::*;
+        use std::io::Cursor;
+
+        let mut output = Object {
+            blocks: vec![
+                CommentBlock::new("This example polygon file shows a misplaced property after cleaning.").unwrap().into(),
+                ElementBlock::decode(&mut Cursor::new(b"point 0\n")).unwrap().into(),
+                PropertyBlock::decode(&mut Cursor::new(b"float y\n")).unwrap().into(),
+            ],
+            format: Ascii.into(),
+        };
+        output.insert(1, PropertyBlock::new("x", FLOAT.to_owned()).unwrap().into());
+
+        let mut writer = Cursor::new(vec![]);
+        output.encode(&mut writer).unwrap_err();
+    }
+
+    #[test]
     fn remove_comment_on_all() {
         use super::*;
         use std::io::Cursor;
@@ -819,4 +845,3 @@ mod tests {
         assert_eq!(output, target);
     }
 }
-

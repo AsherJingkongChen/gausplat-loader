@@ -18,7 +18,7 @@ impl fmt::Debug for ListPropertyBlock {
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        write!(f, "{{ {:?} x{:?} }}", self.info, self.data.len())
+        write!(f, "{{ {:?} [{:?}] }}", self.info, self.data.len())
     }
 }
 
@@ -35,5 +35,22 @@ impl ops::DerefMut for ListPropertyBlock {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.info
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn debug() {
+        use super::*;
+
+        let block = ListPropertyBlock {
+            data: ListPropertyBlockData::from([[].into(), [].into(), [].into()]),
+            info: ListPropertyBlockInfo {
+                count: ScalarPropertyBlockInfo::new("uint", 4).unwrap(),
+                value: INT32.to_owned(),
+            },
+        };
+        assert_eq!(format!("{:?}", block), r#"{ uint <> int32 [3] }"#);
     }
 }
