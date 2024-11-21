@@ -209,22 +209,20 @@ impl Decoder for Object {
             // Allocating the property data for the current element,
 
             // SAFETY: The index is in bounds and the block is an element.
-            let element_size = {
+            let element_size = unsafe {
                 object
-                    .get(element_index)
-                    .expect("Unreachable")
+                    .get_unchecked(element_index)
                     .as_element()
-                    .expect("Unreachable")
+                    .unwrap_unchecked()
                     .size
             };
             for &property_index in &property_indices {
                 // SAFETY: The index is in bounds and the block is a property.
-                let property = {
+                let property = unsafe {
                     object
-                        .get_mut(property_index)
-                        .expect("Unreachable")
+                        .get_unchecked_mut(property_index)
                         .as_property_mut()
-                        .expect("Unreachable")
+                        .unwrap_unchecked()
                 };
                 match &mut **property {
                     Scalar(scalar) => {
@@ -243,12 +241,11 @@ impl Decoder for Object {
             for _element_index in 0..element_size {
                 for &property_index in &property_indices {
                     // SAFETY: The index is in bounds.
-                    let property = {
+                    let property = unsafe {
                         object
-                            .get_mut(property_index)
-                            .expect("Unreachable")
+                            .get_unchecked_mut(property_index)
                             .as_property_mut()
-                            .expect("Unreachable")
+                            .unwrap_unchecked()
                     };
                     match &mut **property {
                         Scalar(ScalarPropertyBlock { data, info }) => {
@@ -284,8 +281,8 @@ impl Decoder for Object {
                                     bytes.resize(size_of::<usize>(), 0);
 
                                     // SAFETY: The bytes are of the exact size.
-                                    usize::from_le_bytes({
-                                        bytes.try_into().expect("Unreachable")
+                                    usize::from_le_bytes(unsafe {
+                                        bytes.try_into().unwrap_unchecked()
                                     })
                                 };
                                 let mut datum =
@@ -499,6 +496,14 @@ macro_rules! impl_variant_matchers {
                     #[inline]
                     pub const fn [<is_ $variant:snake>](&self) -> bool {
                         matches!(self, Self::$variant(_))
+                    }
+
+                    #[inline]
+                    pub fn [<into_ $variant:snake>](self) -> Option<[<$variant $subject>]> {
+                        match self {
+                            Self::$variant(data) => Some(data),
+                            _ => None,
+                        }
                     }
                 )*
             }
