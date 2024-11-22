@@ -43,3 +43,39 @@ pub fn read_bytes_of_polygon_header(reader: &mut impl Read) -> Result<Vec<u8>, E
     header.extend(read_newline(reader)?);
     Ok(header)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn read_bytes_of_polygon_header() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = &mut Cursor::new(b"ply\nformat ascii 1.0\nend_header\n\n \n \n");
+        let target = b"ply\nformat ascii 1.0\nend_header\n";
+        let output = read_bytes_of_polygon_header(source).unwrap();
+        assert_eq!(output, target);
+
+        let source = &mut Cursor::new(b"\n \n ply\nformat ascii 1.0\nend_header\n");
+        let target = b"ply\nformat ascii 1.0\nend_header\n";
+        let output = read_bytes_of_polygon_header(source).unwrap();
+        assert_eq!(output, target);
+
+        let source = &mut Cursor::new(b"ply\r\nformat ascii 1.0\nend_header\n");
+        let target = b"ply\r\nformat ascii 1.0\nend_header\n";
+        let output = read_bytes_of_polygon_header(source).unwrap();
+        assert_eq!(output, target);
+
+        let source = &mut Cursor::new(b"ply\nformat ascii 1.0\nend_header");
+        read_bytes_of_polygon_header(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"ply\n");
+        read_bytes_of_polygon_header(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"ply");
+        read_bytes_of_polygon_header(source).unwrap_err();
+
+        let source = &mut Cursor::new(b"");
+        read_bytes_of_polygon_header(source).unwrap_err();
+    }
+}
