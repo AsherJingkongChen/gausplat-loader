@@ -151,6 +151,32 @@ pub fn read_bytes_before_newline(
     }
 }
 
+/// Reading until the delimiters or EOF.
+#[inline]
+pub fn read_bytes_until_many_const<const N: usize>(
+    reader: &mut impl Read,
+    delimiters: &[u8; N],
+) -> Result<(), Error> {
+    assert_ne!(N, 0);
+
+    let mut ring = [0; N];
+    let mut pos = 0;
+
+    loop {
+        let byte = &mut [0; 1];
+        let is_eof = reader.read(byte)? == 0;
+        if is_eof {
+            return Ok(());
+        }
+
+        ring[pos % N] = byte[0];
+        pos += 1;
+        if pos >= N && (0..N).all(|idx| ring[(idx + pos) % N] == delimiters[idx]) {
+            return Ok(());
+        }
+    }
+}
+
 /// Reading exact one CRLF or LF.
 #[inline]
 pub fn read_newline(reader: &mut impl Read) -> Result<Box<[u8]>, Error> {
@@ -165,11 +191,24 @@ pub fn read_newline(reader: &mut impl Read) -> Result<Box<[u8]>, Error> {
             return Ok([b'\r', b'\n'].into());
         }
     }
-    Err(Error::MissingToken("<newline>".into()))
+    Err(Error::MissingSymbol("<newline> (CRLF or LF)".into()))
 }
 
 #[cfg(test)]
 mod tests {
+    use std::io;
+
+    struct InvalidRead;
+
+    impl io::Read for InvalidRead {
+        fn read(
+            &mut self,
+            _: &mut [u8],
+        ) -> io::Result<usize> {
+            Err(io::Error::new(io::ErrorKind::InvalidData, "cannot read"))
+        }
+    }
+
     #[test]
     fn advance() {
         use super::*;
@@ -225,6 +264,8 @@ mod tests {
         let target = None;
         let output = read_byte_after(&mut Cursor::new([]), is_space).unwrap();
         assert_eq!(output, target);
+
+        read_byte_after(&mut InvalidRead, is_null).unwrap_err();
     }
 
     #[test]
@@ -242,6 +283,8 @@ mod tests {
         let target = b"Bonjour, le monde!\n";
         let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
         assert_eq!(output, target);
+
+        read_bytes_before(&mut InvalidRead, is_null, 0).unwrap_err();
     }
 
     #[test]
@@ -309,6 +352,9 @@ mod tests {
         assert_eq!(output, target);
 
         read_bytes_before_many_const(reader, b" monde", 20).unwrap();
+        read_bytes_before_many_const(reader, b" monde", 20).unwrap();
+
+        read_bytes_before_many_const(&mut InvalidRead, b" ", 0).unwrap_err();
     }
 
     #[test]
@@ -349,6 +395,31 @@ mod tests {
         let target = b"";
         let output = read_bytes_before_newline(reader, 4).unwrap();
         assert_eq!(output, target);
+
+        read_bytes_before_newline(&mut InvalidRead, 0).unwrap_err();
+    }
+
+    #[test]
+    fn read_bytes_until_many_const() {
+        use super::*;
+
+        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let reader = &mut std::io::Cursor::new(source);
+
+        let target = b"World";
+        read_bytes_until_many_const(reader, b", ").unwrap();
+        let output = read_bytes(reader, target.len()).unwrap();
+        assert_eq!(output, target);
+
+        let target = b"le monde";
+        read_bytes_until_many_const(reader, b"Bonjour, ").unwrap();
+        let output = read_bytes(reader, target.len()).unwrap();
+        assert_eq!(output, target);
+
+        read_bytes_until_many_const(reader, b"Bonjour").unwrap();
+        read_bytes_until_many_const(reader, b"Bonjour").unwrap();
+
+        read_bytes_until_many_const(&mut InvalidRead, b" ").unwrap_err();
     }
 
     #[test]
@@ -376,5 +447,19 @@ mod tests {
         let target = (*b"\n").into();
         let output = read_newline(reader).unwrap();
         assert_eq!(output, target);
+
+        let source = b"H";
+        let reader = &mut std::io::Cursor::new(source);
+        read_newline(reader).unwrap_err();
+
+        let source = b"\r";
+        let reader = &mut std::io::Cursor::new(source);
+        read_newline(reader).unwrap_err();
+
+        let source = b"";
+        let reader = &mut std::io::Cursor::new(source);
+        read_newline(reader).unwrap_err();
+
+        read_newline(&mut InvalidRead).unwrap_err();
     }
 }
