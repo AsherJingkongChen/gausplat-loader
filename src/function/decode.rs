@@ -93,6 +93,35 @@ pub fn read_bytes_before<DF: Fn(u8) -> bool>(
     }
 }
 
+/// Reads all bytes before the delimiters or EOF.
+pub fn read_bytes_before_many_const<const N: usize>(
+    reader: &mut impl Read,
+    delimiters: &[u8; N],
+) -> Result<Vec<u8>, Error> {
+    debug_assert_ne!(N, 0);
+
+    let mut bytes = Vec::with_capacity(N);
+    let mut ring = [0; N];
+    let mut pos = 0;
+
+    loop {
+        let byte = &mut [0; 1];
+        let is_eof = reader.read(byte)? == 0;
+        if is_eof {
+            return Ok(bytes);
+        }
+
+        bytes.push(byte[0]);
+        ring[pos % N] = byte[0];
+        pos += 1;
+
+        if pos >= N && (0..N).all(|idx| ring[(pos + idx) % N] == delimiters[idx]) {
+            bytes.truncate(bytes.len() - N);
+            return Ok(bytes);
+        }
+    }
+}
+
 /// Reads all bytes before the CRLF, LF, or EOF.
 #[inline]
 pub fn read_bytes_before_newline(
@@ -228,6 +257,24 @@ mod tests {
 
         let target = b"Bonjour, le monde!\n";
         let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn read_bytes_before_many_const() {
+        use super::*;
+
+        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let reader = &mut std::io::Cursor::new(source);
+
+        advance(reader, 12).unwrap();
+        let target = b"Hello";
+        let output = &read_bytes_before_many_const(reader, b", ").unwrap();
+        assert_eq!(output, target);
+
+        advance(reader, 19).unwrap();
+        let target = b"Bonjour, le";
+        let output = &read_bytes_before_many_const(reader, b" monde").unwrap();
         assert_eq!(output, target);
     }
 
