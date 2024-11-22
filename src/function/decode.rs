@@ -146,6 +146,23 @@ pub fn read_bytes_before_newline(
     }
 }
 
+/// Read exact one CRLF or LF.
+#[inline]
+pub fn take_newline(reader: &mut impl Read) -> Result<(), Error> {
+    let mut byte = [0; 1];
+    reader.read_exact(&mut byte)?;
+    if byte[0] == b'\n' {
+        return Ok(());
+    }
+    if byte[0] == b'\r' {
+        reader.read_exact(&mut byte)?;
+        if byte[0] == b'\n' {
+            return Ok(());
+        }
+    }
+    Err(Error::MissingToken("<newline>".into()))
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -316,5 +333,26 @@ mod tests {
         let target = b"";
         let output = read_bytes_before_newline(reader, 4).unwrap();
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn take_newline() {
+        use super::*;
+
+        let source = b"\nHi!";
+        let reader = &mut std::io::Cursor::new(source);
+        take_newline(reader).unwrap();
+
+        let source = b"\r\nHi!";
+        let reader = &mut std::io::Cursor::new(source);
+        take_newline(reader).unwrap();
+
+        let source = b"\rHi!";
+        let reader = &mut std::io::Cursor::new(source);
+        take_newline(reader).unwrap_err();
+
+        let source = b"\n\nHi!";
+        let reader = &mut std::io::Cursor::new(source);
+        take_newline(reader).unwrap();
     }
 }

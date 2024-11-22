@@ -28,7 +28,7 @@ pub use format::*;
 use crate::function::{
     decode::{
         is_space, read_byte_after, read_bytes, read_bytes_before,
-        read_bytes_before_newline, read_bytes_const,
+        read_bytes_before_newline, read_bytes_const, take_newline,
     },
     encode::{NEWLINE, SPACE},
 };
@@ -117,9 +117,7 @@ impl Decoder for Object {
                 String::from_utf8(Self::SIGNATURE.into()).unwrap_unchecked()
             }))?;
         }
-        if !read_bytes_before_newline(reader, 0)?.is_empty() {
-            Err(Error::MissingToken("<newline>".into()))?;
-        }
+        take_newline(reader)?;
 
         // Decoding the format.
 
@@ -160,14 +158,8 @@ impl Decoder for Object {
                     let keyword_suffix = read_bytes_const(reader)?;
                     match &keyword_suffix {
                         b"d_header" => {
-                            match read_bytes_before_newline(reader, 0)?.as_slice() {
-                                b"" => break,
-                                keyword_suffix_rest => {
-                                    Err([&keyword_suffix, keyword_suffix_rest]
-                                        .concat()
-                                        .into())
-                                },
-                            }
+                            take_newline(reader)?;
+                            break;
                         },
                         _ => Err(keyword_suffix.into()),
                     }
@@ -578,9 +570,7 @@ mod tests {
         assert_eq!(output, target);
 
         let reader = &mut Cursor::new(&source[..source.len() - 1]);
-        let target = Object::default();
-        let output = Object::decode(reader).unwrap();
-        assert_eq!(output, target);
+        Object::decode(reader).unwrap_err();
 
         let reader =
             &mut Cursor::new([&source[..source.len() - 1], b" not newline"].concat());
