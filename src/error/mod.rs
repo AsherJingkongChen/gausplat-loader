@@ -1,5 +1,3 @@
-use crate::source::polygon::{FormatVariant, Object};
-
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Bytemuck error: {0}")]
@@ -22,21 +20,6 @@ pub enum Error {
 
     #[error("Invalid camera model id: {0}")]
     InvalidCameraModelId(u32),
-
-    #[error(
-        "Invalid polygon keyword: {0:?}. It should be one of {:?}.",
-        Object::KEYWORDS
-    )]
-    InvalidPolygonKeyword(String),
-
-    #[error(
-        "Invalid polygon format variant: {0:?}. It should be one of {:?}.",
-        FormatVariant::DOMAIN
-    )]
-    InvalidPolygonFormatVariant(String),
-
-    #[error("Invalid polygon property kind: {0:?}")]
-    InvalidPolygonPropertyKind(String),
 
     #[error("Invalid UTF-8 string: {0:?}")]
     InvalidUtf8(String),
