@@ -17,6 +17,7 @@ pub struct Point {
 }
 
 impl Point {
+    #[inline]
     pub fn color_rgb_normalized(&self) -> [f32; 3] {
         [
             self.color_rgb[0] as f32 / 255.0,
@@ -29,6 +30,7 @@ impl Point {
 impl Decoder for Point {
     type Err = Error;
 
+    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let position = [
             reader.read_f64::<LE>()?,
@@ -54,6 +56,7 @@ impl Decoder for Point {
 impl Encoder for Point {
     type Err = Error;
 
+    #[inline]
     fn encode(
         &self,
         writer: &mut impl Write,

@@ -5,6 +5,7 @@ pub type Points = Vec<Point>;
 impl Decoder for Points {
     type Err = Error;
 
+    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
 
@@ -13,7 +14,6 @@ impl Decoder for Points {
             .map(|_| {
                 // Skip point id
                 advance(reader, 8)?;
-
                 Point::decode(reader)
             })
             .collect();
@@ -28,6 +28,7 @@ impl Decoder for Points {
 impl Encoder for Points {
     type Err = Error;
 
+    #[inline]
     fn encode(
         &self,
         writer: &mut impl Write,
@@ -40,7 +41,6 @@ impl Encoder for Points {
             .try_for_each(|(point_index, point)| {
                 // Write point index to point id
                 writer.write_u64::<LE>(point_index as u64)?;
-
                 point.encode(writer)
             })?;
 

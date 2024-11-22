@@ -54,6 +54,7 @@ pub fn read_bytes(
 }
 
 /// Reading a byte after all delimiter bytes or `None` at EOF.
+#[inline]
 pub fn read_byte_after(
     reader: &mut impl Read,
     delimiter: impl Fn(u8) -> bool,
@@ -99,6 +100,7 @@ pub fn read_bytes_const<const N: usize>(
 }
 
 /// Reading all bytes before the delimiters or EOF.
+#[inline]
 pub fn read_bytes_before_many_const<const N: usize>(
     reader: &mut impl Read,
     delimiters: &[u8; N],

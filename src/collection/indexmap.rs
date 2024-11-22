@@ -74,6 +74,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Get a key-value pair by random.
+    #[inline]
     pub fn get_random(&mut self) -> Option<(&K, &V)> {
         if self.inner.is_empty() {
             None?;
@@ -83,6 +84,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Get a key-value pair by random.
+    #[inline]
     pub fn get_random_mut(&mut self) -> Option<(&K, &mut V)> {
         if self.inner.is_empty() {
             None?;
@@ -110,6 +112,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Return an iterator over the key-value pairs of the map, in random order.
+    #[inline]
     pub fn random_iter(&mut self) -> impl Iterator<Item = (&K, &V)> {
         (&mut self.rng)
             .sample_iter(rand::distributions::Uniform::new(0, self.inner.len()))

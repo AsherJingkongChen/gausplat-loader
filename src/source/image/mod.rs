@@ -15,13 +15,21 @@ pub struct Image {
     pub image_id: u32,
 }
 
+// TODO:
+// - Image::decode_rgb(&self) -> RgbImage
+// - Image::encode_rgb(&mut self, RgbImage) -> &mut Self
+// - Image::rgb_from_tensor(Tensor) -> RgbImage
+// - Image::rgb_to_tensor(RgbImage) -> Tensor
+
 impl Image {
+    #[inline]
     pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
         Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
     }
 
     /// Decoding to a tensor with shape of `[H, W, C]`,
     /// where `C` is the channel count of RGB image.
+    #[inline]
     pub fn decode_rgb_to_tensor<B: Backend>(
         &self,
         device: &B::Device,
@@ -76,6 +84,7 @@ impl Image {
 }
 
 impl fmt::Debug for Image {
+    #[inline]
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,
