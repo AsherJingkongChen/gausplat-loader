@@ -8,7 +8,8 @@ pub const NEWLINE: &[u8; 2] = b"\r\n";
 /// Newline, that is, LF on non-Windows targets.
 #[cfg(not(windows))]
 pub const NEWLINE: &[u8; 1] = b"\n";
-
+/// Null.
+pub const NULL: &[u8; 1] = b"\0";
 /// Space.
 pub const SPACE: &[u8; 1] = b" ";
 

@@ -21,13 +21,12 @@ pub use crate::{
     function::{Decoder, Encoder},
 };
 
-use crate::function::{
-    decode::{
-        is_space, read_byte_after, read_bytes, read_bytes_before,
-        read_bytes_before_newline, read_bytes_const, take_newline,
-    },
-    encode::{NEWLINE, SPACE},
-};
-use std::io::{Read, Write};
+use crate::function::decode::{read_bytes_before_many_const, read_newline};
+use std::io::Read;
 
-// TODO: Syntax documentation
+pub fn read_polygon_header(reader: &mut impl Read) -> Result<String, Error> {
+    let mut header = read_bytes_before_many_const(reader, b"end_header", 1024)?;
+    header.extend(b"end_header");
+    header.extend(read_newline(reader)?);
+    Ok("".to_string())
+}
