@@ -53,25 +53,22 @@ pub fn read_bytes(
     Ok(bytes)
 }
 
-/// Reading a byte after all delimiter bytes or `None` at EOF.
+/// Reading a byte after all delimiter bytes.
 #[inline]
 pub fn read_byte_after(
     reader: &mut impl Read,
     delimiter: impl Fn(u8) -> bool,
-) -> Result<Option<u8>, Error> {
+) -> Result<u8, Error> {
     loop {
         let byte = &mut [0; 1];
-        let is_eof = reader.read(byte)? == 0;
-        if is_eof {
-            return Ok(None);
-        }
+        reader.read_exact(byte)?;
         if !delimiter(byte[0]) {
-            return Ok(Some(byte[0]));
+            return Ok(byte[0]);
         }
     }
 }
 
-/// Reading all bytes before the delimiter or EOF.
+/// Reading all bytes before the delimiter.
 #[inline]
 pub fn read_bytes_before(
     reader: &mut impl Read,
@@ -81,8 +78,8 @@ pub fn read_bytes_before(
     let mut bytes = Vec::with_capacity(capacity);
     loop {
         let byte = &mut [0; 1];
-        let is_eof = reader.read(byte)? == 0;
-        if is_eof || delimiter(byte[0]) {
+        reader.read_exact(byte)?;
+        if delimiter(byte[0]) {
             return Ok(bytes);
         }
         bytes.push(byte[0]);
@@ -99,24 +96,21 @@ pub fn read_bytes_const<const N: usize>(
     Ok(bytes)
 }
 
-/// Reading all bytes before the delimiters or EOF.
+/// Reading all bytes before the delimiters.
 #[inline]
 pub fn read_bytes_before_many_const<const N: usize>(
     reader: &mut impl Read,
     delimiters: &[u8; N],
     capacity: usize,
 ) -> Result<Vec<u8>, Error> {
+    debug_assert_ne!(0, N);
+
     let mut bytes = Vec::with_capacity(capacity);
     let mut ring = [0; N];
     let mut pos = 0;
-
     loop {
         let byte = &mut [0; 1];
-        let is_eof = reader.read(byte)? == 0;
-        if is_eof {
-            return Ok(bytes);
-        }
-
+        reader.read_exact(byte)?;
         bytes.push(byte[0]);
         ring[pos % N] = byte[0];
         pos += 1;
@@ -151,24 +145,19 @@ pub fn read_bytes_before_newline(
     }
 }
 
-/// Reading until the delimiters or EOF.
+/// Reading until the delimiters.
 #[inline]
 pub fn read_bytes_until_many_const<const N: usize>(
     reader: &mut impl Read,
     delimiters: &[u8; N],
 ) -> Result<(), Error> {
-    assert_ne!(N, 0);
+    debug_assert_ne!(0, N);
 
     let mut ring = [0; N];
     let mut pos = 0;
-
     loop {
         let byte = &mut [0; 1];
-        let is_eof = reader.read(byte)? == 0;
-        if is_eof {
-            return Ok(());
-        }
-
+        reader.read_exact(byte)?;
         ring[pos % N] = byte[0];
         pos += 1;
         if pos >= N && (0..N).all(|idx| ring[(idx + pos) % N] == delimiters[idx]) {
@@ -257,13 +246,11 @@ mod tests {
         let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
         let reader = &mut Cursor::new(source);
 
-        let target = Some(b',');
+        let target = b',';
         let output = read_byte_after(reader, |b| b" Helo".contains(&b)).unwrap();
         assert_eq!(output, target);
 
-        let target = None;
-        let output = read_byte_after(&mut Cursor::new([]), is_space).unwrap();
-        assert_eq!(output, target);
+        read_byte_after(&mut Cursor::new([]), is_space).unwrap_err();
 
         read_byte_after(&mut InvalidRead, is_null).unwrap_err();
     }
@@ -280,9 +267,7 @@ mod tests {
         let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
         assert_eq!(output, target);
 
-        let target = b"Bonjour, le monde!\n";
-        let output = read_bytes_before(reader, |b| b == 0, 16).unwrap();
-        assert_eq!(output, target);
+        read_bytes_before(reader, |b| b == 0, 16).unwrap_err();
 
         read_bytes_before(&mut InvalidRead, is_null, 0).unwrap_err();
     }
@@ -309,7 +294,7 @@ mod tests {
         let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
         let reader = &mut std::io::Cursor::new(source);
 
-        let target = Some(b'H');
+        let target = b'H';
         let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
@@ -317,7 +302,7 @@ mod tests {
         let output = read_bytes_before(reader, |b| b == b'\n', 16).unwrap();
         assert_eq!(output, target);
 
-        let target = Some(b'B');
+        let target = b'B';
         let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
@@ -325,13 +310,11 @@ mod tests {
         let output = read_bytes_before(reader, |b| b == b'!', 16).unwrap();
         assert_eq!(output, target);
 
-        let target = Some(b'\n');
+        let target = b'\n';
         let output = read_byte_after(reader, is_space).unwrap();
         assert_eq!(output, target);
 
-        let target = None;
-        let output = read_byte_after(reader, is_space).unwrap();
-        assert_eq!(output, target);
+        read_byte_after(reader, is_space).unwrap_err();
     }
 
     #[test]
@@ -351,8 +334,8 @@ mod tests {
         let output = &read_bytes_before_many_const(reader, b" monde", 20).unwrap();
         assert_eq!(output, target);
 
-        read_bytes_before_many_const(reader, b" monde", 20).unwrap();
-        read_bytes_before_many_const(reader, b" monde", 20).unwrap();
+        read_bytes_before_many_const(reader, b" monde", 20).unwrap_err();
+        read_bytes_before_many_const(reader, b" monde", 20).unwrap_err();
 
         read_bytes_before_many_const(&mut InvalidRead, b" ", 0).unwrap_err();
     }
@@ -416,8 +399,8 @@ mod tests {
         let output = read_bytes(reader, target.len()).unwrap();
         assert_eq!(output, target);
 
-        read_bytes_until_many_const(reader, b"Bonjour").unwrap();
-        read_bytes_until_many_const(reader, b"Bonjour").unwrap();
+        read_bytes_until_many_const(reader, b"Bonjour").unwrap_err();
+        read_bytes_until_many_const(reader, b"Bonjour").unwrap_err();
 
         read_bytes_until_many_const(&mut InvalidRead, b" ").unwrap_err();
     }
