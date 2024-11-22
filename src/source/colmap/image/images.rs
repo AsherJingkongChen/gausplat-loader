@@ -16,7 +16,7 @@ impl Decoder for Images {
             })
             .collect();
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(test)))]
         log::debug!(target: "gausplat-loader::colmap::image", "Images::decode");
 
         images
@@ -35,7 +35,7 @@ impl Encoder for Images {
         writer.write_u64::<LE>(self.len() as u64)?;
         self.values().try_for_each(|image| image.encode(writer))?;
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(test)))]
         log::debug!(target: "gausplat-loader::colmap::image", "Images::encode");
 
         Ok(())

@@ -44,7 +44,7 @@ impl Opener for Files<fs::File> {
             })
             .collect();
 
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, not(test)))]
         log::debug!(target: "gausplat-loader::source::file", "Files::open");
 
         files
