@@ -22,8 +22,6 @@ impl Encoder for Header {
 mod tests {
     use std::io::Cursor;
 
-    /// ## Note
-    ///
     /// This test **ensures** idempotence of header encoded output.
     #[test]
     fn encode_on_example_another_cube() {

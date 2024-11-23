@@ -81,7 +81,9 @@ impl Decoder for Header {
                     kind.extend(read_bytes_before(reader, is_space, 8)?);
 
                     let kind = if kind != b"list" {
-                        Scalar { value: string_from_vec_ascii(kind)? }
+                        Scalar {
+                            value: string_from_vec_ascii(kind)?,
+                        }
                     } else {
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
@@ -208,6 +210,103 @@ mod tests {
             .cloned()
             .collect::<Vec<_>>();
         assert_eq!(output, target);
+    }
+
+    /// This test **ensures** the decoding results are all `Err`.
+    #[test]
+    fn decode_on_example_err() {
+        use super::*;
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/duplicate-format.ascii.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap_err();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/misplaced-property.ascii.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap_err();
+    }
+    /// This test **ensures** the decoding results are all `Ok`.
+    #[test]
+    fn decode_on_example_ok() {
+        use super::*;
+        use std::io::Cursor;
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/another-cube.greg-turk.ascii.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/another-cube.greg-turk.binary-be.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/another-cube.greg-turk.binary-le.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/another-cube.greg-turk.zeros.binary-le.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!("../../../../examples/data/polygon/empty-element.ascii.ply")
+                [..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/empty-element.binary-le.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!("../../../../examples/data/polygon/empty-head.ascii.ply")[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/supported-data-types-common.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!(
+                "../../../../examples/data/polygon/supported-data-types-special.ply"
+            )[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!("../../../../examples/data/polygon/triangle.binary-le.ply")[..],
+        );
+        Header::decode(source).unwrap();
+
+        let source = &mut Cursor::new(
+            &include_bytes!("../../../../examples/data/polygon/valid-keyword.ascii.ply")
+                [..],
+        );
+        Header::decode(source).unwrap();
     }
 
     #[test]

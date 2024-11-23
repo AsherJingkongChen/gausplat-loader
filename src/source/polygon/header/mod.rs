@@ -107,6 +107,8 @@ impl Default for PropertyKind {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+
     #[test]
     fn default() {
         use super::*;
@@ -114,7 +116,7 @@ mod tests {
         let kind_target = &Default::default();
         let kind_output = &PropertyKind::default();
         assert_eq!(kind_output, kind_target);
-        
+
         let target = true;
         let output = kind_output.to_string().is_empty();
         assert_eq!(output, target);
@@ -122,5 +124,7 @@ mod tests {
         let target = "ply\nformat binary_little_endian 1.0\nend_header\n";
         let output = Header::default().to_string();
         assert_eq!(output, target);
+
+        Header::decode(&mut Cursor::new(target)).unwrap();
     }
 }

@@ -57,7 +57,8 @@ mod tests {
     fn decode() {
         use super::*;
 
-        let source = &include_bytes!("../../../../examples/data/colmap/0/points3D.bin")[..];
+        let source =
+            &include_bytes!("../../../../examples/data/colmap/0/points3D.bin")[..];
         let mut reader = std::io::Cursor::new(source);
 
         let targets = vec![
@@ -179,7 +180,8 @@ mod tests {
         .into_iter()
         .collect::<Points>();
 
-        let target = &include_bytes!("../../../../examples/data/colmap/1/points3D.bin")[..];
+        let target =
+            &include_bytes!("../../../../examples/data/colmap/1/points3D.bin")[..];
         let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
