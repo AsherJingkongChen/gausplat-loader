@@ -54,10 +54,10 @@ impl Image {
     ) -> Result<&mut Self, Error> {
         let [height, width, channel_count] = tensor.dims();
         if channel_count != 3 {
-            Err(Error::MismatchedTensorShape(
+            return Err(Error::MismatchedTensorShape(
                 vec![height, width, channel_count],
                 vec![height, width, 3],
-            ))?;
+            ));
         }
 
         let mut result = Cursor::new(vec![]);

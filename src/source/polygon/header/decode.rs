@@ -14,43 +14,43 @@ impl Decoder for Header {
         read_newline(reader)?;
 
         if &read_bytes_const(reader)? != b"format " {
-            Err(MissingSymbol("format ".into()))?;
+            return Err(MissingSymbol("format ".into()));
         }
 
         let format = match &read_bytes_const(reader)? {
             b"b" => {
                 if &read_bytes_const(reader)? != b"inary_" {
-                    Err(MissingSymbol(format!(
+                    return Err(MissingSymbol(format!(
                         "{} or {}",
                         BinaryLittleEndian, BinaryBigEndian
-                    )))?;
+                    )));
                 }
                 match &read_bytes_const(reader)? {
                     b"l" => {
                         if &read_bytes_const(reader)? != b"ittle_endian " {
-                            Err(MissingSymbol(BinaryLittleEndian.to_string()))?;
+                            return Err(MissingSymbol(BinaryLittleEndian.to_string()));
                         }
                         BinaryLittleEndian
                     },
                     b"b" => {
                         if &read_bytes_const(reader)? != b"ig_endian " {
-                            Err(MissingSymbol(BinaryBigEndian.to_string()))?;
+                            return Err(MissingSymbol(BinaryBigEndian.to_string()));
                         }
                         BinaryBigEndian
                     },
-                    _ => Err(MissingSymbol(format!(
+                    _ => return Err(MissingSymbol(format!(
                         "{} or {}",
                         BinaryLittleEndian, BinaryBigEndian
-                    )))?,
+                    ))),
                 }
             },
             b"a" => {
                 if &read_bytes_const(reader)? != b"scii " {
-                    Err(MissingSymbol(Ascii.to_string()))?;
+                    return Err(MissingSymbol(Ascii.to_string()));
                 }
                 Ascii
             },
-            _ => Err(MissingSymbol("ascii or binary".into()))?,
+            _ => return  Err(MissingSymbol("ascii or binary".into())),
         };
 
         let version = string_from_vec_ascii(read_bytes_before_newline(reader, 4)?)?;
@@ -61,14 +61,14 @@ impl Decoder for Header {
             match &read_bytes_const(reader)? {
                 b"end_head" => {
                     if &read_bytes_const(reader)? != b"er" {
-                        Err(MissingSymbol("end_header".into()))?;
+                        return Err(MissingSymbol("end_header".into()));
                     }
                     read_newline(reader)?;
                     break;
                 },
                 b"property" => {
                     if &read_bytes_const(reader)? != b" " {
-                        Err(MissingSymbol(" ".into()))?;
+                        return Err(MissingSymbol(" ".into()));
                     }
 
                     let properties = &mut elements
@@ -123,9 +123,9 @@ impl Decoder for Header {
                 b"comment " | b"obj_info" => {
                     drop(read_bytes_before_newline(reader, 64)?);
                 },
-                _ => Err(MissingSymbol(
+                _ => return Err(MissingSymbol(
                     "comment, element, end_header, obj_info, or property".into(),
-                ))?,
+                )),
             }
         }
 

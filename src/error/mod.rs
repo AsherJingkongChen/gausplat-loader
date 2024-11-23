@@ -21,6 +21,9 @@ pub enum Error {
     #[error("Invalid camera model id: {0}")]
     InvalidCameraModelId(u32),
 
+    #[error("Invalid kind: {0:?}")]
+    InvalidKind(String),
+
     #[error("Invalid UTF-8 string: {0:?}")]
     InvalidUtf8(String),
 

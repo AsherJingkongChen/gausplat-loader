@@ -86,7 +86,7 @@ impl Decoder for Camera {
                     focal_length_y,
                 }
             },
-            _ => Err(Error::InvalidCameraModelId(model_id))?,
+            _ => return Err(Error::InvalidCameraModelId(model_id)),
         };
         let principal_point_x = reader.read_f64::<LE>()?;
         let principal_point_y = reader.read_f64::<LE>()?;

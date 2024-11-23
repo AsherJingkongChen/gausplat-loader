@@ -67,9 +67,11 @@ pub struct ListPropertyKind {
     pub value: String,
 }
 
-#[derive(Clone, Debug, Default, Display, Eq, From, Hash, PartialEq)]
+#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, From, Hash, PartialEq)]
 #[display("property {kind} {name}")]
 pub struct Property {
+    #[deref]
+    #[deref_mut]
     pub kind: PropertyKind,
     pub name: String,
 }
