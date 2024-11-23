@@ -27,7 +27,7 @@ walkdir = {workspace = true}
 
 [dependencies.derive_more]
 workspace = true
-features = ["deref", "deref_mut", "display", "from", "into_iterator", "std"]
+features = ["deref", "deref_mut", "display", "from", "into_iterator", "is_variant", "std"]
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
