@@ -49,7 +49,7 @@ mod tests {
         use super::super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!("../../../../examples/data/colmap/0/cameras.bin");
+        let source = &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
         let mut reader = Cursor::new(source);
 
         let targets = [
@@ -101,7 +101,7 @@ mod tests {
     fn decode_on_unknown_camera_model_id() {
         use super::*;
 
-        let source = include_bytes!("../../../../examples/data/colmap/2/cameras.bin");
+        let source = &include_bytes!("../../../../examples/data/colmap/2/cameras.bin")[..];
         let mut reader = std::io::Cursor::new(source);
 
         let target = -1_i32 as u32;
@@ -172,7 +172,7 @@ mod tests {
         .into_iter()
         .collect::<Cameras>();
 
-        let target = include_bytes!("../../../../examples/data/colmap/0/cameras.bin");
+        let target = &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
         let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();

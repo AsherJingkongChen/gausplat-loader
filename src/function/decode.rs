@@ -218,7 +218,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")[..];
         let reader = &mut Cursor::new(source);
 
         let target = &source[0..24];
@@ -243,7 +243,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+space.txt")[..];
         let reader = &mut Cursor::new(source);
 
         let target = b',';
@@ -259,7 +259,7 @@ mod tests {
     fn read_bytes_before() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")[..];
         let reader = &mut std::io::Cursor::new(source);
 
         advance(reader, 8).unwrap();
@@ -277,7 +277,7 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+binary.dat");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+binary.dat")[..];
         let reader = &mut Cursor::new(source);
 
         let target = [0xd5, 0xda, 0x34, 0x01, 0x60, 0xcc, 0xd5, 0x07];
@@ -291,7 +291,7 @@ mod tests {
     fn read_bytes_after_and_before() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+space.txt")[..];
         let reader = &mut std::io::Cursor::new(source);
 
         let target = b'H';
@@ -321,7 +321,7 @@ mod tests {
     fn read_bytes_before_many_const() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+space.txt")[..];
         let reader = &mut std::io::Cursor::new(source);
 
         advance(reader, 12).unwrap();
@@ -344,7 +344,7 @@ mod tests {
     fn read_bytes_before_newline() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world/utf8+newline.txt");
+        let source = &include_bytes!("../../examples/data/hello-world/utf8+newline.txt")[..];
         let reader = &mut std::io::Cursor::new(source);
 
         let target = b"Hello, World!";
@@ -382,7 +382,7 @@ mod tests {
     fn read_bytes_until_many_const() {
         use super::*;
 
-        let source = include_bytes!("../../examples/data/hello-world/ascii+space.txt");
+        let source = &include_bytes!("../../examples/data/hello-world/ascii+space.txt")[..];
         let reader = &mut std::io::Cursor::new(source);
 
         let target = b"World";

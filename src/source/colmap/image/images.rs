@@ -48,7 +48,7 @@ mod tests {
     fn decode() {
         use super::*;
 
-        let source = include_bytes!("../../../../examples/data/colmap/0/images.bin");
+        let source = &include_bytes!("../../../../examples/data/colmap/0/images.bin")[..];
         let mut reader = std::io::Cursor::new(source);
 
         let targets = [
@@ -278,7 +278,7 @@ mod tests {
         .into_iter()
         .collect::<Images>();
 
-        let target = include_bytes!("../../../../examples/data/colmap/1/images.bin");
+        let target = &include_bytes!("../../../../examples/data/colmap/1/images.bin")[..];
         let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
