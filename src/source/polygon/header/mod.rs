@@ -4,11 +4,12 @@ pub mod encode;
 pub use super::*;
 pub use indexmap::IndexMap;
 
-use derive_more::derive::{Deref, DerefMut, Display, From, IntoIterator, IsVariant};
+use derive_more::derive::{
+    Deref, DerefMut, Display, From, IntoIterator, IsVariant, TryUnwrap,
+};
 use std::fmt;
 use Error::*;
 use Format::*;
-use PropertyKind::*;
 
 #[derive(
     Clone, Debug, Default, Deref, DerefMut, Display, Eq, From, IntoIterator, PartialEq,
@@ -30,7 +31,9 @@ pub struct Elements {
     inner: IndexMap<String, Element>,
 }
 
-#[derive(Clone, Copy, Debug, Default, Display, Eq, From, Hash, IsVariant, PartialEq)]
+#[derive(
+    Clone, Copy, Debug, Default, Display, Eq, From, Hash, IsVariant, PartialEq, TryUnwrap,
+)]
 pub enum Format {
     #[default]
     #[display("binary_little_endian")]
@@ -54,6 +57,16 @@ pub struct Header {
     pub version: String,
 }
 
+#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, Hash, From, PartialEq)]
+#[display("list {count} {value}")]
+pub struct ListPropertyKind {
+    pub count: String,
+
+    #[deref]
+    #[deref_mut]
+    pub value: String,
+}
+
 #[derive(Clone, Debug, Default, Display, Eq, From, Hash, PartialEq)]
 #[display("property {kind} {name}")]
 pub struct Property {
@@ -61,19 +74,21 @@ pub struct Property {
     pub name: String,
 }
 
-#[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq)]
+#[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
 pub enum PropertyKind {
-    #[display("list {count} {value}")]
-    List { count: String, value: String },
-
-    #[display("{value}")]
-    Scalar { value: String },
+    List(ListPropertyKind),
+    Scalar(ScalarPropertyKind),
 }
 
 #[derive(Clone, Debug, Deref, DerefMut, Default, Eq, From, IntoIterator, PartialEq)]
 pub struct Properties {
     #[into_iterator(owned, ref, ref_mut)]
     inner: IndexMap<String, Property>,
+}
+
+#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, Hash, From, PartialEq)]
+pub struct ScalarPropertyKind {
+    pub value: String,
 }
 
 impl Default for Header {
@@ -114,9 +129,7 @@ impl fmt::Display for Properties {
 impl Default for PropertyKind {
     #[inline]
     fn default() -> Self {
-        Scalar {
-            value: Default::default(),
-        }
+        ScalarPropertyKind::default().into()
     }
 }
 

@@ -77,13 +77,12 @@ impl Decoder for Header {
                         .1
                         .properties;
 
-                    let mut kind = vec![read_byte_after(reader, is_space)?];
-                    kind.extend(read_bytes_before(reader, is_space, 8)?);
+                    let mut value = vec![read_byte_after(reader, is_space)?];
+                    value.extend(read_bytes_before(reader, is_space, 8)?);
+                    let value = string_from_vec_ascii(value)?;
 
-                    let kind = if kind != b"list" {
-                        Scalar {
-                            value: string_from_vec_ascii(kind)?,
-                        }
+                    let kind = if value != "list" {
+                        ScalarPropertyKind { value }.into()
                     } else {
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
@@ -93,7 +92,7 @@ impl Decoder for Header {
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
                         let value = string_from_vec_ascii(kind)?;
 
-                        List { count, value }
+                        ListPropertyKind { count, value }.into()
                     };
 
                     let name =
@@ -132,8 +131,8 @@ impl Decoder for Header {
 
         Ok(Header {
             format,
-            version,
             elements,
+            version,
         })
     }
 }
@@ -145,6 +144,7 @@ mod tests {
     #[test]
     fn decode_on_example_another_cube() {
         use super::*;
+        use PropertyKind::*;
 
         let source = &mut Cursor::new(
             &include_bytes!(
@@ -171,12 +171,12 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![
-            ("float".to_string().into(), "x".to_string()).into(),
-            ("float".to_string().into(), "y".to_string()).into(),
-            ("float".to_string().into(), "z".to_string()).into(),
-            ("uchar".to_string().into(), "red".to_string()).into(),
-            ("uchar".to_string().into(), "green".to_string()).into(),
-            ("uchar".to_string().into(), "blue".to_string()).into(),
+            (Scalar("float".to_string().into()), "x".into()).into(),
+            (Scalar("float".to_string().into()), "y".into()).into(),
+            (Scalar("float".to_string().into()), "z".into()).into(),
+            (Scalar("uchar".to_string().into()), "red".into()).into(),
+            (Scalar("uchar".to_string().into()), "green".into()).into(),
+            (Scalar("uchar".to_string().into()), "blue".into()).into(),
         ];
         let output = &header.elements["vertex"]
             .properties
@@ -186,7 +186,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![(
-            ("uchar".to_string().into(), "int".to_string()).into(),
+            List(("uchar".to_string().into(), "int".to_string()).into()),
             "vertex_index".to_string(),
         )
             .into()];
@@ -198,11 +198,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![
-            (("int".to_string().into()), "vertex1".to_string()).into(),
-            (("int".to_string().into()), "vertex2".to_string()).into(),
-            (("uchar".to_string().into()), "red".to_string()).into(),
-            (("uchar".to_string().into()), "green".to_string()).into(),
-            (("uchar".to_string().into()), "blue".to_string()).into(),
+            (Scalar("int".to_string().into()), "vertex1".into()).into(),
+            (Scalar("int".to_string().into()), "vertex2".into()).into(),
+            (Scalar("uchar".to_string().into()), "red".into()).into(),
+            (Scalar("uchar".to_string().into()), "green".into()).into(),
+            (Scalar("uchar".to_string().into()), "blue".into()).into(),
         ];
         let output = &header.elements["edge"]
             .properties

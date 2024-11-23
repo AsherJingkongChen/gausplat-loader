@@ -26,8 +26,17 @@ thiserror = {workspace = true}
 walkdir = {workspace = true}
 
 [dependencies.derive_more]
+features = [
+  "deref",
+  "deref_mut",
+  "display",
+  "from",
+  "into_iterator",
+  "is_variant",
+  "std",
+  "try_unwrap",
+]
 workspace = true
-features = ["deref", "deref_mut", "display", "from", "into_iterator", "is_variant", "std"]
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
