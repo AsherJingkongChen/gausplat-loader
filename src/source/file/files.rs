@@ -21,13 +21,14 @@ impl Opener for Files<fs::File> {
     /// ```
     fn open(pattern: impl AsRef<Path>) -> Result<Self, Error> {
         let pattern = pattern.as_ref();
-        let matcher =
-            globset::GlobBuilder::new(pattern.to_str().ok_or_else(|| {
-                Error::InvalidUtf8(pattern.to_string_lossy().into_owned())
-            })?)
-            .literal_separator(true)
-            .build()?
-            .compile_matcher();
+        let matcher = globset::GlobBuilder::new(
+            pattern
+                .to_str()
+                .ok_or_else(|| Error::InvalidUtf8(pattern.to_string_lossy().into()))?,
+        )
+        .literal_separator(true)
+        .build()?
+        .compile_matcher();
         let rootdir = pattern
             .ancestors()
             .find(|path| path.is_dir())

@@ -121,7 +121,7 @@ pub fn read_bytes_before_many_const<const N: usize>(
     }
 }
 
-/// Reading all bytes before the CRLF, LF, or EOF.
+/// Reading all bytes before the CRLF, LF.
 #[inline]
 pub fn read_bytes_before_newline(
     reader: &mut impl Read,
@@ -130,13 +130,13 @@ pub fn read_bytes_before_newline(
     let mut bytes = Vec::with_capacity(capacity);
     loop {
         let byte = &mut [0; 1];
-        let is_eof = reader.read(byte)? == 0;
-        if is_eof || byte[0] == b'\n' {
+        reader.read_exact(byte)?;
+        if byte[0] == b'\n' {
             return Ok(bytes);
         }
         if byte[0] == b'\r' {
-            let is_eof = reader.read(byte)? == 0;
-            if is_eof || byte[0] == b'\n' {
+            reader.read_exact(byte)?;
+            if byte[0] == b'\n' {
                 return Ok(bytes);
             }
             bytes.push(b'\r');
@@ -367,17 +367,13 @@ mod tests {
         let output = read_bytes_before_newline(reader, 4).unwrap();
         assert_eq!(output, target);
 
-        let target = b"\rBonjour, le monde!  ";
-        let output = read_bytes_before_newline(reader, 20).unwrap();
-        assert_eq!(output, target);
+        read_bytes_before_newline(reader, 20).unwrap_err();
 
         let target = std::io::ErrorKind::UnexpectedEof;
         let output = reader.read_exact(&mut [0; 1]).unwrap_err().kind();
         assert_eq!(output, target);
 
-        let target = b"";
-        let output = read_bytes_before_newline(reader, 4).unwrap();
-        assert_eq!(output, target);
+        read_bytes_before_newline(reader, 4).unwrap_err();
 
         read_bytes_before_newline(&mut InvalidRead, 0).unwrap_err();
     }

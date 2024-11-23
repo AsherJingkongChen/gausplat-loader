@@ -5,13 +5,10 @@
 ## Backus-Naur Form
 
 ```bnf
-<blank> ::=
-    " " | "\t"
-<newline> ::=
-    "\r"? "\n"
-<number> ::=
-    [0-9]
-<word> ::=
+<newline> ::= "\r"? "\n"
+<number>  ::= [0-9]
+<space>   ::= " "
+<word>    ::=
     [A-Z] | [a-z] | <number> | "_" |
     "." | "," | ":" | ";" | "'" | "\"" |
     "!" | "?" | "-" | "+" | "*" | "/" |
@@ -21,35 +18,32 @@
     "&"
 
 <polygon_header> ::=
-    <header_start> <newline>
+    <header_start>
     (<header_block> <newline>)*
-    <header_end> <newline>
+    <header_end>
 
     <header_start> ::=
         "ply" <newline>
-        "format" <blank>+ <format> <blank>+ <version>
+        "format" <space>+ <format> <space>+ <version> <newline>
 
         <format> ::=
-            "ascii" |
-            "binary_big_endian" |
-            "binary_little_endian"
-        <version> ::=
-            <word>+
+            "ascii" | "binary_big_endian" | "binary_little_endian"
+        <version> ::= <word>+
 
     <header_block> ::=
-        "comment" <blank>+ <comment> |
-        "element" <blank>+ <element_name> <blank>+ <element_size> |
-        "obj_info" <blank>+ <comment> |
-        "property" <blank>+ <property_kind> <blank>+ <property_name>
+        "comment" <space>+ <comment> |
+        "element" <space>+ <element_name> <space>+ <element_size> |
+        "property" <space>+ <property_kind> <space>+ <property_name> |
+        "obj_info" <space>+ <comment>
 
         <comment> ::=
-            (<word> | <blank>)*
+            (<word> | <space>)*
         <element_name> ::=
             <word>+
         <element_size> ::=
             <number>+
         <property_kind> ::=
-            "list" <blank>+ <scalar_property_kind> <blank>+ <scalar_property_kind> |
+            "list" <space>+ <scalar_property_kind> <space>+ <scalar_property_kind> |
             <scalar_property_kind>
         <property_name> ::=
             <word>+
@@ -67,5 +61,5 @@
             "u"? ("long" | "int64")
 
     <header_end> ::=
-        "end_header"
+        "end_header" <newline>
 ```

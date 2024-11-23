@@ -15,6 +15,9 @@ pub enum Error {
     #[error("Image error: {0}")]
     Image(#[from] image::ImageError),
 
+    #[error("Invalid ASCII string: {0:?}")]
+    InvalidAscii(String),
+
     #[error("Invalid camera model id: {0}")]
     InvalidCameraModelId(u32),
 

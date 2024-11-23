@@ -24,3 +24,27 @@ where
         writer: &mut impl Write,
     ) -> Result<(), Self::Err>;
 }
+
+#[inline]
+pub fn string_as_bytes_ascii(string: &str) -> Result<&[u8], Error> {
+    let bytes = string.as_bytes();
+    if !bytes.is_ascii() {
+        return Err(Error::InvalidAscii(string.into()));
+    }
+    Ok(bytes)
+}
+
+#[inline]
+pub fn string_from_vec_ascii(vec: Vec<u8>) -> Result<String, Error> {
+    let string = string_from_vec(vec)?;
+    if !string.is_ascii() {
+        return Err(Error::InvalidAscii(string));
+    }
+    Ok(string)
+}
+
+#[inline]
+pub fn string_from_vec(vec: Vec<u8>) -> Result<String, Error> {
+    String::from_utf8(vec)
+        .map_err(|err| Error::InvalidUtf8(String::from_utf8_lossy(err.as_bytes()).into()))
+}

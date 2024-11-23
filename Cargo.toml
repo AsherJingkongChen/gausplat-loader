@@ -13,6 +13,7 @@ version.workspace = true
 burn-tensor = {workspace = true}
 bytemuck = {workspace = true, features = ["extern_crate_std"]}
 byteorder = {workspace = true, features = ["std"]}
+derive_more = {workspace = true, features = ["from", "std"]}
 globset = {workspace = true}
 image = {workspace = true, features = ["jpeg", "png", "rayon"]}
 indexmap = {workspace = true, features = ["rayon", "std"]}
