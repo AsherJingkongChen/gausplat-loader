@@ -55,7 +55,7 @@ impl Decoder for Header {
 
         let version = string_from_vec_ascii(read_bytes_before_newline(reader, 4)?)?;
 
-        let mut elements = IndexMap::<String, Element>::new();
+        let mut elements = Elements::default();
 
         loop {
             match &read_bytes_const(reader)? {
@@ -81,7 +81,7 @@ impl Decoder for Header {
                     kind.extend(read_bytes_before(reader, is_space, 8)?);
 
                     let kind = if kind != b"list" {
-                        Scalar(string_from_vec_ascii(kind)?)
+                        Scalar { value: string_from_vec_ascii(kind)? }
                     } else {
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
