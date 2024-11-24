@@ -124,7 +124,7 @@ impl fmt::Display for Elements {
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        self.values().try_for_each(|e| write!(f, "{e}\n"))
+        self.values().try_for_each(|e| write!(f, "{e}"))
     }
 }
 

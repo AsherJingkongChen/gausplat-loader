@@ -151,10 +151,6 @@ impl fmt::Display for Properties {
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
-        let last_index = self.len().saturating_sub(1);
-        self.values().enumerate().try_for_each(|(index, property)| {
-            let newline = if index == last_index { "" } else { "\n" };
-            write!(f, "{property}{newline}")
-        })
+        self.values().try_for_each(|p| writeln!(f, "{p}"))
     }
 }
