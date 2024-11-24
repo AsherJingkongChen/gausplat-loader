@@ -17,12 +17,12 @@ impl Decoder for Header {
             return Err(MissingSymbol("format ".into()));
         }
 
+        // NOTE: Optimized format matching
         let format = match &read_bytes_const(reader)? {
             b"b" => {
                 if &read_bytes_const(reader)? != b"inary_" {
                     return Err(MissingSymbol(format!(
-                        "{} or {}",
-                        BinaryLittleEndian, BinaryBigEndian
+                        "{BinaryLittleEndian} or {BinaryBigEndian}",
                     )));
                 }
                 match &read_bytes_const(reader)? {
@@ -40,8 +40,7 @@ impl Decoder for Header {
                     },
                     _ => {
                         return Err(MissingSymbol(format!(
-                            "{} or {}",
-                            BinaryLittleEndian, BinaryBigEndian
+                            "{BinaryLittleEndian} or {BinaryBigEndian}",
                         )))
                     },
                 }
@@ -52,13 +51,16 @@ impl Decoder for Header {
                 }
                 Ascii
             },
-            _ => return Err(MissingSymbol("ascii or binary".into())),
+            _ => {
+                return Err(MissingSymbol(format!(
+                    "{BinaryLittleEndian}, {BinaryBigEndian}, or {Ascii}"
+                )))
+            },
         };
 
         let version = string_from_vec_ascii(read_bytes_before_newline(reader, 4)?)?;
 
         let mut elements = Elements::default();
-
         loop {
             match &read_bytes_const(reader)? {
                 b"end_head" => {
@@ -110,7 +112,7 @@ impl Decoder for Header {
                     let name = string_from_vec_ascii(name)?;
 
                     let count =
-                        string_from_vec_ascii(read_bytes_before_newline(reader, 8)?)?
+                        string_from_vec_ascii(read_bytes_before_newline(reader, 16)?)?
                             .parse::<usize>()?;
 
                     elements.insert(
