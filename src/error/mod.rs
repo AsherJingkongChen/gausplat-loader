@@ -3,9 +3,6 @@ pub enum Error {
     #[error("Bytemuck error: {0}")]
     Bytemuck(#[from] bytemuck::PodCastError),
 
-    #[error("Cast int error: {0}")]
-    CastIntError(#[from] std::num::TryFromIntError),
-
     #[error("Glob error: {0}")]
     Glob(#[from] globset::Error),
 
@@ -15,22 +12,22 @@ pub enum Error {
     #[error("Image error: {0}")]
     Image(#[from] image::ImageError),
 
-    #[error("Invalid ASCII string: {0:?}")]
+    #[error("Invalid ASCII string: {0:?}.")]
     InvalidAscii(String),
 
-    #[error("Invalid camera model id: {0}")]
+    #[error("Invalid camera model id: \"{0}\".")]
     InvalidCameraModelId(u32),
 
-    #[error("Invalid kind: {0:?}")]
+    #[error("Invalid kind: {0:?}.")]
     InvalidKind(String),
 
-    #[error("Invalid UTF-8 string: {0:?}")]
+    #[error("Invalid UTF-8 string: {0:?}.")]
     InvalidUtf8(String),
 
     #[error("Mismatched tensor shape: {0:?}. It should be {1:?}.")]
     MismatchedTensorShape(Vec<usize>, Vec<usize>),
 
-    #[error("Missing symbol: {0:?}")]
+    #[error("Missing symbol: {0:?}.")]
     MissingSymbol(String),
 
     #[error("Out of bounds: {0} is out of {1}.")]

@@ -13,7 +13,6 @@ use derive_more::derive::{
 use std::fmt;
 use Error::*;
 use Format::*;
-use PropertyKind::*;
 
 #[derive(
     AsRef,

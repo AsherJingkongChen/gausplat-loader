@@ -17,9 +17,13 @@
 #![doc = include_str!("LICENSE.md")]
 
 pub mod header;
+pub mod object;
+pub mod payload;
 
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
 pub use header::*;
+pub use object::*;
+pub use payload::*;

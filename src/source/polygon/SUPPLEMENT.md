@@ -73,6 +73,8 @@ This is the structure of a supplemented PLY file:
 
   | name                             | description           | number of bytes |
   | -------------------------------- | --------------------- | --------------- |
+  | <ins class=sup-add>byte</ins>    | byte                  | 1               |
+  | <ins class=sup-add>ubyte</ins>   | unsigned byte         | 1               |
   | <ins class=sup-add>half</ins>    | half-precision float  | 2               |
   | <ins class=sup-add>long</ins>    | unsigned long integer | 8               |
   | <ins class=sup-add>ulong</ins>   | long integer          | 8               |

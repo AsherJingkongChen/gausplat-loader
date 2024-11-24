@@ -84,17 +84,17 @@ impl Decoder for Header {
                     let value = string_from_vec_ascii(value)?;
 
                     let kind = if value != "list" {
-                        Scalar(value.into())
+                        ScalarPropertyKind { value }.into()
                     } else {
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
-                        let count = string_from_vec_ascii(kind)?;
+                        let count = string_from_vec_ascii(kind)?.into();
 
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
-                        let value = string_from_vec_ascii(kind)?;
+                        let value = string_from_vec_ascii(kind)?.into();
 
-                        List((count.into(), value.into()).into())
+                        ListPropertyKind { count, value }.into()
                     };
 
                     let name =
@@ -147,7 +147,7 @@ mod tests {
 
     #[test]
     fn decode_on_example_another_cube() {
-        use super::*;
+        use super::{PropertyKind::*, *};
 
         let source = &mut Cursor::new(
             &include_bytes!(
