@@ -16,10 +16,11 @@ impl DecoderWith<&Header> for Payload {
         );
 
         let data = init
+            .elements
             .values()
-            .map(|element| {
-                let prop_count = element.len();
-                let prop_sizes = element
+            .map(|elem| {
+                let prop_count = elem.len();
+                let prop_sizes = elem
                     .values()
                     .map(|prop| {
                         debug_assert!(
@@ -33,31 +34,24 @@ impl DecoderWith<&Header> for Payload {
                         // FAIL: Unknown scalar
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-
-                let elem_count = element.count;
                 let elem_size = prop_sizes.iter().sum::<usize>();
 
-                iter::repeat_n(elem_size, elem_count).try_fold(
-                    {
-                        let mut props = Vec::with_capacity(prop_count);
-                        props.resize(prop_count, Vec::<u8>::with_capacity(1 << 15));
-                        props
-                    },
+                iter::repeat_n(elem_size, elem.count).try_fold(
+                    vec![Vec::with_capacity(1 << 15); prop_count],
                     |mut props, elem_size| {
                         // FAIL: No byte
-                        let mut elem = read_bytes(reader, elem_size)?;
+                        let mut data = read_bytes(reader, elem_size)?;
                         props.iter_mut().zip(prop_sizes.iter()).fold(
                             0,
                             |start, (prop, size)| {
                                 let end = start + size;
                                 // NOTE: The index is guaranteed to be valid
-                                let bytes = elem.get_mut(start..end).unwrap();
+                                let datum = data.get_mut(start..end).unwrap();
                                 // JUMP: Different endian
-                                // TODO: perf
                                 if !init.format.is_binary_native_endian() {
-                                    bytes.reverse();
+                                    datum.reverse();
                                 }
-                                prop.extend_from_slice(bytes);
+                                prop.extend_from_slice(datum);
                                 end
                             },
                         );
@@ -65,7 +59,7 @@ impl DecoderWith<&Header> for Payload {
                     },
                 )
             })
-            .collect::<Result<Vec<_>, Error>>()?;
+            .collect::<Result<_, Self::Err>>()?;
 
         let payload = ScalarPayload { data }.into();
 

@@ -7,6 +7,7 @@ pub use header::{Element, Elements, Properties, Property};
 
 use bytemuck::try_cast_slice;
 use derive_more::derive::{AsRef, Constructor, Display, From};
+use Error::*;
 
 #[derive(AsRef, Clone, Constructor, Debug, Display, Eq, From, PartialEq)]
 #[display("{header}----------\n{payload}")]

@@ -18,7 +18,10 @@ where
 {
     type Err;
 
-    fn decode_with(reader: &mut impl Read, init: T) -> Result<Self, Self::Err>;
+    fn decode_with(
+        reader: &mut impl Read,
+        init: T,
+    ) -> Result<Self, Self::Err>;
 }
 
 /// Discarding `n` bytes.
