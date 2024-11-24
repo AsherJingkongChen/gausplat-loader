@@ -22,8 +22,8 @@ pub mod payload;
 
 pub use crate::{
     error::Error,
-    function::{Decoder, Encoder},
+    function::{Decoder, DecoderWith, Encoder},
 };
-pub use header::*;
-pub use object::*;
-pub use payload::*;
+pub use header::Header;
+pub use object::Object;
+pub use payload::Payload;

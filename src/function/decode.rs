@@ -12,6 +12,15 @@ where
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err>;
 }
 
+pub trait DecoderWith<T>
+where
+    Self: Sized,
+{
+    type Err;
+
+    fn decode_with(reader: &mut impl Read, init: T) -> Result<Self, Self::Err>;
+}
+
 /// Discarding `n` bytes.
 #[inline]
 pub fn advance(

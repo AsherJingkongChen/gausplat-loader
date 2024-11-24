@@ -1,3 +1,6 @@
+pub mod decode;
+pub mod encode;
+
 pub use super::*;
 
 use derive_more::derive::{
@@ -5,6 +8,7 @@ use derive_more::derive::{
     TryUnwrap,
 };
 use std::fmt;
+use Error::*;
 
 #[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
 #[try_unwrap(owned, ref, ref_mut)]
@@ -12,6 +16,7 @@ pub enum Payload {
     Scalar(ScalarPayload),
 }
 
+/// A payload that only contains scalar data.
 #[derive(
     AsRef,
     Clone,
@@ -89,5 +94,4 @@ mod tests {
         let output = output.to_string();
         assert_eq!(target, output);
     }
-
 }
