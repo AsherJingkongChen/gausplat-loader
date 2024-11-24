@@ -3,6 +3,8 @@ format ascii 1.0
 comment This example PLY format file shows all supported property types in special cases.
 comment Extra scalar types are supported by specific implementations.
 element extra_scalar_type_1 1
+property byte BYTE
+property ubyte UBYTE
 property half F16
 property long I64
 property ulong U64
@@ -14,6 +16,6 @@ comment Extra list types are supported by specific implementations.
 element extra_list_type 1
 property list uint64 int64 L_U64_I64
 end_header
--1.3e4 -8000000003 8000000003
--1.4e4 -8000000004 8000000004
+255 -1.3e4 -8000000003 8000000003
+000 -1.4e4 -8000000004 8000000004
 2 0 -1
