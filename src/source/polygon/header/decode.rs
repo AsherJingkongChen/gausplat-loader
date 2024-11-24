@@ -38,10 +38,12 @@ impl Decoder for Header {
                         }
                         BinaryBigEndian
                     },
-                    _ => return Err(MissingSymbol(format!(
-                        "{} or {}",
-                        BinaryLittleEndian, BinaryBigEndian
-                    ))),
+                    _ => {
+                        return Err(MissingSymbol(format!(
+                            "{} or {}",
+                            BinaryLittleEndian, BinaryBigEndian
+                        )))
+                    },
                 }
             },
             b"a" => {
@@ -50,7 +52,7 @@ impl Decoder for Header {
                 }
                 Ascii
             },
-            _ => return  Err(MissingSymbol("ascii or binary".into())),
+            _ => return Err(MissingSymbol("ascii or binary".into())),
         };
 
         let version = string_from_vec_ascii(read_bytes_before_newline(reader, 4)?)?;
@@ -82,7 +84,7 @@ impl Decoder for Header {
                     let value = string_from_vec_ascii(value)?;
 
                     let kind = if value != "list" {
-                        ScalarPropertyKind { value }.into()
+                        Scalar(value.into())
                     } else {
                         let mut kind = vec![read_byte_after(reader, is_space)?];
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
@@ -92,7 +94,7 @@ impl Decoder for Header {
                         kind.extend(read_bytes_before(reader, is_space, 8)?);
                         let value = string_from_vec_ascii(kind)?;
 
-                        ListPropertyKind { count, value }.into()
+                        List((count.into(), value.into()).into())
                     };
 
                     let name =
@@ -107,25 +109,27 @@ impl Decoder for Header {
                     name.extend(read_bytes_before(reader, is_space, 16)?);
                     let name = string_from_vec_ascii(name)?;
 
-                    let size =
+                    let count =
                         string_from_vec_ascii(read_bytes_before_newline(reader, 8)?)?
                             .parse::<usize>()?;
 
                     elements.insert(
                         name.to_owned(),
                         Element {
-                            properties,
+                            count,
                             name,
-                            size,
+                            properties,
                         },
                     );
                 },
                 b"comment " | b"obj_info" => {
                     drop(read_bytes_before_newline(reader, 64)?);
                 },
-                _ => return Err(MissingSymbol(
-                    "comment, element, end_header, obj_info, or property".into(),
-                )),
+                _ => {
+                    return Err(MissingSymbol(
+                        "comment, element, end_header, obj_info, or property".into(),
+                    ))
+                },
             }
         }
 
@@ -144,7 +148,6 @@ mod tests {
     #[test]
     fn decode_on_example_another_cube() {
         use super::*;
-        use PropertyKind::*;
 
         let source = &mut Cursor::new(
             &include_bytes!(
@@ -167,7 +170,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![8, 7, 5];
-        let output = &header.elements.values().map(|e| e.size).collect::<Vec<_>>();
+        let output = &header
+            .elements
+            .values()
+            .map(|e| e.count)
+            .collect::<Vec<_>>();
         assert_eq!(output, target);
 
         let target = &vec![
@@ -186,7 +193,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![(
-            List(("uchar".to_string().into(), "int".to_string()).into()),
+            List(("uchar".to_string().into(), "int".to_string().into()).into()),
             "vertex_index".to_string(),
         )
             .into()];

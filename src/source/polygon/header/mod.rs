@@ -1,39 +1,67 @@
 pub mod decode;
 pub mod encode;
+pub mod property;
 
 pub use super::*;
 pub use indexmap::IndexMap;
+pub use property::*;
 
 use derive_more::derive::{
-    Deref, DerefMut, Display, From, IntoIterator, IsVariant, TryUnwrap,
+    AsRef, Constructor, Deref, DerefMut, Display, From, IntoIterator, IsVariant,
+    TryUnwrap,
 };
 use std::fmt;
 use Error::*;
 use Format::*;
+use PropertyKind::*;
 
 #[derive(
-    Clone, Debug, Default, Deref, DerefMut, Display, Eq, From, IntoIterator, PartialEq,
+    AsRef,
+    Clone,
+    Constructor,
+    Debug,
+    Default,
+    Deref,
+    DerefMut,
+    Display,
+    Eq,
+    From,
+    IntoIterator,
+    PartialEq,
 )]
-#[display("element {name} {size}\n{properties}")]
+#[display("element {name} {count}\n{properties}")]
 pub struct Element {
+    pub count: usize,
     pub name: String,
 
     #[deref]
     #[deref_mut]
     #[into_iterator(owned, ref, ref_mut)]
     pub properties: Properties,
-    pub size: usize,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, Default, Eq, From, IntoIterator, PartialEq)]
+#[derive(
+    AsRef,
+    Clone,
+    Constructor,
+    Debug,
+    Deref,
+    DerefMut,
+    Default,
+    Eq,
+    From,
+    IntoIterator,
+    PartialEq,
+)]
 pub struct Elements {
     #[into_iterator(owned, ref, ref_mut)]
-    inner: IndexMap<String, Element>,
+    pub inner: IndexMap<String, Element>,
 }
 
 #[derive(
     Clone, Copy, Debug, Default, Display, Eq, From, Hash, IsVariant, PartialEq, TryUnwrap,
 )]
+#[try_unwrap(owned, ref, ref_mut)]
 pub enum Format {
     #[default]
     #[display("binary_little_endian")]
@@ -46,7 +74,19 @@ pub enum Format {
     BinaryBigEndian,
 }
 
-#[derive(Clone, Debug, Deref, DerefMut, Display, Eq, From, IntoIterator, PartialEq)]
+#[derive(
+    AsRef,
+    Clone,
+    Constructor,
+    Debug,
+    Deref,
+    DerefMut,
+    Display,
+    Eq,
+    From,
+    IntoIterator,
+    PartialEq,
+)]
 #[display("ply\nformat {format} {version}\n{elements}end_header\n")]
 pub struct Header {
     #[deref]
@@ -57,40 +97,15 @@ pub struct Header {
     pub version: String,
 }
 
-#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, Hash, From, PartialEq)]
-#[display("list {count} {value}")]
-pub struct ListPropertyKind {
-    pub count: String,
-
-    #[deref]
-    #[deref_mut]
-    pub value: String,
-}
-
-#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, From, Hash, PartialEq)]
-#[display("property {kind} {name}")]
-pub struct Property {
-    #[deref]
-    #[deref_mut]
-    pub kind: PropertyKind,
-    pub name: String,
-}
-
-#[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
-pub enum PropertyKind {
-    List(ListPropertyKind),
-    Scalar(ScalarPropertyKind),
-}
-
-#[derive(Clone, Debug, Deref, DerefMut, Default, Eq, From, IntoIterator, PartialEq)]
-pub struct Properties {
-    #[into_iterator(owned, ref, ref_mut)]
-    inner: IndexMap<String, Property>,
-}
-
-#[derive(Clone, Debug, Default, Deref, DerefMut, Display, Eq, Hash, From, PartialEq)]
-pub struct ScalarPropertyKind {
-    pub value: String,
+impl Format {
+    #[inline]
+    pub const fn is_binary_native_endian(&self) -> bool {
+        match self {
+            BinaryLittleEndian => cfg!(target_endian = "little"),
+            BinaryBigEndian => cfg!(target_endian = "big"),
+            Ascii => false,
+        }
+    }
 }
 
 impl Default for Header {
@@ -114,27 +129,6 @@ impl fmt::Display for Elements {
     }
 }
 
-impl fmt::Display for Properties {
-    #[inline]
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
-        let last_index = self.len().saturating_sub(1);
-        self.values().enumerate().try_for_each(|(index, property)| {
-            let newline = if index == last_index { "" } else { "\n" };
-            write!(f, "{property}{newline}")
-        })
-    }
-}
-
-impl Default for PropertyKind {
-    #[inline]
-    fn default() -> Self {
-        ScalarPropertyKind::default().into()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
@@ -143,12 +137,12 @@ mod tests {
     fn default() {
         use super::*;
 
-        let kind_target = &Default::default();
-        let kind_output = &PropertyKind::default();
-        assert_eq!(kind_output, kind_target);
+        let taret = true;
+        let output = &PropertyKind::default();
+        assert_eq!(output.is_scalar(), taret);
 
         let target = true;
-        let output = kind_output.to_string().is_empty();
+        let output = output.to_string().is_empty();
         assert_eq!(output, target);
 
         let target = "ply\nformat binary_little_endian 1.0\nend_header\n";

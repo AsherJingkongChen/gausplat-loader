@@ -27,6 +27,8 @@ walkdir = {workspace = true}
 
 [dependencies.derive_more]
 features = [
+  "as_ref",
+  "constructor",
   "deref",
   "deref_mut",
   "display",
