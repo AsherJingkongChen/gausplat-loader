@@ -43,6 +43,7 @@ workspace = true
 [dev-dependencies]
 burn-ndarray = {workspace = true}
 divan = {workspace = true}
+ply-rs = {workspace = true}
 
 [[bench]]
 name = "polygon"
