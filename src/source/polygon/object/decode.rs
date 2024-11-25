@@ -108,7 +108,11 @@ mod tests {
         use super::*;
 
         let source = &mut Cursor::new(
-            &b"ply\nformat binary_little_endian 1.0\nelement point 1\nproperty float x\nend_header\0\0\0\0"[..],
+            &b"ply\nformat binary_little_endian 1.0\n\
+            element point 1\n\
+            property float x\n\
+            end_header\
+            \0\0\0\0"[..],
         );
         Object::decode(source).unwrap_err();
     }
@@ -118,7 +122,11 @@ mod tests {
         use super::*;
 
         let source = &mut Cursor::new(
-            &b"ply\nformat binary_little_endian 1.0\nelement point 1\nproperty flaot x\nend_header\n\0\0\0\0"[..],
+            &b"ply\nformat binary_little_endian 1.0\n\
+            element point 1\n\
+            property flaot x\n\
+            end_header\n\
+            \0\0\0\0"[..],
         );
         let target = true;
         let output =
@@ -132,7 +140,10 @@ mod tests {
         use std::io::ErrorKind::*;
 
         let source = &mut Cursor::new(
-            &b"ply\nformat binary_little_endian 1.0\nelement point 1\nproperty float x\nend_header\n"[..],
+            &b"ply\nformat binary_little_endian 1.0\n\
+            element point 1\n\
+            property float x\n\
+            end_header\n"[..],
         );
         let target = true;
         let output = matches!(Object::decode(source).unwrap_err(), Io(e) if e.kind() == UnexpectedEof);

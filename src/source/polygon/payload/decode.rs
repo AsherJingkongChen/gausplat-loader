@@ -1,7 +1,7 @@
 pub use super::*;
 
 use crate::function::read_bytes;
-use std::{io::Read, iter};
+use std::io::Read;
 
 impl DecoderWith<&Header> for Payload {
     type Err = Error;
@@ -15,6 +15,8 @@ impl DecoderWith<&Header> for Payload {
             "Unimplemented: ASCII format decoding"
         );
 
+        let should_reverse_datum = !init.format.is_binary_native_endian();
+
         let data = init
             .elements
             .values()
@@ -23,11 +25,9 @@ impl DecoderWith<&Header> for Payload {
                 let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
                 let elem_size = prop_sizes.iter().sum::<usize>();
 
-                // TODO: TODO: perf on universal size
-
-                iter::repeat_n(elem_size, elem.count).try_fold(
+                (0..elem.count).try_fold(
                     vec![Vec::with_capacity(1 << 15); prop_count],
-                    |mut props, elem_size| {
+                    |mut props, _| {
                         let mut data = read_bytes(reader, elem_size)?;
                         props.iter_mut().zip(prop_sizes.iter()).fold(
                             0,
@@ -35,7 +35,7 @@ impl DecoderWith<&Header> for Payload {
                                 let end = start + size;
                                 // NOTE: The index is guaranteed to be valid
                                 let datum = data.get_mut(start..end).unwrap();
-                                if !init.format.is_binary_native_endian() {
+                                if should_reverse_datum {
                                     datum.reverse();
                                 }
                                 prop.extend_from_slice(datum);

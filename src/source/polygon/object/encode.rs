@@ -17,6 +17,8 @@ impl Encoder for Object {
             "Unimplemented: ASCII format encoding"
         );
 
+        let should_reverse_datum = !self.header.format.is_binary_native_endian();
+
         let elements = self.get_elements();
         elements.0.values().zip(elements.1.iter()).try_for_each(
             |(elem, elem_data)| {
@@ -39,14 +41,13 @@ impl Encoder for Object {
                                         format!("element index {elem_index}"),
                                     )
                                 })?;
-                                let result =
-                                    if self.header.format.is_binary_native_endian() {
-                                        writer.write_all(datum)
-                                    } else {
-                                        let datum = &mut datum.to_owned();
-                                        datum.reverse();
-                                        writer.write_all(datum)
-                                    };
+                                let result = if should_reverse_datum {
+                                    let datum = &mut datum.to_owned();
+                                    datum.reverse();
+                                    writer.write_all(datum)
+                                } else {
+                                    writer.write_all(datum)
+                                };
 
                                 #[cfg(test)]
                                 result.unwrap();
@@ -103,13 +104,13 @@ mod tests {
     fn encode_on_invalid_kind() {
         use super::PropertyKind::*;
         use super::*;
-
-        let target = &[
-            &b"ply\nformat binary_little_endian 1.0\n"[..],
-            &b"element point 1\nproperty double x\n"[..],
-            &b"end_header\n\0\0\0\0\0\0\0\0"[..],
-        ]
-        .concat()[..];
+        let target = &b"\
+            ply\nformat binary_little_endian 1.0\n\
+            element point 1\n\
+            property double x\n\
+            end_header\n\
+            \0\0\0\0\0\0\0\0\
+        "[..];
 
         let mut object = Object::default();
         let (elements, data) = object.get_mut_elements();
@@ -199,12 +200,13 @@ mod tests {
         use super::PropertyKind::*;
         use super::*;
 
-        let target = &[
-            &b"ply\nformat binary_little_endian 1.0\n"[..],
-            &b"element vertex 1\nproperty float x\nproperty float y\n"[..],
-            &b"end_header\n\0\0\x80\0\0\0\0\0"[..],
-        ]
-        .concat()[..];
+        let target = &b"\
+            ply\nformat binary_little_endian 1.0\n\
+            element vertex 1\n\
+            property float x\nproperty float y\n\
+            end_header\n\
+            \0\0\x80\0\0\0\0\0\
+        "[..];
 
         let mut object = Object::default();
         let (elements, data) = object.get_mut_elements();
