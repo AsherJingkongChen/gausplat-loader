@@ -21,7 +21,6 @@ paste = {workspace = true}
 rand = {workspace = true, features = ["getrandom", "std_rng"]}
 rand_distr = {workspace = true}
 rayon = {workspace = true}
-regex = {workspace = true, features = ["perf", "std"]}
 thiserror = {workspace = true}
 walkdir = {workspace = true}
 
