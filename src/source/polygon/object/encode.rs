@@ -116,6 +116,50 @@ mod tests {
         let output = &mut vec![];
         object.encode(output).unwrap();
         assert_eq!(output, target);
+
+        object.get_mut_property("vertex", "x").unwrap().1.pop().unwrap();
+        let target = None;
+        let output = object.get_mut_property_as::<f32>("vertex", "x");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.get_mut_property_as::<f32>("vertex", "z");
+        assert_eq!(output, target);
+
+        object.get_mut_properties("vertex").unwrap().1.pop().unwrap();
+        let target = None;
+        let output = object.get_mut_property("vertex", "y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.get_property("vertex", "y");
+        assert_eq!(output, target);
+
+        object.get_mut_properties("vertex").unwrap().0.pop().unwrap();
+        let target = None;
+        let output = object.get_mut_property("vertex", "y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.get_mut_property_as::<f32>("vertex", "y");
+        assert_eq!(output, target);
+
+        object.get_mut_elements().1.pop().unwrap();
+        let target = None;
+        let output = object.get_mut_properties("vertex");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.get_element("vertex");
+        assert_eq!(output, target);
+
+        object.get_mut_elements().0.pop().unwrap();
+        let target = None;
+        let output = object.get_mut_element("vertex");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.get_element("vertex");
+        assert_eq!(output, target);
+
+        let target = None;
+        let output = object.get_mut_property("vertex", "x");
+        assert_eq!(output, target);
     }
 
     #[test]
