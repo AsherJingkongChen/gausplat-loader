@@ -1,0 +1,7 @@
+ply
+format ascii 1.0
+comment This example polygon file shows a misplaced property.
+property float x
+element point 0
+property float y
+end_header

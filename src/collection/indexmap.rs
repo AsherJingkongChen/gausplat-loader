@@ -54,11 +54,16 @@ use std::{
 /// ```
 #[derive(Clone, Debug)]
 pub struct IndexMap<K, V, S = RandomState> {
-    pub inner: IndexMapInner<K, V, S>,
-    pub rng: StdRng,
+    inner: IndexMapInner<K, V, S>,
+    rng: StdRng,
 }
 
 impl<K, V, S> IndexMap<K, V, S> {
+    #[inline]
+    pub fn into_inner(self) -> IndexMapInner<K, V, S> {
+        self.inner
+    }
+
     #[inline]
     pub fn seed(
         &mut self,
@@ -69,6 +74,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Get a key-value pair by random.
+    #[inline]
     pub fn get_random(&mut self) -> Option<(&K, &V)> {
         if self.inner.is_empty() {
             None?;
@@ -78,6 +84,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Get a key-value pair by random.
+    #[inline]
     pub fn get_random_mut(&mut self) -> Option<(&K, &mut V)> {
         if self.inner.is_empty() {
             None?;
@@ -105,6 +112,7 @@ impl<K, V, S> IndexMap<K, V, S> {
     }
 
     /// Return an iterator over the key-value pairs of the map, in random order.
+    #[inline]
     pub fn random_iter(&mut self) -> impl Iterator<Item = (&K, &V)> {
         (&mut self.rng)
             .sample_iter(rand::distributions::Uniform::new(0, self.inner.len()))
@@ -121,6 +129,15 @@ impl<K, V, S> IndexMap<K, V, S> {
     #[inline]
     pub fn random_values(&mut self) -> impl Iterator<Item = &V> {
         self.random_iter().map(|(_, value)| value)
+    }
+
+    /// Shuffle the map’s key-value pairs in place.
+    #[inline]
+    pub fn shuffle(&mut self) -> &mut Self {
+        for i in (1..self.inner.len()).rev() {
+            self.inner.swap_indices(i, self.rng.gen_range(0..i));
+        }
+        self
     }
 
     /// Return an owning iterator over the keys of the map,
@@ -233,7 +250,7 @@ where
 {
     /// Create an [`IndexMap`] from the sequence of key-value pairs in the iterable.
     ///
-    /// `from_iter` uses the same logic as [`extend`].
+    /// `from_iter` uses the same logic as `extend`.
     /// See [`extend`][IndexMapInner::extend] for more details.
     #[inline]
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iterable: I) -> Self {
@@ -252,9 +269,7 @@ where
 {
     /// Create an [`IndexMap`] from the sequence of key-value pairs in the parallel iterable.
     #[inline]
-    fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(
-        iterable: I
-    ) -> Self {
+    fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(iterable: I) -> Self {
         Self {
             inner: IndexMapInner::from_par_iter(iterable),
             rng: StdRng::from_entropy(),
@@ -280,7 +295,7 @@ where
     S1: BuildHasher,
     S2: BuildHasher,
 {
-    /// Return `true` if [`self.inner`](IndexMap::inner) is equal to `other.inner`.
+    /// Return `true` if the underlying maps are equal.
     #[inline]
     fn eq(
         &self,
@@ -302,8 +317,7 @@ mod tests {
         let output = map.is_empty();
         assert_eq!(output, target);
 
-        let target = &IndexMapInner::<u8, f32>::default();
-        let output = map.deref();
+        let output = (*map).is_empty();
         assert_eq!(output, target);
     }
 
@@ -311,12 +325,8 @@ mod tests {
     fn from_and_into_iter() {
         use super::*;
 
-        let map = IndexMap::<u8, f32>::from_iter([
-            (0, 0.1),
-            (3, 0.4),
-            (1, 0.2),
-            (4, 0.5),
-        ]);
+        let map =
+            IndexMap::<u8, f32>::from_iter([(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)]);
 
         let target = 4;
         let output = map.len();
@@ -335,12 +345,8 @@ mod tests {
     fn from_and_into_par_iter() {
         use super::*;
 
-        let map = IndexMap::<u8, f32>::from_par_iter([
-            (0, 0.1),
-            (3, 0.4),
-            (1, 0.2),
-            (4, 0.5),
-        ]);
+        let map =
+            IndexMap::<u8, f32>::from_par_iter([(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)]);
 
         let target = 4;
         let output = map.len();
@@ -366,11 +372,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = None;
-        let output = map.get_random_value().cloned();
+        let output = map.get_random_value().copied();
         assert_eq!(output, target);
 
         let target = output;
-        let output = map.get_random_value_mut().cloned();
+        let output = map.get_random_value_mut().copied();
         assert_eq!(output, target);
 
         let mut map = IndexMap::<i16, f32>::with_capacity(1);
@@ -386,7 +392,18 @@ mod tests {
 
         let target = Some(67.8);
         map.insert(-123, 67.8);
-        let output = map.get_random_value_mut().cloned();
+        let output = map.get_random_value_mut().copied();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn into_inner() {
+        use super::*;
+
+        let map = IndexMap::<u8, f32>::default();
+
+        let target = map.is_empty();
+        let output = map.into_inner().is_empty();
         assert_eq!(output, target);
     }
 
@@ -405,8 +422,7 @@ mod tests {
     fn seed_and_random_iter() {
         use super::*;
 
-        let mut map: IndexMap<_, _> =
-            [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
+        let mut map: IndexMap<_, _> = [(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)].into();
 
         let values_1 = map
             .seed(0)
@@ -435,6 +451,26 @@ mod tests {
             .take(256)
             .collect::<Vec<_>>();
         assert_eq!(values_1, values_2);
+    }
+
+    #[test]
+    fn shuffle() {
+        use super::*;
+
+        let mut map = (0..=255).zip(0..=255).collect::<IndexMap<u8, u8>>();
+
+        map.seed(0);
+
+        let keys_1 = map.shuffle().keys().copied().collect::<Vec<_>>();
+        let keys_2 = map.to_owned().shuffle().keys().copied().collect::<Vec<_>>();
+        let values = map
+            .to_owned()
+            .shuffle()
+            .values()
+            .copied()
+            .collect::<Vec<_>>();
+        assert_ne!(keys_1, keys_2);
+        assert_eq!(keys_2, values);
     }
 
     #[test]

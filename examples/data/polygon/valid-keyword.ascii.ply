@@ -1,0 +1,11 @@
+ply
+format ascii 1.0
+comment This example polygon file shows all valid keywords.
+obj_info Yet Another Comment - Obj Info!
+comment 8-bit grayscale color point:
+element gray8_color 0
+property uchar level
+obj_info Point index collection:
+element point_list 0
+property list uint uint indices
+end_header

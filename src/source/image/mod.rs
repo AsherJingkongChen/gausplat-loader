@@ -6,22 +6,30 @@ pub use images::*;
 
 use burn_tensor::TensorData;
 use image::{ColorType, GenericImageView, ImageFormat};
-use std::{fmt, io::Cursor};
+use std::{fmt, io::Cursor, path::PathBuf};
 
 #[derive(Clone, Default, PartialEq)]
 pub struct Image {
     pub image_encoded: Vec<u8>,
-    pub image_file_name: String,
+    pub image_file_path: PathBuf,
     pub image_id: u32,
 }
 
+// TODO:
+// - Image::decode_rgb(&self) -> RgbImage
+// - Image::encode_rgb(&mut self, RgbImage) -> &mut Self
+// - Image::rgb_from_tensor(Tensor) -> RgbImage
+// - Image::rgb_to_tensor(RgbImage) -> Tensor
+
 impl Image {
+    #[inline]
     pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
         Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
     }
 
     /// Decoding to a tensor with shape of `[H, W, C]`,
     /// where `C` is the channel count of RGB image.
+    #[inline]
     pub fn decode_rgb_to_tensor<B: Backend>(
         &self,
         device: &B::Device,
@@ -46,13 +54,13 @@ impl Image {
     ) -> Result<&mut Self, Error> {
         let [height, width, channel_count] = tensor.dims();
         if channel_count != 3 {
-            Err(Error::MismatchedTensorShape(
+            return Err(Error::MismatchedTensorShape(
                 vec![height, width, channel_count],
                 vec![height, width, 3],
-            ))?;
+            ));
         }
 
-        let mut result = Cursor::new(Vec::new());
+        let mut result = Cursor::new(vec![]);
         let value = tensor
             .mul_scalar(255.0)
             .add_scalar(0.5)
@@ -67,7 +75,7 @@ impl Image {
             width as u32,
             height as u32,
             ColorType::Rgb8,
-            ImageFormat::from_path(&self.image_file_name)?,
+            ImageFormat::from_path(&self.image_file_path)?,
         )?;
         self.image_encoded = result.into_inner();
 
@@ -76,13 +84,14 @@ impl Image {
 }
 
 impl fmt::Debug for Image {
+    #[inline]
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,
     ) -> fmt::Result {
         f.debug_struct("Image")
             .field("image_encoded.len()", &self.image_encoded.len())
-            .field("image_file_name", &self.image_file_name)
+            .field("image_file_path", &self.image_file_path)
             .field("image_id", &self.image_id)
             .finish()
     }
@@ -96,7 +105,7 @@ mod tests {
 
         let target = Image {
             image_encoded: Default::default(),
-            image_file_name: Default::default(),
+            image_file_path: Default::default(),
             image_id: Default::default(),
         };
         let output = Image::default();
@@ -112,11 +121,10 @@ mod tests {
         use super::*;
         use burn_ndarray::NdArray;
 
-        let source =
-            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let source = &include_bytes!("../../../examples/data/image/example.png")[..];
         let mut image = Image {
-            image_encoded: source,
-            image_file_name: "example.png".into(),
+            image_encoded: source.to_vec(),
+            image_file_path: "example.png".into(),
             image_id: Default::default(),
         };
 
@@ -137,11 +145,10 @@ mod tests {
     fn decode_dimensions() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/image/example.png").to_vec();
+        let source = &include_bytes!("../../../examples/data/image/example.png")[..];
         let image = Image {
-            image_encoded: source,
-            image_file_name: "example.png".into(),
+            image_encoded: source.to_vec(),
+            image_file_path: "example.png".into(),
             image_id: Default::default(),
         };
 
@@ -155,11 +162,10 @@ mod tests {
         use super::*;
         use burn_ndarray::NdArray;
 
-        let source =
-            include_bytes!("../../../examples/data/image/rainbow-8x8.png");
+        let source = &include_bytes!("../../../examples/data/image/rainbow-8x8.png")[..];
         let image = Image {
             image_encoded: source.to_vec(),
-            image_file_name: "rainbow-8x8.png".into(),
+            image_file_path: "rainbow-8x8.png".into(),
             image_id: Default::default(),
         };
 
@@ -262,7 +268,7 @@ mod tests {
         let target = (vec![8, 6, 4], vec![8, 6, 3]);
         let output = match image.encode_rgb_from_tensor(source).unwrap_err() {
             Error::MismatchedTensorShape(output, target) => (output, target),
-            error => panic!("{:?}", error),
+            error => panic!("{error:?}"),
         };
         assert_eq!(output, target);
     }

@@ -11,14 +11,40 @@ version.workspace = true
 
 [dependencies]
 burn-tensor = {workspace = true}
-bytemuck = {workspace = true}
+bytemuck = {workspace = true, features = ["extern_crate_std"]}
+byteorder = {workspace = true, features = ["std"]}
+globset = {workspace = true}
 image = {workspace = true, features = ["jpeg", "png", "rayon"]}
 indexmap = {workspace = true, features = ["rayon", "std"]}
 log = {workspace = true}
+paste = {workspace = true}
 rand = {workspace = true, features = ["getrandom", "std_rng"]}
 rand_distr = {workspace = true}
 rayon = {workspace = true}
+regex = {workspace = true, features = ["perf", "std"]}
 thiserror = {workspace = true}
+walkdir = {workspace = true}
+
+[dependencies.derive_more]
+features = [
+  "as_ref",
+  "constructor",
+  "deref",
+  "deref_mut",
+  "display",
+  "from",
+  "into_iterator",
+  "is_variant",
+  "std",
+  "try_unwrap",
+]
+workspace = true
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
+divan = {workspace = true}
+ply-rs = {workspace = true}
+
+[[bench]]
+name = "polygon"
+harness = false

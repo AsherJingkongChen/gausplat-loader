@@ -1,19 +1,14 @@
-pub use super::Image;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-
-use crate::function::{read_any, write_any};
-use std::io::{BufReader, BufWriter, Read, Write};
+pub use super::*;
 
 pub type Images = crate::collection::IndexMap<u32, Image>;
 
 impl Decoder for Images {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
 
-        let image_count = read_any::<u64>(reader)? as usize;
+        let image_count = reader.read_u64::<LE>()?;
         let images = (0..image_count)
             .map(|_| {
                 let image = Image::decode(reader)?;
@@ -21,25 +16,27 @@ impl Decoder for Images {
             })
             .collect();
 
-        #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::image", "Images::decode");
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::colmap::image", "Images::decode");
 
         images
     }
 }
 
 impl Encoder for Images {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        write_any(writer, &(self.len() as u64))?;
+        writer.write_u64::<LE>(self.len() as u64)?;
         self.values().try_for_each(|image| image.encode(writer))?;
 
-        #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::image", "Images::encode");
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::colmap::image", "Images::encode");
 
         Ok(())
     }
@@ -51,8 +48,7 @@ mod tests {
     fn decode() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../../examples/data/colmap/0/images.bin");
+        let source = &include_bytes!("../../../../examples/data/colmap/0/images.bin")[..];
         let mut reader = std::io::Cursor::new(source);
 
         let targets = [
@@ -72,7 +68,7 @@ mod tests {
                         3.02849770919350700,
                     ],
                     camera_id: 1,
-                    file_name: "001.png".into(),
+                    file_name: c"001.png".into(),
                 },
             ),
             (
@@ -91,7 +87,7 @@ mod tests {
                         2.996173726996660000,
                     ],
                     camera_id: 1,
-                    file_name: "002.png".into(),
+                    file_name: c"002.png".into(),
                 },
             ),
             (
@@ -110,7 +106,7 @@ mod tests {
                         2.962536046879310000,
                     ],
                     camera_id: 1,
-                    file_name: "003.png".into(),
+                    file_name: c"003.png".into(),
                 },
             ),
             (
@@ -129,7 +125,7 @@ mod tests {
                         2.929815138064468000,
                     ],
                     camera_id: 1,
-                    file_name: "004.png".into(),
+                    file_name: c"004.png".into(),
                 },
             ),
             (
@@ -148,7 +144,7 @@ mod tests {
                         2.898707117916470700,
                     ],
                     camera_id: 1,
-                    file_name: "005.png".into(),
+                    file_name: c"005.png".into(),
                 },
             ),
         ]
@@ -162,7 +158,7 @@ mod tests {
     fn decode_on_zero_bytes() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[]);
+        let mut reader = std::io::Cursor::new(&b""[..]);
 
         Images::decode(&mut reader).unwrap_err();
     }
@@ -171,7 +167,7 @@ mod tests {
     fn decode_on_zero_entry() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0][..]);
 
         let target = true;
         let output = Images::decode(&mut reader).unwrap().is_empty();
@@ -199,7 +195,7 @@ mod tests {
                         2.841519901424116,
                     ],
                     camera_id: 1,
-                    file_name: "00001.png".into(),
+                    file_name: c"00001.png".into(),
                 },
             ),
             (
@@ -218,7 +214,7 @@ mod tests {
                         2.7869433888185773,
                     ],
                     camera_id: 1,
-                    file_name: "00002.png".into(),
+                    file_name: c"00002.png".into(),
                 },
             ),
             (
@@ -237,7 +233,7 @@ mod tests {
                         2.733216794563995,
                     ],
                     camera_id: 1,
-                    file_name: "00003.png".into(),
+                    file_name: c"00003.png".into(),
                 },
             ),
             (
@@ -256,7 +252,7 @@ mod tests {
                         2.6867445977350486,
                     ],
                     camera_id: 1,
-                    file_name: "00004.png".into(),
+                    file_name: c"00004.png".into(),
                 },
             ),
             (
@@ -275,16 +271,15 @@ mod tests {
                         2.642389506923824,
                     ],
                     camera_id: 1,
-                    file_name: "00005.png".into(),
+                    file_name: c"00005.png".into(),
                 },
             ),
         ]
         .into_iter()
         .collect::<Images>();
 
-        let target =
-            include_bytes!("../../../../examples/data/colmap/1/images.bin");
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let target = &include_bytes!("../../../../examples/data/colmap/1/images.bin")[..];
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
@@ -296,8 +291,8 @@ mod tests {
 
         let source = Images::default();
 
-        let target = &[0, 0, 0, 0, 0, 0, 0, 0];
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let target = &[0, 0, 0, 0, 0, 0, 0, 0][..];
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);

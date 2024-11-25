@@ -6,8 +6,9 @@ pub use crate::{
 };
 pub use points::*;
 
-use crate::function::{advance, read_any, write_any};
-use std::io::{Read, Write};
+use crate::function::{advance, read_bytes_const};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use std::io::{BufReader, BufWriter, Read, Write};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point {
@@ -16,6 +17,7 @@ pub struct Point {
 }
 
 impl Point {
+    #[inline]
     pub fn color_rgb_normalized(&self) -> [f32; 3] {
         [
             self.color_rgb[0] as f32 / 255.0,
@@ -26,13 +28,22 @@ impl Point {
 }
 
 impl Decoder for Point {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let position = read_any::<[f64; 3]>(reader)?;
-        let color_rgb = read_any::<[u8; 3]>(reader)?;
+    type Err = Error;
+
+    #[inline]
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        let position = [
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+        ];
+        let color_rgb = read_bytes_const(reader)?;
+
         // Skip re-projection error
         advance(reader, 8)?;
-        let track_count = read_any::<u64>(reader)? as usize;
+
         // Skip tracks
+        let track_count = reader.read_u64::<LE>()? as usize;
         advance(reader, 8 * track_count)?;
 
         Ok(Self {
@@ -43,16 +54,23 @@ impl Decoder for Point {
 }
 
 impl Encoder for Point {
+    type Err = Error;
+
+    #[inline]
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
-        write_any(writer, &self.position)?;
-        write_any(writer, &self.color_rgb)?;
+    ) -> Result<(), Self::Err> {
+        writer.write_f64::<LE>(self.position[0])?;
+        writer.write_f64::<LE>(self.position[1])?;
+        writer.write_f64::<LE>(self.position[2])?;
+        writer.write_all(&self.color_rgb)?;
+
         // Write -1.0 to re-projection error
-        write_any(writer, &-1.0_f64)?;
+        writer.write_f64::<LE>(-1.0)?;
+
         // Write 0 to track count
-        write_any(writer, &0_u64)?;
+        writer.write_u64::<LE>(0)?;
 
         Ok(())
     }

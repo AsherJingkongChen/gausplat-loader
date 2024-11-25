@@ -1,45 +1,42 @@
-pub use super::Camera;
-pub use crate::{
-    error::Error,
-    function::{Decoder, Encoder},
-};
-
-use crate::function::{read_any, write_any};
-use std::io::{BufReader, BufWriter, Read, Write};
+pub use super::*;
 
 pub type Cameras = crate::collection::IndexMap<u32, Camera>;
 
 impl Decoder for Cameras {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let reader = &mut BufReader::new(reader);
-        let camera_count = read_any::<u64>(reader)? as usize;
+    type Err = Error;
 
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        let reader = &mut BufReader::new(reader);
+
+        let camera_count = reader.read_u64::<LE>()?;
         let cameras = (0..camera_count)
             .map(|_| {
                 let camera = Camera::decode(reader)?;
-                Ok((camera.camera_id(), camera))
+                Ok((camera.camera_id, camera))
             })
             .collect();
 
-        #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::decode");
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::colmap::camera", "Cameras::decode");
 
         cameras
     }
 }
 
 impl Encoder for Cameras {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        write_any(writer, &(self.len() as u64))?;
+        writer.write_u64::<LE>(self.len() as u64)?;
         self.values().try_for_each(|camera| camera.encode(writer))?;
 
-        #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::colmap::camera", "Cameras::encode");
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::colmap::camera", "Cameras::encode");
 
         Ok(())
     }
@@ -50,41 +47,55 @@ mod tests {
     #[test]
     fn decode() {
         use super::super::*;
+        use std::io::Cursor;
 
         let source =
-            include_bytes!("../../../../examples/data/colmap/0/cameras.bin");
-        let mut reader = std::io::Cursor::new(source);
+            &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
+        let mut reader = Cursor::new(source);
 
         let targets = [
             (
                 1,
-                Camera::Pinhole(PinholeCamera {
+                Camera {
                     camera_id: 1,
                     width: 1959,
                     height: 1090,
-                    focal_length_x: 1159.5880733038061,
-                    focal_length_y: 1164.6601287484507,
                     principal_point_x: 979.5,
                     principal_point_y: 545.0,
-                }),
+                    variant: CameraVariant::Pinhole {
+                        focal_length_x: 1159.5880733038061,
+                        focal_length_y: 1164.6601287484507,
+                    },
+                },
             ),
             (
                 2,
-                Camera::Pinhole(PinholeCamera {
+                Camera {
                     camera_id: 2,
                     width: 1957,
                     height: 1091,
-                    focal_length_x: 1163.2547280302354,
-                    focal_length_y: 1163.2547280302354,
                     principal_point_x: 978.5,
                     principal_point_y: 545.5,
-                }),
+                    variant: CameraVariant::SimplePinhole {
+                        focal_length: 1163.2547280302354,
+                    },
+                },
             ),
         ]
         .into_iter()
         .collect::<Cameras>();
         let output = Cameras::decode(&mut reader).unwrap();
         assert_eq!(output, targets);
+
+        let target = false;
+        let camera = targets.get(&1).unwrap();
+        let output = camera.focal_length_x() == camera.focal_length_y();
+        assert_eq!(output, target);
+
+        let target = true;
+        let camera = targets.get(&2).unwrap();
+        let output = camera.focal_length_x() == camera.focal_length_y();
+        assert_eq!(output, target);
     }
 
     #[test]
@@ -92,14 +103,15 @@ mod tests {
         use super::*;
 
         let source =
-            include_bytes!("../../../../examples/data/colmap/2/cameras.bin");
+            &include_bytes!("../../../../examples/data/colmap/2/cameras.bin")[..];
         let mut reader = std::io::Cursor::new(source);
 
         let target = -1_i32 as u32;
-        let output = match Cameras::decode(&mut reader).unwrap_err() {
-            Error::UnknownCameraModelId(id) => id,
-            error => panic!("{:?}", error),
-        };
+        let output = matches!(
+            Cameras::decode(&mut reader).unwrap_err(),
+            Error::InvalidCameraModelId(id) if id == target,
+        );
+        let target = true;
         assert_eq!(output, target);
     }
 
@@ -107,44 +119,64 @@ mod tests {
     fn decode_on_zero_bytes() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[]);
-
+        let mut reader = std::io::Cursor::new(&b""[..]);
         Cameras::decode(&mut reader).unwrap_err();
     }
 
     #[test]
     fn decode_on_zero_entry() {
         use super::*;
+        use std::io::Cursor;
 
-        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0][..]);
 
         let target = true;
         let output = Cameras::decode(&mut reader).unwrap().is_empty();
         assert_eq!(output, target);
+
+        let mut reader = Cursor::new(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0][..]);
+        Cameras::decode(&mut reader).unwrap_err();
     }
 
     #[test]
     fn encode() {
         use super::super::*;
 
-        let source = [(
-            1,
-            Camera::Pinhole(PinholeCamera {
-                camera_id: 1,
-                width: 536,
-                height: 807,
-                focal_length_x: 465.23983067958585,
-                focal_length_y: 468.5845476078834,
-                principal_point_x: 268.0,
-                principal_point_y: 403.5,
-            }),
-        )]
+        let source = [
+            (
+                1,
+                Camera {
+                    camera_id: 1,
+                    width: 1959,
+                    height: 1090,
+                    principal_point_x: 979.5,
+                    principal_point_y: 545.0,
+                    variant: CameraVariant::Pinhole {
+                        focal_length_x: 1159.5880733038061,
+                        focal_length_y: 1164.6601287484507,
+                    },
+                },
+            ),
+            (
+                2,
+                Camera {
+                    camera_id: 2,
+                    width: 1957,
+                    height: 1091,
+                    principal_point_x: 978.5,
+                    principal_point_y: 545.5,
+                    variant: CameraVariant::SimplePinhole {
+                        focal_length: 1163.2547280302354,
+                    },
+                },
+            ),
+        ]
         .into_iter()
         .collect::<Cameras>();
 
         let target =
-            include_bytes!("../../../../examples/data/colmap/1/cameras.bin");
-        let mut writer = std::io::Cursor::new(Vec::new());
+            &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
+        let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);
@@ -153,11 +185,12 @@ mod tests {
     #[test]
     fn encode_on_zero_entry() {
         use super::*;
+        use std::io::Cursor;
 
         let source = Cameras::default();
 
-        let target = &[0, 0, 0, 0, 0, 0, 0, 0];
-        let mut writer = std::io::Cursor::new(Vec::new());
+        let target = &[0, 0, 0, 0, 0, 0, 0, 0][..];
+        let mut writer = Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);

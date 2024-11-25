@@ -18,6 +18,7 @@ pub struct ColmapSource<S> {
 }
 
 impl<S> fmt::Debug for ColmapSource<S> {
+    #[inline]
     fn fmt(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -32,6 +33,7 @@ impl<S> fmt::Debug for ColmapSource<S> {
 }
 
 impl<S: Default> Default for ColmapSource<S> {
+    #[inline]
     fn default() -> Self {
         Self {
             cameras: Default::default(),

@@ -1,10 +1,10 @@
 pub use crate::error::Error;
 
-use std::path;
+use std::path::Path;
 
 pub trait Opener
 where
     Self: Sized,
 {
-    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error>;
+    fn open(path: impl AsRef<Path>) -> Result<Self, Error>;
 }

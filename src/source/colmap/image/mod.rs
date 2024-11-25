@@ -6,10 +6,12 @@ pub use crate::{
 };
 pub use images::*;
 
-use crate::function::{
-    advance, read_any, read_byte_until, write_any, write_str,
+use crate::function::{advance, is_null, read_bytes_before};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use std::{
+    ffi::CString,
+    io::{BufReader, BufWriter, Read, Write},
 };
-use std::io::{Read, Write};
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Image {
@@ -22,18 +24,33 @@ pub struct Image {
     pub quaternion: [f64; 4],
     pub translation: [f64; 3],
     pub camera_id: u32,
-    pub file_name: String,
+    pub file_name: CString,
 }
 
 impl Decoder for Image {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let image_id = read_any::<u32>(reader)?;
-        let quaternion = read_any::<[f64; 4]>(reader)?;
-        let translation = read_any::<[f64; 3]>(reader)?;
-        let camera_id = read_any::<u32>(reader)?;
-        let file_name = String::from_utf8(read_byte_until(reader, b'\0', 64)?)?;
-        let point_count = read_any::<u64>(reader)? as usize;
+    type Err = Error;
+
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        let image_id = reader.read_u32::<LE>()?;
+        let quaternion = [
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+        ];
+        let translation = [
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+            reader.read_f64::<LE>()?,
+        ];
+        let camera_id = reader.read_u32::<LE>()?;
+
+        let file_name = read_bytes_before(reader, is_null, 64)?;
+        // SAFETY: The result of `read_bytes_before` never include the null terminator.
+        let file_name = unsafe { CString::from_vec_unchecked(file_name) };
+
         // Skip points
+        let point_count = reader.read_u64::<LE>()? as usize;
         advance(reader, 24 * point_count)?;
 
         Ok(Self {
@@ -47,18 +64,25 @@ impl Decoder for Image {
 }
 
 impl Encoder for Image {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
-        write_any(writer, &self.image_id)?;
-        write_any(writer, &self.quaternion)?;
-        write_any(writer, &self.translation)?;
-        write_any(writer, &self.camera_id)?;
-        write_str(writer, &self.file_name)?;
-        write_any(writer, &b'\0')?;
+    ) -> Result<(), Self::Err> {
+        writer.write_u32::<LE>(self.image_id)?;
+        writer.write_f64::<LE>(self.quaternion[0])?;
+        writer.write_f64::<LE>(self.quaternion[1])?;
+        writer.write_f64::<LE>(self.quaternion[2])?;
+        writer.write_f64::<LE>(self.quaternion[3])?;
+        writer.write_f64::<LE>(self.translation[0])?;
+        writer.write_f64::<LE>(self.translation[1])?;
+        writer.write_f64::<LE>(self.translation[2])?;
+        writer.write_u32::<LE>(self.camera_id)?;
+        writer.write_all(self.file_name.as_bytes_with_nul())?;
+
         // Write 0 to point count
-        write_any(writer, &0_u64)?;
+        writer.write_u64::<LE>(0)?;
 
         Ok(())
     }

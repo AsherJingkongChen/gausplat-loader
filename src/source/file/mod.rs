@@ -7,19 +7,22 @@ pub use files::*;
 use std::{
     fs,
     io::{BufReader, BufWriter, Read, Seek, Write},
-    path,
+    ops::{Deref, DerefMut},
+    path::{Path, PathBuf},
 };
 
+/// Duplex file stream.
 #[derive(Clone, Debug, PartialEq)]
-pub struct File<S> {
-    pub name: String,
-    pub stream: S,
+pub struct File<F> {
+    pub inner: F,
+    pub path: PathBuf,
 }
 
 impl<R: Read> File<R> {
+    #[inline]
     pub fn read(&mut self) -> Result<Vec<u8>, Error> {
-        let mut bytes = Vec::new();
-        let reader = &mut BufReader::new(&mut self.stream);
+        let mut bytes = vec![];
+        let reader = &mut BufReader::new(&mut self.inner);
         reader.read_to_end(&mut bytes)?;
 
         Ok(bytes)
@@ -27,11 +30,12 @@ impl<R: Read> File<R> {
 }
 
 impl<W: Write> File<W> {
+    #[inline]
     pub fn write(
         &mut self,
         bytes: &[u8],
     ) -> Result<(), Error> {
-        let writer = &mut BufWriter::new(&mut self.stream);
+        let writer = &mut BufWriter::new(&mut self.inner);
         writer.write_all(bytes)?;
 
         Ok(())
@@ -39,36 +43,50 @@ impl<W: Write> File<W> {
 }
 
 impl<S: Seek> File<S> {
+    #[inline]
     pub fn rewind(&mut self) -> Result<(), Error> {
-        Ok(self.stream.rewind()?)
+        Ok(self.inner.rewind()?)
+    }
+}
+
+impl<F: Default> Default for File<F> {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            path: Default::default(),
+        }
+    }
+}
+
+impl<F> Deref for File<F> {
+    type Target = F;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<F> DerefMut for File<F> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
     }
 }
 
 impl Opener for File<fs::File> {
-    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
-        let name = path
-            .as_ref()
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-        let stream = fs::OpenOptions::new()
+    #[inline]
+    fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
+        let inner = fs::OpenOptions::new()
             .create(true)
             .read(true)
             .truncate(false)
             .write(true)
-            .open(path)?;
+            .open(&path)?;
+        let path = path.as_ref().to_owned();
 
-        Ok(Self { name, stream })
-    }
-}
-
-impl<R: Default> Default for File<R> {
-    fn default() -> Self {
-        Self {
-            name: Default::default(),
-            stream: Default::default(),
-        }
+        Ok(Self { inner, path })
     }
 }
 
@@ -87,14 +105,33 @@ mod tests {
     }
 
     #[test]
+    fn open_on_symlink() {
+        use super::*;
+
+        let source = "examples/data/hello-world.symlink/ascii.symlink.txt";
+        let mut file = File::open(source).unwrap();
+
+        let target = b"Hello, World!";
+        let output = file.read().unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn open_on_directory() {
+        use super::*;
+
+        let source = "examples/data/hello-world/";
+        File::open(source).unwrap_err();
+    }
+
+    #[test]
     fn read() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/hello-world/ascii.txt");
+        let source = &include_bytes!("../../../examples/data/hello-world/ascii.txt")[..];
         let mut file = File {
-            name: Default::default(),
-            stream: std::io::Cursor::new(source),
+            path: Default::default(),
+            inner: std::io::Cursor::new(source),
         };
 
         let target = source;
@@ -106,14 +143,15 @@ mod tests {
     fn write_and_rewind() {
         use super::*;
 
-        let source =
-            include_bytes!("../../../examples/data/hello-world/ascii.txt");
+        let source = &include_bytes!("../../../examples/data/hello-world/ascii.txt")[..];
         let mut file = File::<std::io::Cursor<Vec<u8>>>::default();
 
         let target = source;
         file.write(source).unwrap();
         file.rewind().unwrap();
-        let output = file.stream.into_inner();
+        let output = file.deref().to_owned().into_inner();
+        assert_eq!(output, target);
+        let output = file.deref_mut().to_owned().into_inner();
         assert_eq!(output, target);
     }
 }

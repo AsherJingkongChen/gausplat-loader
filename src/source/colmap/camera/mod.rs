@@ -1,122 +1,143 @@
 pub mod cameras;
-pub mod pinhole;
 
 pub use crate::{
     error::Error,
     function::{Decoder, Encoder},
 };
 pub use cameras::*;
-pub use pinhole::*;
 
-use crate::function::{read_any, write_any};
-use std::io::{Read, Write};
+use byteorder::{ReadBytesExt, WriteBytesExt, LE};
+use std::io::{BufReader, BufWriter, Read, Write};
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Camera {
+    pub camera_id: u32,
+    pub width: u64,
+    pub height: u64,
+    pub principal_point_x: f64,
+    pub principal_point_y: f64,
+    pub variant: CameraVariant,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Camera {
-    Pinhole(PinholeCamera),
-    // TODO: Support more camera models from COLMAP.
+pub enum CameraVariant {
+    SimplePinhole {
+        focal_length: f64,
+    },
+    Pinhole {
+        focal_length_x: f64,
+        focal_length_y: f64,
+    },
+    // TODO: Support more camera models from COLMAP. See https://github.com/colmap/colmap/blob/c238aec0e669610850badf3a3279dc2858f37f0f/src/colmap/sensor/models.h#L82
 }
 
 impl Camera {
-    pub fn camera_id(&self) -> u32 {
-        match self {
-            Self::Pinhole(camera) => camera.camera_id,
-        }
-    }
-
+    #[inline]
     pub fn model_id(&self) -> u32 {
-        match self {
-            Self::Pinhole(_) => 1,
+        use CameraVariant::*;
+
+        match self.variant {
+            SimplePinhole { .. } => 0,
+            Pinhole { .. } => 1,
         }
     }
 
-    pub fn width(&self) -> u64 {
-        match self {
-            Self::Pinhole(camera) => camera.width,
-        }
-    }
-
-    pub fn height(&self) -> u64 {
-        match self {
-            Self::Pinhole(camera) => camera.height,
-        }
-    }
-
+    #[inline]
     pub fn focal_length_x(&self) -> f64 {
-        match self {
-            Self::Pinhole(camera) => camera.focal_length_x,
+        use CameraVariant::*;
+
+        match self.variant {
+            SimplePinhole { focal_length } => focal_length,
+            Pinhole { focal_length_x, .. } => focal_length_x,
         }
     }
 
+    #[inline]
     pub fn focal_length_y(&self) -> f64 {
-        match self {
-            Self::Pinhole(camera) => camera.focal_length_y,
-        }
-    }
+        use CameraVariant::*;
 
-    pub fn principal_point_x(&self) -> f64 {
-        match self {
-            Self::Pinhole(camera) => camera.principal_point_x,
-        }
-    }
-
-    pub fn principal_point_y(&self) -> f64 {
-        match self {
-            Self::Pinhole(camera) => camera.principal_point_y,
+        match self.variant {
+            SimplePinhole { focal_length } => focal_length,
+            Pinhole { focal_length_y, .. } => focal_length_y,
         }
     }
 }
 
 impl Decoder for Camera {
-    fn decode(reader: &mut impl Read) -> Result<Self, Error> {
-        let [camera_id, model_id] = read_any::<[u32; 2]>(reader)?;
-        let [width, height] = read_any::<[u64; 2]>(reader)?;
-        let [focal_length_x, focal_length_y] = match model_id {
-            0 => {
-                let focal_length = read_any::<f64>(reader)?;
-                [focal_length, focal_length]
-            },
-            1 => read_any::<[f64; 2]>(reader)?,
-            _ => return Err(Error::UnknownCameraModelId(model_id)),
-        };
-        let [principal_point_x, principal_point_y] =
-            read_any::<[f64; 2]>(reader)?;
+    type Err = Error;
 
-        Ok(match model_id {
-            0 | 1 => Self::Pinhole(PinholeCamera {
-                camera_id,
-                width,
-                height,
-                focal_length_x,
-                focal_length_y,
-                principal_point_x,
-                principal_point_y,
-            }),
-            _ => unreachable!(),
+    fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
+        use CameraVariant::*;
+
+        let camera_id = reader.read_u32::<LE>()?;
+        let model_id = reader.read_u32::<LE>()?;
+        let width = reader.read_u64::<LE>()?;
+        let height = reader.read_u64::<LE>()?;
+        let variant = match model_id {
+            0 => {
+                let focal_length = reader.read_f64::<LE>()?;
+                SimplePinhole { focal_length }
+            },
+            1 => {
+                let focal_length_x = reader.read_f64::<LE>()?;
+                let focal_length_y = reader.read_f64::<LE>()?;
+                Pinhole {
+                    focal_length_x,
+                    focal_length_y,
+                }
+            },
+            _ => return Err(Error::InvalidCameraModelId(model_id)),
+        };
+        let principal_point_x = reader.read_f64::<LE>()?;
+        let principal_point_y = reader.read_f64::<LE>()?;
+
+        Ok(Self {
+            camera_id,
+            width,
+            height,
+            principal_point_x,
+            principal_point_y,
+            variant,
         })
     }
 }
 
 impl Encoder for Camera {
+    type Err = Error;
+
     fn encode(
         &self,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
-        write_any(writer, &[self.camera_id(), self.model_id()])?;
-        write_any(writer, &[self.width(), self.height()])?;
-        write_any(writer, &[self.focal_length_x(), self.focal_length_y()])?;
-        write_any(
-            writer,
-            &[self.principal_point_x(), self.principal_point_y()],
-        )?;
+    ) -> Result<(), Self::Err> {
+        use CameraVariant::*;
+
+        writer.write_u32::<LE>(self.camera_id)?;
+        writer.write_u32::<LE>(self.model_id())?;
+        writer.write_u64::<LE>(self.width)?;
+        writer.write_u64::<LE>(self.height)?;
+        match self.variant {
+            SimplePinhole { focal_length } => writer.write_f64::<LE>(focal_length),
+            Pinhole {
+                focal_length_x,
+                focal_length_y,
+            } => {
+                writer.write_f64::<LE>(focal_length_x)?;
+                writer.write_f64::<LE>(focal_length_y)
+            },
+        }?;
+        writer.write_f64::<LE>(self.principal_point_x)?;
+        writer.write_f64::<LE>(self.principal_point_y)?;
 
         Ok(())
     }
 }
 
-impl Default for Camera {
+impl Default for CameraVariant {
+    #[inline]
     fn default() -> Self {
-        Self::Pinhole(Default::default())
+        CameraVariant::SimplePinhole {
+            focal_length: Default::default(),
+        }
     }
 }
 
@@ -126,8 +147,8 @@ mod tests {
     fn default() {
         use super::*;
 
-        let target = Camera::Pinhole(Default::default());
-        let output = Camera::default();
+        let target = CameraVariant::SimplePinhole { focal_length: 0.0 };
+        let output = Camera::default().variant;
         assert_eq!(output, target);
     }
 }

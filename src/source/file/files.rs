@@ -1,23 +1,52 @@
 pub use super::File;
 pub use crate::{error::Error, function::Opener};
 
-use std::{fs, path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-pub type Files<S> = crate::collection::IndexMap<String, File<S>>;
+pub type Files<S> = crate::collection::IndexMap<PathBuf, File<S>>;
 
 impl Opener for Files<fs::File> {
-    fn open(path: impl AsRef<path::Path>) -> Result<Self, Error> {
-        let files = fs::read_dir(path)?
+    /// Opening all files matching the glob pattern.
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// use gausplat_loader::source::file::{Files, Opener};
+    ///
+    /// let files = Files::open("examples/data/hello-world/*").unwrap();
+    /// assert!(!files.is_empty());
+    /// ```
+    fn open(pattern: impl AsRef<Path>) -> Result<Self, Error> {
+        let pattern = pattern.as_ref();
+        let matcher = globset::GlobBuilder::new(
+            pattern
+                .to_str()
+                .ok_or_else(|| Error::InvalidUtf8(pattern.to_string_lossy().into()))?,
+        )
+        .literal_separator(true)
+        .build()?
+        .compile_matcher();
+        let rootdir = pattern
+            .ancestors()
+            .find(|path| path.is_dir())
+            .unwrap_or(Path::new("."));
+        let files = walkdir::WalkDir::new(rootdir)
+            .contents_first(true)
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| entry.file_type().is_file() && matcher.is_match(entry.path()))
             .map(|entry| {
-                let path = entry?.path();
-                let file = File::open(path)?;
-
-                Ok((file.name.to_owned(), file))
+                let path = entry.path();
+                Ok((path.to_owned(), File::open(path)?))
             })
             .collect();
 
-        #[cfg(debug_assertions)]
-        log::debug!(target: "gausplat::loader::source::file", "Files::open");
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::source::file", "Files::open");
 
         files
     }
@@ -32,8 +61,61 @@ mod tests {
         let source = "examples/data/hello-world/";
         let files = Files::open(source).unwrap();
 
+        let target = true;
+        let output = files.is_empty();
+        assert_eq!(output, target);
+
+        let source = "examples/data/hello-world/*";
+        let files = Files::open(source).unwrap();
+
         let target = false;
         let output = files.is_empty();
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn open_on_symlink() {
+        use super::*;
+
+        let source = "examples/data/hello-world.symlink";
+        let files = Files::open(source).unwrap();
+
+        let target = true;
+        let output = files.is_empty();
+        assert_eq!(output, target);
+
+        let source = "examples/data/hello-world.symlink/*";
+        let files = Files::open(source).unwrap();
+
+        let target = false;
+        let output = files.is_empty();
+        assert_eq!(output, target);
+
+        let source = "examples/data/hello-world/ascii.symlink.txt";
+        let files = Files::open(source).unwrap();
+
+        let target = false;
+        let output = files.is_empty();
+        assert_eq!(output, target);
+
+        let source = "examples/data/hello-world.symlink/*.symlink.txt";
+        let files = Files::open(source).unwrap();
+
+        let target = false;
+        let output = files.is_empty();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn open_on_invalid_utf8() {
+        use super::*;
+
+        // SAFETY: This is a deliberately invalid UTF-8 string literal.
+        let source = unsafe {
+            std::ffi::OsStr::from_encoded_bytes_unchecked(
+                b"examples/data/hello-world/\x8e\xcd*",
+            )
+        };
+        Files::open(source).unwrap_err();
     }
 }
