@@ -206,7 +206,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![
-            (Scalar("int".into()), "vertex1".to_string()).into(),
+            (Scalar("int".into()), "vertex1").into(),
             (Scalar("int".into()), "vertex2").into(),
             (Scalar("uchar".into()), "red").into(),
             (Scalar("uchar".into()), "green").into(),

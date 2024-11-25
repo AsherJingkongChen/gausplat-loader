@@ -10,7 +10,7 @@ use derive_more::derive::{
     AsRef, Constructor, Deref, DerefMut, Display, From, IntoIterator, IsVariant,
     TryUnwrap,
 };
-use std::fmt;
+use std::{fmt, str::FromStr};
 use Error::*;
 use Format::*;
 
@@ -100,11 +100,13 @@ pub struct Header {
 
 impl Elements {
     #[inline]
-    pub fn eq_ordered(
+    pub fn is_same_order(
         &self,
         other: &Self,
     ) -> bool {
-        self.iter().zip(other.iter()).all(|(a, b)| a == b)
+        self.iter()
+            .zip(other.iter())
+            .all(|(a, b)| a.0 == b.0 && a.1.is_same_order(&b.1))
     }
 }
 
@@ -139,6 +141,15 @@ impl fmt::Display for Elements {
     }
 }
 
+impl FromStr for Header {
+    type Err = Error;
+
+    #[inline]
+    fn from_str(input: &str) -> Result<Self, Self::Err> {
+        Header::decode(&mut std::io::Cursor::new(input))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
@@ -163,31 +174,41 @@ mod tests {
     }
 
     #[test]
-    fn eq_ordered() {
+    fn is_same_order() {
         use super::*;
 
         let target = true;
-        let output = Elements::default().eq_ordered(&Elements::default());
+        let output = Elements::default().is_same_order(&Elements::default());
         assert_eq!(output, target);
 
         let target = false;
-        let elements_1 = Elements::new(
-            [
-                ("a".into(), Default::default()),
-                ("b".into(), Default::default()),
-            ]
-            .into_iter()
-            .collect(),
+        let mut elements = (
+            "ply\n\
+            format binary_little_endian 1.0\n\
+            element vertex 365\n\
+            property float x\n\
+            property float y\n\
+            end_header\n"
+                .parse::<Header>()
+                .unwrap()
+                .elements,
+            "ply\n\
+            format binary_little_endian 1.0\n\
+            element vertex 900\n\
+            property float y\n\
+            property float x\n\
+            end_header\n"
+                .parse::<Header>()
+                .unwrap()
+                .elements,
         );
-        let elements_2 = Elements::new(
-            [
-                ("b".into(), Default::default()),
-                ("a".into(), Default::default()),
-            ]
-            .into_iter()
-            .collect(),
-        );
-        let output = elements_1.eq_ordered(&elements_2);
+
+        let output = elements.0.is_same_order(&elements.1);
+        assert_eq!(output, target);
+
+        let target = true;
+        elements.1.get_mut("vertex").unwrap().properties.swap_indices(0, 1);
+        let output = elements.0.is_same_order(&elements.1);
         assert_eq!(output, target);
     }
 }

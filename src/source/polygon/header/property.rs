@@ -97,6 +97,11 @@ pub struct ScalarPropertyKind {
 
 impl Properties {
     #[inline]
+    pub fn is_same_order(&self, other: &Self) -> bool {
+        self.iter().zip(other.iter()).all(|(a, b)| a == b)
+    }
+
+    #[inline]
     pub fn property_sizes(&self) -> impl '_ + Iterator<Item = Result<usize, Error>> {
         self.values().map(|prop| {
             prop.try_unwrap_scalar_ref()
@@ -115,6 +120,24 @@ impl ScalarPropertyKind {
             .unwrap()
             .get(&self.value)
             .copied()
+    }
+}
+
+
+impl Default for PropertyKind {
+    #[inline]
+    fn default() -> Self {
+        ScalarPropertyKind::default().into()
+    }
+}
+
+impl fmt::Display for Properties {
+    #[inline]
+    fn fmt(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        self.values().try_for_each(|p| writeln!(f, "{p}"))
     }
 }
 
@@ -153,20 +176,3 @@ pub static SCALAR_PROPERTY_SIZES: LazyLock<RwLock<IndexMap<String, usize>>> =
         .collect::<IndexMap<_, _>>()
         .into()
     });
-
-impl Default for PropertyKind {
-    #[inline]
-    fn default() -> Self {
-        ScalarPropertyKind::default().into()
-    }
-}
-
-impl fmt::Display for Properties {
-    #[inline]
-    fn fmt(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
-        self.values().try_for_each(|p| writeln!(f, "{p}"))
-    }
-}
