@@ -91,6 +91,18 @@ pub struct ScalarPropertyKind {
     pub value: String,
 }
 
+impl Properties {
+    #[inline]
+    pub fn property_sizes(&self) -> impl '_ + Iterator<Item = Result<usize, Error>> {
+        self.values().map(|prop| {
+            prop.try_unwrap_scalar_ref()
+                .map_err(|err| InvalidKind(err.input.to_string()))?
+                .size()
+                .ok_or_else(|| InvalidKind(prop.kind.to_string()))
+        })
+    }
+}
+
 impl ScalarPropertyKind {
     #[inline]
     pub fn size(&self) -> Option<usize> {

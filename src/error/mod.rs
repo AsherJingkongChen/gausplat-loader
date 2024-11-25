@@ -30,8 +30,8 @@ pub enum Error {
     #[error("Missing symbol: {0:?}.")]
     MissingSymbol(String),
 
-    #[error("Out of bounds: {0} is out of {1}.")]
-    OutOfBounds(usize, usize),
+    #[error("Out of bounds: {0} is out of {1} at {2}.")]
+    OutOfBounds(usize, usize, String),
 
     #[error("Parse int error: {0}")]
     ParseIntError(#[from] std::num::ParseIntError),

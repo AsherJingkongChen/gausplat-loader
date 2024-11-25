@@ -10,7 +10,7 @@ impl DecoderWith<&Header> for Payload {
         reader: &mut impl Read,
         init: &Header,
     ) -> Result<Self, Self::Err> {
-        debug_assert!(
+        assert!(
             !init.format.is_ascii(),
             "Unimplemented: ASCII format decoding"
         );
@@ -21,19 +21,11 @@ impl DecoderWith<&Header> for Payload {
             .map(|elem| {
                 let prop_count = elem.len();
                 let prop_sizes = elem
-                    .values()
-                    .map(|prop| {
-                        debug_assert!(
-                            prop.is_scalar(),
-                            "Unimplemented: Non-scalar property decoding"
-                        );
-                        prop.try_unwrap_scalar_ref()
-                            .unwrap()
-                            .size()
-                            .ok_or_else(|| InvalidKind(prop.kind.to_string()))
-                    })
+                    .property_sizes()
                     .collect::<Result<Vec<_>, _>>()?;
                 let elem_size = prop_sizes.iter().sum::<usize>();
+
+                // TODO: perf on universal size
 
                 iter::repeat_n(elem_size, elem.count).try_fold(
                     vec![Vec::with_capacity(1 << 15); prop_count],

@@ -81,12 +81,12 @@ mod tests {
             let reader = &mut Cursor::new(source);
 
             let header = Header::decode(reader).unwrap();
-            let writer = &mut Vec::new();
+            let writer = &mut vec![];
             header.encode(writer).unwrap();
             let output_1 = writer.to_owned();
 
             let header = Header::decode(&mut Cursor::new(writer)).unwrap();
-            let writer = &mut Vec::new();
+            let writer = &mut vec![];
             header.encode(writer).unwrap();
             let output_2 = writer.to_owned();
 

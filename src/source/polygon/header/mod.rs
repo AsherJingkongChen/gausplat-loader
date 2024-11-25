@@ -99,11 +99,10 @@ pub struct Header {
 impl Format {
     #[inline]
     pub const fn is_binary_native_endian(&self) -> bool {
-        match self {
-            BinaryLittleEndian => cfg!(target_endian = "little"),
-            BinaryBigEndian => cfg!(target_endian = "big"),
-            Ascii => false,
-        }
+        #[cfg(target_endian = "big")]
+        return self.is_binary_big_endian();
+        #[cfg(target_endian = "little")]
+        return self.is_binary_little_endian();
     }
 }
 

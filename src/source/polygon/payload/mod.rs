@@ -7,13 +7,15 @@ use derive_more::derive::{
     TryUnwrap,
 };
 use std::fmt;
-use Error::*;
 
 #[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
 #[try_unwrap(owned, ref, ref_mut)]
 pub enum Payload {
     Scalar(ScalarPayload),
+    // TODO: Non-scaler payload
 }
+
+// TODO: Logging
 
 /// A payload that only contains scalar data.
 #[derive(

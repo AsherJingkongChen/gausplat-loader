@@ -1,9 +1,6 @@
 pub use super::*;
 
-use std::{
-    io::{BufWriter, Write},
-    iter,
-};
+use std::io::{BufWriter, Write};
 
 impl Encoder for Object {
     type Err = Error;
@@ -14,9 +11,8 @@ impl Encoder for Object {
     ) -> Result<(), Self::Err> {
         let writer = &mut BufWriter::new(writer);
 
-        // FAIL: No ascii string in header
         self.header.encode(writer)?;
-        debug_assert!(
+        assert!(
             !self.header.format.is_ascii(),
             "Unimplemented: ASCII format encoding"
         );
@@ -27,40 +23,27 @@ impl Encoder for Object {
             .values()
             .zip(elements.1.iter())
             .try_for_each(|(elem, elem_data)| {
-                // LOOP: each element
                 let prop_count = elem.len();
-                let prop_sizes = elem
-                    .values()
-                    .map(|prop| {
-                        debug_assert!(
-                            prop.is_scalar(),
-                            "Unimplemented: Non-scalar property decoding"
-                        );
-                        prop.try_unwrap_scalar_ref()
-                            .unwrap()
-                            .size()
-                            .ok_or_else(|| InvalidKind(prop.kind.to_string()))
-                        // FAIL: Unknown scalar
-                    })
-                    .collect::<Result<Vec<_>, _>>()?;
-                // FAIL: Same
+                let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
 
-                iter::repeat_n((), elem.count)
-                    .try_fold(vec![0; prop_count], |mut prop_offsets, _| {
-                        // LOOP: each element count
+                (0..elem.count)
+                    .try_fold(vec![0; prop_count], |mut prop_offsets, elem_index| {
                         prop_offsets
                             .iter_mut()
                             .zip(prop_sizes.iter().zip(elem_data.iter()))
                             .try_for_each(|(offset, (size, data))| {
-                                // LOOP: each property
                                 let start = *offset;
                                 let end = start + size;
                                 *offset = end;
 
                                 // FAIL: Smaller element count
-                                let datum = data
-                                    .get(start..end)
-                                    .ok_or_else(|| OutOfBounds(end, elem.count * size))?;
+                                let datum = data.get(start..end).ok_or_else(|| {
+                                    OutOfBounds(
+                                        end,
+                                        elem.count * size,
+                                        format!("element index {elem_index}"),
+                                    )
+                                })?;
                                 // JUMP: Different endian
                                 if self.header.format.is_binary_native_endian() {
                                     writer.write_all(datum)
@@ -81,4 +64,66 @@ impl Encoder for Object {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use std::io::Cursor;
+
+    #[test]
+    fn encode_on_default() {
+        use super::*;
+
+        let object = Object::default();
+
+        let target = b"ply\nformat binary_little_endian 1.0\nend_header\n";
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn encode_on_no_native_endian() {
+        use super::*;
+
+        let source_be = &mut Cursor::new(&include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-be.ply"
+        )[..]);
+        let source_le = &mut Cursor::new(
+            &include_bytes!("../../../../examples/data/polygon/triangle.binary-le.ply")[..],
+        );
+
+        let object = Object::decode(source_be).unwrap();
+        let target = &mut vec![];
+        object.encode(target).unwrap();
+
+        let mut object = Object::decode(source_le).unwrap();
+        object.header.format = Format::BinaryBigEndian;
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn encode_on_invalid_header() {
+        use super::*;
+
+        let object = Object {
+            header: Header {
+                version: "\u{4e00}\u{9eDe}\u{96f6}".into(),
+                ..Default::default()
+            },
+            payload: Default::default(),
+        };
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+    }
+
+    #[test]
+    #[should_panic]
+    fn encode_on_unimplemented_ascii() {
+        use super::*;
+
+        let mut object = Object::default();
+        object.header.format = Format::Ascii;
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+    }
+}
