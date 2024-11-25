@@ -79,6 +79,71 @@ mod tests {
     }
 
     #[test]
+    fn encode_on_invalid_header() {
+        use super::*;
+
+        let object = Object {
+            header: Header {
+                version: "\u{4e00}\u{9eDe}\u{96f6}".into(),
+                ..Default::default()
+            },
+            payload: Default::default(),
+        };
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_no_native_endian() {
+        use super::*;
+
+        let source_be = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-be.ply"
+        )[..];
+        let source_le = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-le.ply"
+        )[..];
+
+        let object = Object::decode(&mut Cursor::new(source_be)).unwrap();
+        let target = &mut vec![];
+        object.encode(target).unwrap();
+
+        let mut object = Object::decode(&mut Cursor::new(source_le)).unwrap();
+        object.header.format = Format::BinaryBigEndian;
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+
+        let source_be = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-be.ply"
+        )[..];
+        let source_le = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-le.ply"
+        )[..];
+
+        let object = Object::decode(&mut Cursor::new(source_le)).unwrap();
+        let target = &mut vec![];
+        object.encode(target).unwrap();
+
+        let mut object = Object::decode(&mut Cursor::new(source_be)).unwrap();
+        object.header.format = Format::BinaryLittleEndian;
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    #[should_panic]
+    fn encode_on_unimplemented_ascii() {
+        use super::*;
+
+        let mut object = Object::default();
+        object.header.format = Format::Ascii;
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+    }
+
+    #[test]
     fn encode_on_triangle_in_memory() {
         use super::PropertyKind::*;
         use super::*;
@@ -163,66 +228,42 @@ mod tests {
     }
 
     #[test]
-    fn encode_on_invalid_header() {
+    fn encode_on_invalid_kind() {
+        use super::PropertyKind::*;
         use super::*;
 
-        let object = Object {
-            header: Header {
-                version: "\u{4e00}\u{9eDe}\u{96f6}".into(),
-                ..Default::default()
-            },
-            payload: Default::default(),
-        };
-        let output = &mut vec![];
-        object.encode(output).unwrap_err();
-    }
-
-    #[test]
-    fn encode_on_no_native_endian() {
-        use super::*;
-
-        let source_be = &include_bytes!(
-            "../../../../examples/data/polygon/triangle.binary-be.ply"
-        )[..];
-        let source_le = &include_bytes!(
-            "../../../../examples/data/polygon/triangle.binary-le.ply"
-        )[..];
-
-        let object = Object::decode(&mut Cursor::new(source_be)).unwrap();
-        let target = &mut vec![];
-        object.encode(target).unwrap();
-
-        let mut object = Object::decode(&mut Cursor::new(source_le)).unwrap();
-        object.header.format = Format::BinaryBigEndian;
-        let output = &mut vec![];
-        object.encode(output).unwrap();
-        assert_eq!(output, target);
-
-        let source_be = &include_bytes!(
-            "../../../../examples/data/polygon/triangle.binary-be.ply"
-        )[..];
-        let source_le = &include_bytes!(
-            "../../../../examples/data/polygon/triangle.binary-le.ply"
-        )[..];
-
-        let object = Object::decode(&mut Cursor::new(source_le)).unwrap();
-        let target = &mut vec![];
-        object.encode(target).unwrap();
-
-        let mut object = Object::decode(&mut Cursor::new(source_be)).unwrap();
-        object.header.format = Format::BinaryLittleEndian;
-        let output = &mut vec![];
-        object.encode(output).unwrap();
-        assert_eq!(output, target);
-    }
-
-    #[test]
-    #[should_panic]
-    fn encode_on_unimplemented_ascii() {
-        use super::*;
+        let target = &[
+            &b"ply\nformat binary_little_endian 1.0\n"[..],
+            &b"element point 1\nproperty double x\n"[..],
+            &b"end_header\n\0\0\0\0\0\0\0\0"[..],
+        ].concat()[..];
 
         let mut object = Object::default();
-        object.header.format = Format::Ascii;
+        let (elements, data) = object.get_mut_elements();
+        elements.insert(
+            "point".into(),
+            (
+                1,
+                "point",
+                [
+                    ("x".into(), (Scalar("duoble".into()), "x").into()),
+                ]
+                .into_iter()
+                .collect(),
+            )
+                .into(),
+        );
+        data.push(vec![vec![0x00; 8]]);
+
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+
+        object.get_mut_property("point", "x").unwrap().0.kind = Scalar("double".into());
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+
+        object.get_mut_property("point", "x").unwrap().1.pop().unwrap();
         let output = &mut vec![];
         object.encode(output).unwrap_err();
     }
