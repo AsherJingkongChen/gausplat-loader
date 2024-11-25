@@ -78,29 +78,45 @@ mod tests {
         assert_eq!(output, target);
     }
 
-    // #[test]
-    // fn encode_on_memory() {
-    //     use super::PropertyKind::*;
-    //     use super::*;
+    #[test]
+    fn encode_on_triangle_in_memory() {
+        use super::PropertyKind::*;
+        use super::*;
 
-    //     let target = b"ply\nformat binary_little_endian 1.0\nelement point x\nproperty float x\nend_header\n\0\0\x80\0";
-    //     let mut object = Object::default();
-    //     let (elements, data) = object.get_mut_elements();
-    //     elements.insert(
-    //         "point".into(),
-    //         (
-    //             1,
-    //             "point".into(),
-    //             [(
-    //                 "x".to_string(),
-    //                 Property::new(Scalar("float".to_string().into()), "x".into()),
-    //             )]
-    //             .into_iter()
-    //             .collect(),
-    //         )
-    //             .into(),
-    //     );
-    // }
+        let target = &[
+            &b"ply\nformat binary_little_endian 1.0\n"[..],
+            &b"element vertex 1\nproperty float x\nproperty float y\n"[..],
+            &b"end_header\n\0\0\x80\0\0\0\0\0"[..],
+        ]
+        .concat()[..];
+
+        let mut object = Object::default();
+        let (elements, data) = object.get_mut_elements();
+        elements.insert(
+            "vertex".into(),
+            (
+                1,
+                "vertex",
+                [
+                    ("x".into(), (Scalar("float".into()), "x").into()),
+                    ("y".into(), (Scalar("float".into()), "y").into()),
+                ]
+                .into_iter()
+                .collect(),
+            )
+                .into(),
+        );
+        data.resize(1, Default::default());
+        let data = object.get_mut_properties("vertex").unwrap().1;
+        data.extend(vec![
+            vec![0x00, 0x00, 0x80, 0x00],
+            vec![0x00, 0x00, 0x00, 0x00],
+        ]);
+
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+    }
 
     #[test]
     fn encode_on_invalid_header() {

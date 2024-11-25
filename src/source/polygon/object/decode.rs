@@ -64,7 +64,7 @@ mod tests {
         let target = None;
         let output = object.get_property("vretex", "x");
         assert_eq!(output, target);
-        
+
         let target = None;
         let output = object.get_property("vertex", "z");
         assert_eq!(output, target);
@@ -166,9 +166,4 @@ mod tests {
         );
         Object::decode(source).unwrap_err();
     }
-
-    // TODO:
-    // - encode object tests
-    // - encode object and mutate properties tests
-    // - decode object tests
 }

@@ -7,7 +7,7 @@ pub use indexmap::IndexMap;
 pub use property::*;
 
 use derive_more::derive::{
-    AsRef, Constructor, Deref, DerefMut, Display, From, FromStr, IntoIterator, IsVariant,
+    AsRef, Constructor, Deref, DerefMut, Display, From, IntoIterator, IsVariant,
     TryUnwrap,
 };
 use std::fmt;

@@ -3,8 +3,8 @@ pub mod encode;
 
 pub use super::*;
 pub use bytemuck::Pod;
-pub use header::*;
 pub use bytemuck::{try_cast_slice, try_cast_slice_mut};
+pub use header::*;
 
 use derive_more::derive::{AsRef, Constructor, Display, From};
 use Error::*;

@@ -20,9 +20,7 @@ impl DecoderWith<&Header> for Payload {
             .values()
             .map(|elem| {
                 let prop_count = elem.len();
-                let prop_sizes = elem
-                    .property_sizes()
-                    .collect::<Result<Vec<_>, _>>()?;
+                let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
                 let elem_size = prop_sizes.iter().sum::<usize>();
 
                 // TODO: perf on universal size
@@ -50,7 +48,7 @@ impl DecoderWith<&Header> for Payload {
             })
             .collect::<Result<_, Self::Err>>()?;
 
-            // NOTE: Currently, only scalar payload is implemented.
+        // NOTE: Currently, only scalar payload is implemented.
         let payload = ScalarPayload { data }.into();
 
         Ok(payload)

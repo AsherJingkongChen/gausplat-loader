@@ -89,6 +89,7 @@ pub struct Properties {
     From,
     PartialEq,
 )]
+#[display("{value}")]
 #[from(String, &str)]
 pub struct ScalarPropertyKind {
     pub value: String,
