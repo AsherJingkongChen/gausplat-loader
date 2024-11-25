@@ -5,6 +5,7 @@ use std::io::{BufReader, Read};
 impl Decoder for Object {
     type Err = Error;
 
+    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
         let header = Header::decode(reader)?;

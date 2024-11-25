@@ -2,10 +2,11 @@ pub mod images;
 
 pub use crate::error::Error;
 pub use burn_tensor::{backend::Backend, Tensor};
+pub use image::RgbImage;
 pub use images::*;
 
 use burn_tensor::TensorData;
-use image::{ColorType, GenericImageView, ImageFormat};
+use image::{GenericImageView, ImageFormat, Pixel, Rgb};
 use std::{fmt, io::Cursor, path::PathBuf};
 
 #[derive(Clone, Default, PartialEq)]
@@ -15,52 +16,22 @@ pub struct Image {
     pub image_id: u32,
 }
 
-// TODO:
-// - Image::decode_rgb(&self) -> RgbImage
-// - Image::encode_rgb(&mut self, RgbImage) -> &mut Self
-// - Image::rgb_from_tensor(Tensor) -> RgbImage
-// - Image::rgb_to_tensor(RgbImage) -> Tensor
-
 impl Image {
+    /// Obtaining an [`RgbImage`] from a [`Tensor`] with shape of `[H, W, C]`.
     #[inline]
-    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
-        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
-    }
+    pub fn get_rgb_from_tensor<B: Backend>(
+        tensor: Tensor<B, 3>
+    ) -> Result<RgbImage, Error> {
+        const CHANNEL_COUNT: usize = Rgb::<u8>::CHANNEL_COUNT as usize;
 
-    /// Decoding to a tensor with shape of `[H, W, C]`,
-    /// where `C` is the channel count of RGB image.
-    #[inline]
-    pub fn decode_rgb_to_tensor<B: Backend>(
-        &self,
-        device: &B::Device,
-    ) -> Result<Tensor<B, 3>, Error> {
-        const CHANNEL_COUNT: usize = 3;
-
-        let image = image::load_from_memory(&self.image_encoded)?.into_rgb8();
-        let (width, height) = image.dimensions();
-        let value = TensorData::new(
-            image.into_raw(),
-            [height as usize, width as usize, CHANNEL_COUNT],
-        );
-
-        Ok(Tensor::from_data(value, device).div_scalar(255.0))
-    }
-
-    /// Encoding a tensor with shape of `[H, W, C]` to an image,
-    /// where `C` is the channel count of RGB image.
-    pub fn encode_rgb_from_tensor<B: Backend>(
-        &mut self,
-        tensor: Tensor<B, 3>,
-    ) -> Result<&mut Self, Error> {
         let [height, width, channel_count] = tensor.dims();
-        if channel_count != 3 {
+        if channel_count != CHANNEL_COUNT {
             return Err(Error::MismatchedTensorShape(
                 vec![height, width, channel_count],
-                vec![height, width, 3],
+                vec![height, width, CHANNEL_COUNT],
             ));
         }
 
-        let mut result = Cursor::new(vec![]);
         let value = tensor
             .mul_scalar(255.0)
             .add_scalar(0.5)
@@ -69,15 +40,74 @@ impl Image {
             .convert::<u8>()
             .bytes;
 
-        image::write_buffer_with_format(
-            &mut result,
-            &value,
-            width as u32,
-            height as u32,
-            ColorType::Rgb8,
-            ImageFormat::from_path(&self.image_file_path)?,
-        )?;
-        self.image_encoded = result.into_inner();
+        Ok(RgbImage::from_raw(width as u32, height as u32, value).expect("Unreachable"))
+    }
+
+    /// Obtaining a [`Tensor`] with shape of `[H, W, C]` from an [`RgbImage`].
+    #[inline]
+    pub fn get_tensor_from_rgb<B: Backend>(
+        image: RgbImage,
+        device: &B::Device,
+    ) -> Tensor<B, 3> {
+        const CHANNEL_COUNT: usize = Rgb::<u8>::CHANNEL_COUNT as usize;
+
+        let (width, height) = image.dimensions();
+        let value = TensorData::new(
+            image.into_raw(),
+            [height as usize, width as usize, CHANNEL_COUNT],
+        );
+
+        Tensor::from_data(value, device).div_scalar(255.0)
+    }
+
+    /// Decoding an [`RgbImage`] from [`Self::image_encoded`],
+    /// and converting it to a [`Tensor`].
+    #[inline]
+    pub fn decode_rgb_tensor<B: Backend>(
+        &self,
+        device: &B::Device,
+    ) -> Result<Tensor<B, 3>, Error> {
+        Ok(Self::get_tensor_from_rgb(self.decode_rgb()?, device))
+    }
+
+    /// Converting a [`Tensor`] with shape of `[H, W, C]` to an [`RgbImage`],
+    /// and encoding it to [`Self::image_encoded`].
+    #[inline]
+    pub fn encode_rgb_tensor<B: Backend>(
+        &mut self,
+        tensor: Tensor<B, 3>,
+    ) -> Result<&mut Self, Error> {
+        self.encode_rgb(Self::get_rgb_from_tensor(tensor)?)
+    }
+}
+
+impl Image {
+    /// Decoding the image dimensions.
+    #[inline]
+    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
+        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
+    }
+
+    /// Decoding an [`RgbImage`] from [`Self::image_encoded`].
+    #[inline]
+    pub fn decode_rgb(&self) -> Result<RgbImage, Error> {
+        Ok(image::load_from_memory(&self.image_encoded)?.into_rgb8())
+    }
+
+    /// Encoding an [`RgbImage`] to [`Self::image_encoded`].
+    #[inline]
+    pub fn encode_rgb(
+        &mut self,
+        image: RgbImage,
+    ) -> Result<&mut Self, Error> {
+        const CHANNEL_COUNT: u32 = Rgb::<u8>::CHANNEL_COUNT as u32;
+
+        let (width, height) = image.dimensions();
+        let mut writer = Cursor::new(Vec::with_capacity(
+            (height * width * CHANNEL_COUNT) as usize,
+        ));
+        image.write_to(&mut writer, ImageFormat::from_path(&self.image_file_path)?)?;
+        self.image_encoded = writer.into_inner();
 
         Ok(self)
     }
@@ -130,12 +160,12 @@ mod tests {
 
         (0..5).for_each(|_| {
             let target = image
-                .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                .decode_rgb_tensor::<NdArray>(&Default::default())
                 .unwrap();
             let output = image
-                .encode_rgb_from_tensor(target.to_owned())
+                .encode_rgb_tensor(target.to_owned())
                 .unwrap()
-                .decode_rgb_to_tensor::<NdArray>(&Default::default())
+                .decode_rgb_tensor::<NdArray>(&Default::default())
                 .unwrap();
             output.into_data().assert_eq(&target.into_data(), true);
         });
@@ -158,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn decode_rgb_to_tensor() {
+    fn decode_rgb_tensor() {
         use super::*;
         use burn_ndarray::NdArray;
 
@@ -252,13 +282,13 @@ mod tests {
             ],
         ]);
         let output = image
-            .decode_rgb_to_tensor::<NdArray>(&Default::default())
+            .decode_rgb_tensor::<NdArray>(&Default::default())
             .unwrap();
         output.into_data().assert_eq(&target.into_data(), true);
     }
 
     #[test]
-    fn encode_rgb_from_tensor_on_mismatched_tensor_shape() {
+    fn encode_rgb_tensor_on_mismatched_tensor_shape() {
         use super::*;
         use burn_ndarray::NdArray;
 
@@ -266,10 +296,12 @@ mod tests {
         let mut image = Image::default();
 
         let target = (vec![8, 6, 4], vec![8, 6, 3]);
-        let output = match image.encode_rgb_from_tensor(source).unwrap_err() {
-            Error::MismatchedTensorShape(output, target) => (output, target),
-            error => panic!("{error:?}"),
-        };
+        let output = matches!(
+            image.encode_rgb_tensor(source).unwrap_err(),
+            Error::MismatchedTensorShape(output_0, output_1)
+            if output_0 == target.0 && output_1 == target.1,
+        );
+        let target = true;
         assert_eq!(output, target);
     }
 }
