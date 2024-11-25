@@ -455,7 +455,7 @@ mod tests {
         let reader = &mut std::io::Cursor::new(source);
         read_newline(reader).unwrap_err();
 
-        let source = b"";
+        let source = &b""[..];
         let reader = &mut std::io::Cursor::new(source);
         read_newline(reader).unwrap_err();
 

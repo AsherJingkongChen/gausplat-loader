@@ -25,7 +25,6 @@ impl Encoder for Object {
             .try_for_each(|(elem, elem_data)| {
                 let prop_count = elem.len();
                 let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
-
                 (0..elem.count)
                     .try_fold(vec![0; prop_count], |mut prop_offsets, elem_index| {
                         prop_offsets
@@ -36,7 +35,6 @@ impl Encoder for Object {
                                 let end = start + size;
                                 *offset = end;
 
-                                // FAIL: Smaller element count
                                 let datum = data.get(start..end).ok_or_else(|| {
                                     OutOfBounds(
                                         end,
@@ -44,17 +42,21 @@ impl Encoder for Object {
                                         format!("element index {elem_index}"),
                                     )
                                 })?;
-                                if self.header.format.is_binary_native_endian() {
+                                let writer_result = if self.header.format.is_binary_native_endian() {
                                     writer.write_all(datum)
                                 } else {
                                     let datum = &mut datum.to_owned();
                                     datum.reverse();
                                     writer.write_all(datum)
-                                }?;
-                                // FAIL: Write error
+                                };
+
+                                #[cfg(test)]
+                                writer_result.unwrap();
+                                #[cfg(not(test))]
+                                writer_result?;
 
                                 Ok::<_, Self::Err>(())
-                            })?; // FAIL: Same
+                            })?;
                         Ok(prop_offsets)
                     })
                     .map(drop)
@@ -89,6 +91,51 @@ mod tests {
             },
             payload: Default::default(),
         };
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_invalid_kind() {
+        use super::PropertyKind::*;
+        use super::*;
+
+        let target = &[
+            &b"ply\nformat binary_little_endian 1.0\n"[..],
+            &b"element point 1\nproperty double x\n"[..],
+            &b"end_header\n\0\0\0\0\0\0\0\0"[..],
+        ]
+        .concat()[..];
+
+        let mut object = Object::default();
+        let (elements, data) = object.get_mut_elements();
+        elements.insert(
+            "point".into(),
+            (
+                1,
+                "point",
+                [("x".into(), (Scalar("duoble".into()), "x").into())]
+                    .into_iter()
+                    .collect(),
+            )
+                .into(),
+        );
+        data.push(vec![vec![0x00; 8]]);
+
+        let output = &mut vec![];
+        object.encode(output).unwrap_err();
+
+        object.get_mut_property("point", "x").unwrap().0.kind = Scalar("double".into());
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+
+        object
+            .get_mut_property("point", "x")
+            .unwrap()
+            .1
+            .pop()
+            .unwrap();
         let output = &mut vec![];
         object.encode(output).unwrap_err();
     }
@@ -182,7 +229,12 @@ mod tests {
         object.encode(output).unwrap();
         assert_eq!(output, target);
 
-        object.get_mut_property("vertex", "x").unwrap().1.pop().unwrap();
+        object
+            .get_mut_property("vertex", "x")
+            .unwrap()
+            .1
+            .pop()
+            .unwrap();
         let target = None;
         let output = object.get_mut_property_as::<f32>("vertex", "x");
         assert_eq!(output, target);
@@ -190,7 +242,12 @@ mod tests {
         let output = object.get_mut_property_as::<f32>("vertex", "z");
         assert_eq!(output, target);
 
-        object.get_mut_properties("vertex").unwrap().1.pop().unwrap();
+        object
+            .get_mut_properties("vertex")
+            .unwrap()
+            .1
+            .pop()
+            .unwrap();
         let target = None;
         let output = object.get_mut_property("vertex", "y");
         assert_eq!(output, target);
@@ -198,7 +255,12 @@ mod tests {
         let output = object.get_property("vertex", "y");
         assert_eq!(output, target);
 
-        object.get_mut_properties("vertex").unwrap().0.pop().unwrap();
+        object
+            .get_mut_properties("vertex")
+            .unwrap()
+            .0
+            .pop()
+            .unwrap();
         let target = None;
         let output = object.get_mut_property("vertex", "y");
         assert_eq!(output, target);
@@ -225,46 +287,5 @@ mod tests {
         let target = None;
         let output = object.get_mut_property("vertex", "x");
         assert_eq!(output, target);
-    }
-
-    #[test]
-    fn encode_on_invalid_kind() {
-        use super::PropertyKind::*;
-        use super::*;
-
-        let target = &[
-            &b"ply\nformat binary_little_endian 1.0\n"[..],
-            &b"element point 1\nproperty double x\n"[..],
-            &b"end_header\n\0\0\0\0\0\0\0\0"[..],
-        ].concat()[..];
-
-        let mut object = Object::default();
-        let (elements, data) = object.get_mut_elements();
-        elements.insert(
-            "point".into(),
-            (
-                1,
-                "point",
-                [
-                    ("x".into(), (Scalar("duoble".into()), "x").into()),
-                ]
-                .into_iter()
-                .collect(),
-            )
-                .into(),
-        );
-        data.push(vec![vec![0x00; 8]]);
-
-        let output = &mut vec![];
-        object.encode(output).unwrap_err();
-
-        object.get_mut_property("point", "x").unwrap().0.kind = Scalar("double".into());
-        let output = &mut vec![];
-        object.encode(output).unwrap();
-        assert_eq!(output, target);
-
-        object.get_mut_property("point", "x").unwrap().1.pop().unwrap();
-        let output = &mut vec![];
-        object.encode(output).unwrap_err();
     }
 }

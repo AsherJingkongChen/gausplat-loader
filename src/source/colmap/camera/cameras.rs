@@ -119,7 +119,7 @@ mod tests {
     fn decode_on_zero_bytes() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[]);
+        let mut reader = std::io::Cursor::new(&b""[..]);
         Cameras::decode(&mut reader).unwrap_err();
     }
 
@@ -128,13 +128,13 @@ mod tests {
         use super::*;
         use std::io::Cursor;
 
-        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0][..]);
 
         let target = true;
         let output = Cameras::decode(&mut reader).unwrap().is_empty();
         assert_eq!(output, target);
 
-        let mut reader = Cursor::new(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = Cursor::new(&[1, 0, 0, 0, 0, 0, 0, 0, 0, 0][..]);
         Cameras::decode(&mut reader).unwrap_err();
     }
 
@@ -189,7 +189,7 @@ mod tests {
 
         let source = Cameras::default();
 
-        let target = &[0, 0, 0, 0, 0, 0, 0, 0];
+        let target = &[0, 0, 0, 0, 0, 0, 0, 0][..];
         let mut writer = Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();

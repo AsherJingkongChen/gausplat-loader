@@ -111,7 +111,7 @@ mod tests {
     fn decode_on_zero_bytes() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[]);
+        let mut reader = std::io::Cursor::new(&b""[..]);
 
         Points::decode(&mut reader).unwrap_err();
     }
@@ -120,7 +120,7 @@ mod tests {
     fn decode_on_zero_entry() {
         use super::*;
 
-        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut reader = std::io::Cursor::new(&[0, 0, 0, 0, 0, 0, 0, 0][..]);
 
         let target = true;
         let output = Points::decode(&mut reader).unwrap().is_empty();
@@ -194,7 +194,7 @@ mod tests {
 
         let source = Points::default();
 
-        let target = &[0, 0, 0, 0, 0, 0, 0, 0];
+        let target = &[0, 0, 0, 0, 0, 0, 0, 0][..];
         let mut writer = std::io::Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
