@@ -98,6 +98,16 @@ pub struct Header {
     pub version: String,
 }
 
+impl Elements {
+    #[inline]
+    pub fn eq_ordered(
+        &self,
+        other: &Self,
+    ) -> bool {
+        self.iter().zip(other.iter()).all(|(a, b)| a == b)
+    }
+}
+
 impl Format {
     #[inline]
     pub const fn is_binary_native_endian(&self) -> bool {
@@ -150,5 +160,34 @@ mod tests {
         assert_eq!(output, target);
 
         Header::decode(&mut Cursor::new(target)).unwrap();
+    }
+
+    #[test]
+    fn eq_ordered() {
+        use super::*;
+
+        let target = true;
+        let output = Elements::default().eq_ordered(&Elements::default());
+        assert_eq!(output, target);
+
+        let target = false;
+        let elements_1 = Elements::new(
+            [
+                ("a".into(), Default::default()),
+                ("b".into(), Default::default()),
+            ]
+            .into_iter()
+            .collect(),
+        );
+        let elements_2 = Elements::new(
+            [
+                ("b".into(), Default::default()),
+                ("a".into(), Default::default()),
+            ]
+            .into_iter()
+            .collect(),
+        );
+        let output = elements_1.eq_ordered(&elements_2);
+        assert_eq!(output, target);
     }
 }
