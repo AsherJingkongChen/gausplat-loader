@@ -9,6 +9,10 @@ impl Decoder for Object {
         let reader = &mut BufReader::new(reader);
         let header = Header::decode(reader)?;
         let payload = Payload::decode_with(reader, &header)?;
+
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::polygon::object", "Object::decode");
+
         Ok(Self { header, payload })
     }
 }

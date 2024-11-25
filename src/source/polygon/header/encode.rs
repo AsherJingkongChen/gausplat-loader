@@ -14,6 +14,10 @@ impl Encoder for Header {
         if !header.is_ascii() {
             return Err(Error::InvalidAscii(header));
         }
+
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::polygon::header", "Header::encode");
+
         Ok(write!(writer, "{header}")?)
     }
 }

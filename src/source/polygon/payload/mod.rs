@@ -15,8 +15,6 @@ pub enum Payload {
     // TODO: Non-scaler payload
 }
 
-// TODO: Logging
-
 /// A payload that only contains scalar data.
 #[derive(
     AsRef,

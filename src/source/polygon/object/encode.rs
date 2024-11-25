@@ -18,11 +18,8 @@ impl Encoder for Object {
         );
 
         let elements = self.get_elements();
-        elements
-            .0
-            .values()
-            .zip(elements.1.iter())
-            .try_for_each(|(elem, elem_data)| {
+        elements.0.values().zip(elements.1.iter()).try_for_each(
+            |(elem, elem_data)| {
                 let prop_count = elem.len();
                 let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
                 (0..elem.count)
@@ -42,25 +39,32 @@ impl Encoder for Object {
                                         format!("element index {elem_index}"),
                                     )
                                 })?;
-                                let writer_result = if self.header.format.is_binary_native_endian() {
-                                    writer.write_all(datum)
-                                } else {
-                                    let datum = &mut datum.to_owned();
-                                    datum.reverse();
-                                    writer.write_all(datum)
-                                };
+                                let result =
+                                    if self.header.format.is_binary_native_endian() {
+                                        writer.write_all(datum)
+                                    } else {
+                                        let datum = &mut datum.to_owned();
+                                        datum.reverse();
+                                        writer.write_all(datum)
+                                    };
 
                                 #[cfg(test)]
-                                writer_result.unwrap();
+                                result.unwrap();
                                 #[cfg(not(test))]
-                                writer_result?;
+                                result?;
 
                                 Ok::<_, Self::Err>(())
                             })?;
-                        Ok(prop_offsets)
+                        Ok::<_, Self::Err>(prop_offsets)
                     })
                     .map(drop)
-            })
+            },
+        )?;
+
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::polygon::object", "Object::encode");
+
+        Ok(())
     }
 }
 

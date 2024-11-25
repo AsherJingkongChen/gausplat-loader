@@ -23,7 +23,7 @@ impl DecoderWith<&Header> for Payload {
                 let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
                 let elem_size = prop_sizes.iter().sum::<usize>();
 
-                // TODO: perf on universal size
+                // TODO: TODO: perf on universal size
 
                 iter::repeat_n(elem_size, elem.count).try_fold(
                     vec![Vec::with_capacity(1 << 15); prop_count],
@@ -50,6 +50,9 @@ impl DecoderWith<&Header> for Payload {
 
         // NOTE: Currently, only scalar payload is implemented.
         let payload = ScalarPayload { data }.into();
+
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::polygon::payload", "Payload::decode_with");
 
         Ok(payload)
     }

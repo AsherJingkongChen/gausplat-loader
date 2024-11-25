@@ -135,6 +135,9 @@ impl Decoder for Header {
             }
         }
 
+        #[cfg(all(debug_assertions, not(test)))]
+        log::debug!(target: "gausplat-loader::polygon::header", "Header::decode");
+
         Ok(Header {
             format,
             elements,
