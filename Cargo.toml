@@ -42,3 +42,8 @@ workspace = true
 
 [dev-dependencies]
 burn-ndarray = {workspace = true}
+divan = {workspace = true}
+
+[[bench]]
+name = "polygon"
+harness = false
