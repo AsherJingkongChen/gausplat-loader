@@ -31,7 +31,6 @@ impl DecoderWith<&Header> for Payload {
                             .unwrap()
                             .size()
                             .ok_or_else(|| InvalidKind(prop.kind.to_string()))
-                        // FAIL: Unknown scalar
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 let elem_size = prop_sizes.iter().sum::<usize>();
@@ -39,7 +38,6 @@ impl DecoderWith<&Header> for Payload {
                 iter::repeat_n(elem_size, elem.count).try_fold(
                     vec![Vec::with_capacity(1 << 15); prop_count],
                     |mut props, elem_size| {
-                        // FAIL: No byte
                         let mut data = read_bytes(reader, elem_size)?;
                         props.iter_mut().zip(prop_sizes.iter()).fold(
                             0,
