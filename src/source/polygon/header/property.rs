@@ -17,6 +17,7 @@ use std::sync::{LazyLock, RwLock};
     PartialEq,
 )]
 #[display("list {count} {value}")]
+#[from((String, String), (&str, &str))]
 pub struct ListPropertyKind {
     pub count: ScalarPropertyKind,
 
@@ -41,6 +42,7 @@ pub struct ListPropertyKind {
     PartialEq,
 )]
 #[display("property {kind} {name}")]
+#[from((PropertyKind, String), (PropertyKind, &str))]
 pub struct Property {
     #[deref]
     #[deref_mut]
@@ -87,6 +89,7 @@ pub struct Properties {
     From,
     PartialEq,
 )]
+#[from(String, &str)]
 pub struct ScalarPropertyKind {
     pub value: String,
 }

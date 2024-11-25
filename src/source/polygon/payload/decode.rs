@@ -37,7 +37,6 @@ impl DecoderWith<&Header> for Payload {
                                 let end = start + size;
                                 // NOTE: The index is guaranteed to be valid
                                 let datum = data.get_mut(start..end).unwrap();
-                                // JUMP: Different endian
                                 if !init.format.is_binary_native_endian() {
                                     datum.reverse();
                                 }
@@ -51,6 +50,7 @@ impl DecoderWith<&Header> for Payload {
             })
             .collect::<Result<_, Self::Err>>()?;
 
+            // NOTE: Currently, only scalar payload is implemented.
         let payload = ScalarPayload { data }.into();
 
         Ok(payload)

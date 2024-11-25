@@ -180,12 +180,12 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![
-            (Scalar("float".to_string().into()), "x".into()).into(),
-            (Scalar("float".to_string().into()), "y".into()).into(),
-            (Scalar("float".to_string().into()), "z".into()).into(),
-            (Scalar("uchar".to_string().into()), "red".into()).into(),
-            (Scalar("uchar".to_string().into()), "green".into()).into(),
-            (Scalar("uchar".to_string().into()), "blue".into()).into(),
+            (Scalar("float".into()), "x").into(),
+            (Scalar("float".into()), "y").into(),
+            (Scalar("float".into()), "z").into(),
+            (Scalar("uchar".into()), "red").into(),
+            (Scalar("uchar".into()), "green").into(),
+            (Scalar("uchar".into()), "blue").into(),
         ];
         let output = &header.elements["vertex"]
             .properties
@@ -194,11 +194,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(output, target);
 
-        let target = &vec![(
-            List(("uchar".to_string().into(), "int".to_string().into()).into()),
-            "vertex_index".to_string(),
-        )
-            .into()];
+        let target = &vec![(List(("uchar", "int").into()), "vertex_index").into()];
         let output = &header.elements["face"]
             .properties
             .values()
@@ -207,11 +203,11 @@ mod tests {
         assert_eq!(output, target);
 
         let target = &vec![
-            (Scalar("int".to_string().into()), "vertex1".into()).into(),
-            (Scalar("int".to_string().into()), "vertex2".into()).into(),
-            (Scalar("uchar".to_string().into()), "red".into()).into(),
-            (Scalar("uchar".to_string().into()), "green".into()).into(),
-            (Scalar("uchar".to_string().into()), "blue".into()).into(),
+            (Scalar("int".into()), "vertex1".to_string()).into(),
+            (Scalar("int".into()), "vertex2").into(),
+            (Scalar("uchar".into()), "red").into(),
+            (Scalar("uchar".into()), "green").into(),
+            (Scalar("uchar".into()), "blue").into(),
         ];
         let output = &header.elements["edge"]
             .properties

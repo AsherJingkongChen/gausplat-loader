@@ -17,7 +17,7 @@ pub struct Object {
 }
 
 impl Object {
-    #[doc(alias = "properties")]
+    #[doc(alias = "get_properties")]
     #[inline]
     pub fn get_element(
         &self,
@@ -53,7 +53,7 @@ impl Object {
         Some((property, data.get(index)?))
     }
 
-    #[doc(alias = "element")]
+    #[doc(alias = "get_element")]
     pub fn get_properties(
         &self,
         element_name: &str,
@@ -74,7 +74,7 @@ impl Object {
 }
 
 impl Object {
-    #[doc(alias = "properties")]
+    #[doc(alias = "get_mut_properties")]
     #[inline]
     pub fn get_mut_element(
         &mut self,
@@ -104,19 +104,19 @@ impl Object {
         &mut self,
         element_name: &str,
         property_name: &str,
-    ) -> Option<(&Property, &mut Vec<u8>)> {
+    ) -> Option<(&mut Property, &mut Vec<u8>)> {
         let (element, data) = self.get_mut_element(element_name)?;
         let (index, _, property) = element.get_full_mut(property_name)?;
         Some((property, data.get_mut(index)?))
     }
 
-    #[doc(alias = "element")]
+    #[doc(alias = "get_mut_element")]
     pub fn get_mut_properties(
         &mut self,
         element_name: &str,
-    ) -> Option<(&Properties, &mut Vec<Vec<u8>>)> {
+    ) -> Option<(&mut Properties, &mut Vec<Vec<u8>>)> {
         let (element, data) = self.get_mut_element(element_name)?;
-        Some((&element.properties, data))
+        Some((&mut element.properties, data))
     }
 
     #[inline]
@@ -124,7 +124,7 @@ impl Object {
         &mut self,
         element_name: &str,
         property_name: &str,
-    ) -> Option<(&Property, &mut [T])> {
+    ) -> Option<(&mut Property, &mut [T])> {
         let (property, data) = self.get_mut_property(element_name, property_name)?;
         Some((property, try_cast_slice_mut(data).ok()?))
     }

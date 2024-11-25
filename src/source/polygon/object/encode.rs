@@ -44,7 +44,6 @@ impl Encoder for Object {
                                         format!("element index {elem_index}"),
                                     )
                                 })?;
-                                // JUMP: Different endian
                                 if self.header.format.is_binary_native_endian() {
                                     writer.write_all(datum)
                                 } else {
@@ -79,27 +78,29 @@ mod tests {
         assert_eq!(output, target);
     }
 
-    #[test]
-    fn encode_on_no_native_endian() {
-        use super::*;
+    // #[test]
+    // fn encode_on_memory() {
+    //     use super::PropertyKind::*;
+    //     use super::*;
 
-        let source_be = &mut Cursor::new(&include_bytes!(
-            "../../../../examples/data/polygon/triangle.binary-be.ply"
-        )[..]);
-        let source_le = &mut Cursor::new(
-            &include_bytes!("../../../../examples/data/polygon/triangle.binary-le.ply")[..],
-        );
-
-        let object = Object::decode(source_be).unwrap();
-        let target = &mut vec![];
-        object.encode(target).unwrap();
-
-        let mut object = Object::decode(source_le).unwrap();
-        object.header.format = Format::BinaryBigEndian;
-        let output = &mut vec![];
-        object.encode(output).unwrap();
-        assert_eq!(output, target);
-    }
+    //     let target = b"ply\nformat binary_little_endian 1.0\nelement point x\nproperty float x\nend_header\n\0\0\x80\0";
+    //     let mut object = Object::default();
+    //     let (elements, data) = object.get_mut_elements();
+    //     elements.insert(
+    //         "point".into(),
+    //         (
+    //             1,
+    //             "point".into(),
+    //             [(
+    //                 "x".to_string(),
+    //                 Property::new(Scalar("float".to_string().into()), "x".into()),
+    //             )]
+    //             .into_iter()
+    //             .collect(),
+    //         )
+    //             .into(),
+    //     );
+    // }
 
     #[test]
     fn encode_on_invalid_header() {
@@ -114,6 +115,45 @@ mod tests {
         };
         let output = &mut vec![];
         object.encode(output).unwrap_err();
+    }
+
+    #[test]
+    fn encode_on_no_native_endian() {
+        use super::*;
+
+        let source_be = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-be.ply"
+        )[..];
+        let source_le = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-le.ply"
+        )[..];
+
+        let object = Object::decode(&mut Cursor::new(source_be)).unwrap();
+        let target = &mut vec![];
+        object.encode(target).unwrap();
+
+        let mut object = Object::decode(&mut Cursor::new(source_le)).unwrap();
+        object.header.format = Format::BinaryBigEndian;
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
+
+        let source_be = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-be.ply"
+        )[..];
+        let source_le = &include_bytes!(
+            "../../../../examples/data/polygon/triangle.binary-le.ply"
+        )[..];
+
+        let object = Object::decode(&mut Cursor::new(source_le)).unwrap();
+        let target = &mut vec![];
+        object.encode(target).unwrap();
+
+        let mut object = Object::decode(&mut Cursor::new(source_be)).unwrap();
+        object.header.format = Format::BinaryLittleEndian;
+        let output = &mut vec![];
+        object.encode(output).unwrap();
+        assert_eq!(output, target);
     }
 
     #[test]

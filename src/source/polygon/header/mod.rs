@@ -7,7 +7,7 @@ pub use indexmap::IndexMap;
 pub use property::*;
 
 use derive_more::derive::{
-    AsRef, Constructor, Deref, DerefMut, Display, From, IntoIterator, IsVariant,
+    AsRef, Constructor, Deref, DerefMut, Display, From, FromStr, IntoIterator, IsVariant,
     TryUnwrap,
 };
 use std::fmt;
@@ -29,6 +29,7 @@ use Format::*;
     PartialEq,
 )]
 #[display("element {name} {count}\n{properties}")]
+#[from((usize, String, Properties), (usize, &str, IndexMap<String, Property>))]
 pub struct Element {
     pub count: usize,
     pub name: String,
@@ -87,6 +88,7 @@ pub enum Format {
     PartialEq,
 )]
 #[display("ply\nformat {format} {version}\n{elements}end_header\n")]
+#[from((Elements, Format, String), (IndexMap<String, Element>, Format, &str))]
 pub struct Header {
     #[deref]
     #[deref_mut]
