@@ -97,7 +97,10 @@ pub struct ScalarPropertyKind {
 
 impl Properties {
     #[inline]
-    pub fn is_same_order(&self, other: &Self) -> bool {
+    pub fn is_same_order(
+        &self,
+        other: &Self,
+    ) -> bool {
         self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 
@@ -122,7 +125,6 @@ impl ScalarPropertyKind {
             .copied()
     }
 }
-
 
 impl Default for PropertyKind {
     #[inline]

@@ -3,7 +3,7 @@
 //! # Examples
 //!
 //! **Note:** Click triangle to view content.
-//! 
+//!
 //! ----
 //!
 //! <details>
