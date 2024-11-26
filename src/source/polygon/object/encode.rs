@@ -19,16 +19,15 @@ impl Encoder for Object {
 
         let should_reverse_datum = !self.header.format.is_binary_native_endian();
 
-        let elements = self.get_elements();
-        elements.0.values().zip(elements.1.iter()).try_for_each(
-            |(elem, elem_data)| {
+        self.iter_elements()
+            .try_for_each(|ElementEntry { meta: elem, data }| {
                 let prop_count = elem.len();
                 let prop_sizes = elem.property_sizes().collect::<Result<Vec<_>, _>>()?;
                 (0..elem.count)
                     .try_fold(vec![0; prop_count], |mut prop_offsets, elem_index| {
                         prop_offsets
                             .iter_mut()
-                            .zip(prop_sizes.iter().zip(elem_data.iter()))
+                            .zip(prop_sizes.iter().zip(data.iter()))
                             .try_for_each(|(offset, (size, data))| {
                                 let start = *offset;
                                 let end = start + size;
@@ -59,8 +58,7 @@ impl Encoder for Object {
                         Ok::<_, Self::Err>(prop_offsets)
                     })
                     .map(drop)
-            },
-        )?;
+            })?;
 
         #[cfg(all(debug_assertions, not(test)))]
         log::debug!(target: "gausplat-loader::polygon::object", "Object::encode");
@@ -113,8 +111,7 @@ mod tests {
         "[..];
 
         let mut object = Object::default();
-        let (elements, data) = object.get_mut_elements();
-        elements.insert(
+        object.header.elements.insert(
             "point".into(),
             (
                 1,
@@ -125,20 +122,32 @@ mod tests {
             )
                 .into(),
         );
-        data.push(vec![vec![0x00; 8]]);
+        object
+            .payload
+            .try_unwrap_scalar_mut()
+            .unwrap()
+            .push(vec![vec![0x00; 8]]);
 
         let output = &mut vec![];
         object.encode(output).unwrap_err();
 
-        object.get_mut_property("point", "x").unwrap().0.kind = Scalar("double".into());
+        object
+            .elem_mut("point")
+            .unwrap()
+            .prop_mut("x")
+            .unwrap()
+            .meta
+            .kind = Scalar("double".into());
         let output = &mut vec![];
         object.encode(output).unwrap();
         assert_eq!(output, target);
 
         object
-            .get_mut_property("point", "x")
+            .elem_mut("point")
             .unwrap()
-            .1
+            .prop_mut("x")
+            .unwrap()
+            .data
             .pop()
             .unwrap();
         let output = &mut vec![];
@@ -209,8 +218,7 @@ mod tests {
         "[..];
 
         let mut object = Object::default();
-        let (elements, data) = object.get_mut_elements();
-        elements.insert(
+        object.header.elements.insert(
             "vertex".into(),
             (
                 1,
@@ -224,9 +232,12 @@ mod tests {
             )
                 .into(),
         );
-        data.resize(1, Default::default());
-        let data = object.get_mut_properties("vertex").unwrap().1;
-        data.extend(vec![
+        object
+            .payload
+            .try_unwrap_scalar_mut()
+            .unwrap()
+            .resize(1, Default::default());
+        object.elem_mut("vertex").unwrap().data.extend(vec![
             vec![0x00, 0x00, 0x80, 0x00],
             vec![0x00, 0x00, 0x00, 0x00],
         ]);
@@ -236,62 +247,75 @@ mod tests {
         assert_eq!(output, target);
 
         object
-            .get_mut_property("vertex", "x")
+            .elem_mut("vertex")
             .unwrap()
-            .1
+            .prop_mut("x")
+            .unwrap()
+            .data
             .pop()
             .unwrap();
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("x").unwrap();
+        output.cast::<f32>().unwrap_err();
+        let output = &mut object.elem_mut("vertex").unwrap();
+        let output = &mut output.prop_mut("x").unwrap();
+        output.cast_mut::<f32>().unwrap_err();
+
+        object.elem_mut("vertex").unwrap().data.pop().unwrap();
         let target = None;
-        let output = object.get_mut_property_as::<f32>("vertex", "x");
+        let output = &mut object.elem_mut("vertex").unwrap();
+        let output = output.prop_mut("y");
         assert_eq!(output, target);
         let target = None;
-        let output = object.get_mut_property_as::<f32>("vertex", "z");
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = &mut object.elem_mut("vertex").unwrap();
+        let output = output.prop_mut("y");
+        assert_eq!(output, target);
+
+        object.elem_mut("vertex").unwrap().meta.pop().unwrap();
+        let target = None;
+        let output = &mut object.elem_mut("vertex").unwrap();
+        let output = output.prop_mut("y");
+        assert_eq!(output, target);
+
+        let target = 1;
+        let output = object.elem_mut("vertex").unwrap().props_mut().count();
         assert_eq!(output, target);
 
         object
-            .get_mut_properties("vertex")
+            .payload
+            .try_unwrap_scalar_mut()
             .unwrap()
-            .1
             .pop()
             .unwrap();
         let target = None;
-        let output = object.get_mut_property("vertex", "y");
+        let output = object.elem("vertex");
         assert_eq!(output, target);
         let target = None;
-        let output = object.get_property("vertex", "y");
-        assert_eq!(output, target);
-
-        object
-            .get_mut_properties("vertex")
-            .unwrap()
-            .0
-            .pop()
-            .unwrap();
-        let target = None;
-        let output = object.get_mut_property("vertex", "y");
-        assert_eq!(output, target);
-        let target = None;
-        let output = object.get_mut_property_as::<f32>("vertex", "y");
+        let output = object.elem_mut("vertex");
         assert_eq!(output, target);
 
-        object.get_mut_elements().1.pop().unwrap();
+        object.header.elements.pop().unwrap();
         let target = None;
-        let output = object.get_mut_properties("vertex");
+        let output = object.elem("vertex");
         assert_eq!(output, target);
         let target = None;
-        let output = object.get_element("vertex");
-        assert_eq!(output, target);
-
-        object.get_mut_elements().0.pop().unwrap();
-        let target = None;
-        let output = object.get_mut_element("vertex");
-        assert_eq!(output, target);
-        let target = None;
-        let output = object.get_element("vertex");
+        let output = object.elem_mut("vertex");
         assert_eq!(output, target);
 
+        object.header.elements.pop();
         let target = None;
-        let output = object.get_mut_property("vertex", "x");
+        let output = object.elem("vertex");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_mut("vertex");
+        assert_eq!(output, target);
+
+        let target = 0;
+        let output = object.elems_mut().count();
         assert_eq!(output, target);
     }
 }

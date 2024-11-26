@@ -25,12 +25,8 @@ pub mod vertex_decode {
             let mut reader = BufReader::new(Cursor::new(v));
             let parser = Parser::<DefaultElement>::new();
             let object = parser.read_ply(&mut reader).unwrap();
-            let flags = &[
-                &object.payload["vertex"][0]["x"],
-                &object.payload["vertex"][0]["y"],
-                &object.payload["vertex"][0]["z"],
-            ]
-            .map(|v| match v {
+            let element = &object.payload["vertex"][0];
+            let flags = &[&element["x"], &element["y"], &element["z"]].map(|v| match v {
                 Float(v) => *v,
                 other => panic!("{:?}", other),
             });
@@ -47,12 +43,9 @@ pub mod vertex_decode {
             // NOTE: Object::decode has an internal buffer.
             let mut reader = Cursor::new(v);
             let object = Object::decode(&mut reader).unwrap();
-            let flags = &[
-                object.get_property_as::<f32>("vertex", "x"),
-                object.get_property_as::<f32>("vertex", "y"),
-                object.get_property_as::<f32>("vertex", "z"),
-            ]
-            .map(|v| v.unwrap().1[0]);
+            let element = object.elem("vertex").unwrap();
+            let flags = &[element.prop("x"), element.prop("y"), element.prop("z")]
+                .map(|v| v.unwrap().cast::<f32>().unwrap()[0]);
             assert_eq!(data::FLAGS, flags);
             object
         })
@@ -106,11 +99,12 @@ pub mod splat_decode {
             let mut reader = Cursor::new(v);
             let parser = Parser::<DefaultElement>::new();
             let object = parser.read_ply(&mut reader).unwrap();
+            let element = &object.payload["splat"][0];
             let flags = &[
-                &object.payload["splat"][0]["red"],
-                &object.payload["splat"][0]["green"],
-                &object.payload["splat"][0]["blue"],
-                &object.payload["splat"][0]["alpha"],
+                &element["red"],
+                &element["green"],
+                &element["blue"],
+                &element["alpha"],
             ]
             .map(|v| match v {
                 UChar(v) => *v,
@@ -129,13 +123,14 @@ pub mod splat_decode {
             // NOTE: Object::decode has an internal buffer.
             let mut reader = Cursor::new(v);
             let object = Object::decode(&mut reader).unwrap();
+            let element = object.elem("splat").unwrap();
             let flags = &[
-                object.get_property_as::<u8>("splat", "red"),
-                object.get_property_as::<u8>("splat", "green"),
-                object.get_property_as::<u8>("splat", "blue"),
-                object.get_property_as::<u8>("splat", "alpha"),
+                element.prop("red"),
+                element.prop("green"),
+                element.prop("blue"),
+                element.prop("alpha"),
             ]
-            .map(|v| v.unwrap().1[0]);
+            .map(|v| v.unwrap().cast::<u8>().unwrap()[0]);
             assert_eq!(data::FLAGS, flags);
             object
         })

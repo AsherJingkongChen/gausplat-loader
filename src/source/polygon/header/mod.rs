@@ -207,7 +207,12 @@ mod tests {
         assert_eq!(output, target);
 
         let target = true;
-        elements.1.get_mut("vertex").unwrap().properties.swap_indices(0, 1);
+        elements
+            .1
+            .get_mut("vertex")
+            .unwrap()
+            .properties
+            .swap_indices(0, 1);
         let output = elements.0.is_same_order(&elements.1);
         assert_eq!(output, target);
     }

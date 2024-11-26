@@ -5,25 +5,25 @@ use bytemuck::{try_cast_slice, try_cast_slice_mut};
 
 #[derive(AsRef, Clone, Constructor, Debug, Eq, From, PartialEq)]
 pub struct ElementEntry<'e> {
-    pub element: &'e Element,
+    pub meta: &'e Element,
     pub data: &'e Vec<Vec<u8>>,
 }
 
 #[derive(AsRef, Debug, Eq, From, PartialEq)]
 pub struct ElementEntryMut<'e> {
-    pub element: &'e mut Element,
+    pub meta: &'e mut Element,
     pub data: &'e mut Vec<Vec<u8>>,
 }
 
 #[derive(AsRef, Clone, Constructor, Debug, Eq, From, Hash, PartialEq)]
 pub struct PropertyEntry<'p> {
-    pub property: &'p Property,
+    pub meta: &'p Property,
     pub data: &'p Vec<u8>,
 }
 
 #[derive(AsRef, Debug, Eq, From, Hash, PartialEq)]
 pub struct PropertyEntryMut<'p> {
-    pub property: &'p mut Property,
+    pub meta: &'p mut Property,
     pub data: &'p mut Vec<u8>,
 }
 
@@ -31,81 +31,81 @@ pub struct PropertyEntryMut<'p> {
 impl Object {
     #[doc(alias = "get_element")]
     #[inline]
-    pub fn elem<Q: AsRef<str>>(
-        &self,
+    pub fn elem<'e, Q: AsRef<str>>(
+        &'e self,
         name: Q,
-    ) -> Option<ElementEntry> {
+    ) -> Option<ElementEntry<'e>> {
         self.get_element(name)
     }
 
     #[doc(alias = "get_mut_element")]
     #[inline]
-    pub fn elem_mut<Q: AsRef<str>>(
-        &mut self,
+    pub fn elem_mut<'e, Q: AsRef<str>>(
+        &'e mut self,
         name: Q,
-    ) -> Option<ElementEntryMut> {
+    ) -> Option<ElementEntryMut<'e>> {
         self.get_mut_element(name)
     }
 
     #[doc(alias = "iter_elements")]
     #[inline]
-    pub fn elems(&self) -> impl Iterator<Item = ElementEntry> {
+    pub fn elems<'e>(&'e self) -> impl Iterator<Item = ElementEntry<'e>> {
         self.iter_elements()
     }
 
     #[doc(alias = "iter_mut_elements")]
     #[inline]
-    pub fn elems_mut(&mut self) -> impl Iterator<Item = ElementEntryMut> {
+    pub fn elems_mut<'e>(&'e mut self) -> impl Iterator<Item = ElementEntryMut<'e>> {
         self.iter_mut_elements()
     }
 }
 
-impl ElementEntry<'_> {
+impl<'e, 'p: 'e> ElementEntry<'e> {
     #[doc(alias = "get_property")]
     #[inline]
     pub fn prop<Q: AsRef<str>>(
-        &self,
+        &'p self,
         name: Q,
-    ) -> Option<PropertyEntry> {
+    ) -> Option<PropertyEntry<'p>> {
         self.get_property(name)
     }
 
     #[doc(alias = "iter_properties")]
     #[inline]
-    pub fn props(&self) -> impl Iterator<Item = PropertyEntry> {
+    pub fn props(&'p self) -> impl Iterator<Item = PropertyEntry<'p>> {
         self.iter_properties()
     }
 }
 
-impl ElementEntryMut<'_> {
+impl<'e, 'p: 'e> ElementEntryMut<'e> {
     #[doc(alias = "get_mut_property")]
     #[inline]
     pub fn prop_mut<Q: AsRef<str>>(
-        &mut self,
+        &'p mut self,
         name: Q,
-    ) -> Option<PropertyEntryMut> {
+    ) -> Option<PropertyEntryMut<'p>> {
         self.get_mut_property(name)
     }
 
     #[doc(alias = "iter_mut_properties")]
     #[inline]
-    pub fn props_mut(&mut self) -> impl Iterator<Item = PropertyEntryMut> {
+    pub fn props_mut(&'p mut self) -> impl Iterator<Item = PropertyEntryMut<'p>> {
         self.iter_mut_properties()
     }
 }
 
-impl PropertyEntry<'_> {
+impl<'p> PropertyEntry<'p> {
     #[doc(alias = "as_kind")]
     #[inline]
-    pub fn cast<T: Pod>(&self) -> Option<&[T]> {
+    pub fn cast<T: Pod>(&'p self) -> Result<&'p [T], Error> {
         self.as_kind()
     }
 }
 
-impl PropertyEntryMut<'_> {
+impl<'p> PropertyEntryMut<'p> {
     #[doc(alias = "as_mut_kind")]
     #[inline]
-    pub fn cast_mut<T: Pod>(&mut self) -> Option<&mut [T]> {
+    pub fn cast_mut<T: Pod>(&'p mut self) -> Result<&'p mut [T], Error> {
         self.as_mut_kind()
     }
 }
@@ -115,39 +115,39 @@ impl PropertyEntryMut<'_> {
 impl Object {
     #[doc(alias = "elem")]
     #[inline]
-    pub fn get_element<Q: AsRef<str>>(
-        &self,
+    pub fn get_element<'e, Q: AsRef<str>>(
+        &'e self,
         name: Q,
-    ) -> Option<ElementEntry> {
-        let (index, _, element) = self.header.get_full(name.as_ref())?;
+    ) -> Option<ElementEntry<'e>> {
+        let (index, _, meta) = self.header.get_full(name.as_ref())?;
         let data = self
             .payload
             .try_unwrap_scalar_ref()
             .unwrap()
             .data
             .get(index)?;
-        Some(ElementEntry { element, data })
+        Some(ElementEntry { meta, data })
     }
 
     #[doc(alias = "elem_mut")]
     #[inline]
-    pub fn get_mut_element<Q: AsRef<str>>(
-        &mut self,
+    pub fn get_mut_element<'e, Q: AsRef<str>>(
+        &'e mut self,
         name: Q,
-    ) -> Option<ElementEntryMut> {
-        let (index, _, element) = self.header.get_full_mut(name.as_ref())?;
+    ) -> Option<ElementEntryMut<'e>> {
+        let (index, _, meta) = self.header.get_full_mut(name.as_ref())?;
         let data = self
             .payload
             .try_unwrap_scalar_mut()
             .unwrap()
             .data
             .get_mut(index)?;
-        Some(ElementEntryMut { element, data })
+        Some(ElementEntryMut { meta, data })
     }
 
     #[doc(alias = "elems")]
     #[inline]
-    pub fn iter_elements(&self) -> impl Iterator<Item = ElementEntry> {
+    pub fn iter_elements<'e>(&'e self) -> impl Iterator<Item = ElementEntry<'e>> {
         self.header
             .elements
             .values()
@@ -157,7 +157,9 @@ impl Object {
 
     #[doc(alias = "elems_mut")]
     #[inline]
-    pub fn iter_mut_elements(&mut self) -> impl Iterator<Item = ElementEntryMut> {
+    pub fn iter_mut_elements<'e>(
+        &'e mut self
+    ) -> impl Iterator<Item = ElementEntryMut<'e>> {
         self.header
             .elements
             .values_mut()
@@ -172,22 +174,22 @@ impl Object {
     }
 }
 
-impl ElementEntry<'_> {
+impl<'e, 'p: 'e> ElementEntry<'e> {
     #[doc(alias = "prop")]
     #[inline]
     pub fn get_property<Q: AsRef<str>>(
-        &self,
+        &'p self,
         name: Q,
-    ) -> Option<PropertyEntry> {
-        let (index, _, property) = self.element.get_full(name.as_ref())?;
+    ) -> Option<PropertyEntry<'p>> {
+        let (index, _, meta) = self.meta.get_full(name.as_ref())?;
         let data = self.data.get(index)?;
-        Some(PropertyEntry { property, data })
+        Some(PropertyEntry { meta, data })
     }
 
     #[doc(alias = "props")]
     #[inline]
-    pub fn iter_properties(&self) -> impl Iterator<Item = PropertyEntry> {
-        self.element
+    pub fn iter_properties(&'p self) -> impl Iterator<Item = PropertyEntry<'p>> {
+        self.meta
             .properties
             .values()
             .zip(self.data.iter())
@@ -195,22 +197,24 @@ impl ElementEntry<'_> {
     }
 }
 
-impl ElementEntryMut<'_> {
+impl<'e, 'p: 'e> ElementEntryMut<'e> {
     #[doc(alias = "prop_mut")]
     #[inline]
     pub fn get_mut_property<Q: AsRef<str>>(
-        &mut self,
+        &'p mut self,
         name: Q,
-    ) -> Option<PropertyEntryMut> {
-        let (index, _, property) = self.element.get_full_mut(name.as_ref())?;
+    ) -> Option<PropertyEntryMut<'p>> {
+        let (index, _, meta) = self.meta.get_full_mut(name.as_ref())?;
         let data = self.data.get_mut(index)?;
-        Some(PropertyEntryMut { property, data })
+        Some(PropertyEntryMut { meta, data })
     }
 
     #[doc(alias = "props_mut")]
     #[inline]
-    pub fn iter_mut_properties(&mut self) -> impl Iterator<Item = PropertyEntryMut> {
-        self.element
+    pub fn iter_mut_properties(
+        &'p mut self
+    ) -> impl Iterator<Item = PropertyEntryMut<'p>> {
+        self.meta
             .properties
             .values_mut()
             .zip(self.data.iter_mut())
@@ -218,16 +222,16 @@ impl ElementEntryMut<'_> {
     }
 }
 
-impl PropertyEntry<'_> {
+impl<'p> PropertyEntry<'p> {
     #[inline]
-    pub fn as_kind<T: Pod>(&self) -> Option<&[T]> {
-        try_cast_slice(self.data).ok()
+    pub fn as_kind<T: Pod>(&'p self) -> Result<&'p [T], Error> {
+        Ok(try_cast_slice(self.data)?)
     }
 }
 
-impl PropertyEntryMut<'_> {
+impl<'p> PropertyEntryMut<'p> {
     #[inline]
-    pub fn as_mut_kind<T: Pod>(&mut self) -> Option<&mut [T]> {
-        try_cast_slice_mut(self.data).ok()
+    pub fn as_mut_kind<T: Pod>(&'p mut self) -> Result<&'p mut [T], Error> {
+        Ok(try_cast_slice_mut(self.data)?)
     }
 }

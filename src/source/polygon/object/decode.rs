@@ -33,75 +33,91 @@ mod tests {
 
         let target = &vec![vec![
             vec![
-                0x8f, 0xc3, 0xf5, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x8f, 0xc2, 0x75, 0xbe,
+                0x8f_u8, 0xc3, 0xf5, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x8f, 0xc2, 0x75, 0xbe,
             ],
             vec![
                 0x8f, 0xc2, 0xf5, 0xbd, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00,
             ],
         ]];
-        let output = object.get_elements().1;
+        let output = &object
+            .elems()
+            .map(|e| e.data.to_owned())
+            .collect::<Vec<_>>();
         assert_eq!(output, target);
 
-        let target = &target[0];
-        let output = object.get_properties("vertex").unwrap().1;
+        let target = &target[0].iter().collect::<Vec<_>>();
+        let output = object.elem("vertex").unwrap();
+        let output = &output.props().map(|p| p.data).collect::<Vec<_>>();
         assert_eq!(output, target);
 
         let target = None;
-        let output = object.get_properties("vretex");
-        assert_eq!(output, target);
-
-        let target = None;
-        let output = object.get_element("vretex");
+        let output = object.elem("vretex");
         assert_eq!(output, target);
 
         let target = &[0.1200019046664238, 0.0, -0.23999999463558197];
-        let output = object.get_property_as::<f32>("vertex", "x").unwrap();
-        assert_eq!(output.1, target);
-        let output = output.0.try_unwrap_scalar_ref().unwrap().size().unwrap();
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("x").unwrap();
+        assert_eq!(output.cast::<f32>().unwrap(), target);
+        let output = output.meta.try_unwrap_scalar_ref().unwrap().size().unwrap();
         assert_eq!(output, size_of::<f32>());
 
         let target = &[-0.11999999731779099, 0.0, 1.1754943508222875e-38];
-        let output = object.get_property_as::<f32>("vertex", "y").unwrap();
-        assert_eq!(output.1, target);
-        let output = output.0.try_unwrap_scalar_ref().unwrap().size().unwrap();
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("y").unwrap();
+        assert_eq!(output.cast::<f32>().unwrap(), target);
+        let output = output.meta.try_unwrap_scalar_ref().unwrap().size().unwrap();
         assert_eq!(output, size_of::<f32>());
 
         let target = None;
-        let output = object.get_property("vretex", "x");
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("z");
         assert_eq!(output, target);
 
-        let target = None;
-        let output = object.get_property("vertex", "z");
-        assert_eq!(output, target);
-
-        let target = None;
-        let output = object.get_property_as::<f32>("vertex", "z");
-        assert_eq!(output, target);
-
-        let target = None;
         object
-            .get_mut_property("vertex", "x")
+            .elem_mut("vertex")
             .unwrap()
-            .1
-            .pop()
-            .unwrap();
-        let output = object.get_property_as::<f32>("vertex", "x");
-        assert_eq!(output, target);
+            .prop_mut("x")
+            .unwrap()
+            .data
+            .pop();
+        object
+            .elem("vertex")
+            .unwrap()
+            .prop("x")
+            .unwrap()
+            .cast::<f32>()
+            .unwrap_err();
 
         let target = &[2.0_f32, -0.3];
-        *object.get_mut_property("vertex", "x").unwrap().1 =
-            try_cast_slice(target).unwrap().to_owned();
-        let output = object.get_property_as::<f32>("vertex", "x").unwrap();
-        assert_eq!(output.1, target);
+        *object
+            .elem_mut("vertex")
+            .unwrap()
+            .prop_mut("x")
+            .unwrap()
+            .data = bytemuck::try_cast_slice(target).unwrap().to_owned();
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("x").unwrap();
+        let output = output.cast::<f32>().unwrap();
+        assert_eq!(output, target);
 
         let target = &[-1.23_f32, 0.0, 0.1];
         object
-            .get_mut_property_as("vertex", "y")
+            .elem_mut("vertex")
             .unwrap()
-            .1
+            .prop_mut("y")
+            .unwrap()
+            .cast_mut::<f32>()
+            .unwrap()
             .copy_from_slice(target);
-        let output = object.get_property_as::<f32>("vertex", "y").unwrap();
-        assert_eq!(output.1, target);
+        let output = object.elem("vertex").unwrap();
+        let output = output.prop("y").unwrap();
+        let output = output.cast::<f32>().unwrap();
+        assert_eq!(output, target);
+
+        let target = None;
+        let output = &mut object.elem_mut("vertex").unwrap();
+        let output = output.prop_mut("z");
+        assert_eq!(output, target);
     }
 
     #[test]
