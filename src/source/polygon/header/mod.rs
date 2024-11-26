@@ -104,9 +104,11 @@ impl Elements {
         &self,
         other: &Self,
     ) -> bool {
-        self.iter()
-            .zip(other.iter())
-            .all(|(a, b)| a.0 == b.0 && a.1.is_same_order(&b.1))
+        self.len().eq(&other.len())
+            && self
+                .iter()
+                .zip(other.iter())
+                .all(|(a, b)| a.0 == b.0 && a.1.is_same_order(&b.1))
     }
 }
 

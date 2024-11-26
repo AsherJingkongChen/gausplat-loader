@@ -101,7 +101,7 @@ impl Properties {
         &self,
         other: &Self,
     ) -> bool {
-        self.iter().zip(other.iter()).all(|(a, b)| a == b)
+        self.len().eq(&other.len()) && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 
     #[inline]

@@ -1,6 +1,6 @@
 pub use divan::Bencher;
 pub use rand::{distributions::Uniform, rngs::StdRng, Rng, SeedableRng};
-pub use std::io::{BufReader, Cursor, Read};
+pub use std::io::{Cursor, Read};
 
 fn main() {
     divan::main();
@@ -22,7 +22,7 @@ pub mod vertex_decode {
         };
 
         bencher.with_inputs(data::get()).bench_local_refs(|v| {
-            let mut reader = BufReader::new(Cursor::new(v));
+            let mut reader = Cursor::new(v);
             let parser = Parser::<DefaultElement>::new();
             let object = parser.read_ply(&mut reader).unwrap();
             let element = &object.payload["vertex"][0];
@@ -40,7 +40,6 @@ pub mod vertex_decode {
         use gausplat_loader::source::polygon::{Decoder, Object};
 
         bencher.with_inputs(data::get()).bench_local_refs(|v| {
-            // NOTE: Object::decode has an internal buffer.
             let mut reader = Cursor::new(v);
             let object = Object::decode(&mut reader).unwrap();
             let element = object.elem("vertex").unwrap();
@@ -120,7 +119,6 @@ pub mod splat_decode {
         use gausplat_loader::source::polygon::{Decoder, Object};
 
         bencher.with_inputs(data::get()).bench_local_refs(|v| {
-            // NOTE: Object::decode has an internal buffer.
             let mut reader = Cursor::new(v);
             let object = Object::decode(&mut reader).unwrap();
             let element = object.elem("splat").unwrap();

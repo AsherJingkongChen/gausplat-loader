@@ -28,6 +28,7 @@ pub struct PropertyEntryMut<'p> {
 }
 
 // Short name accessors
+
 impl Object {
     #[doc(alias = "get_element")]
     #[inline]
@@ -57,6 +58,26 @@ impl Object {
     #[inline]
     pub fn elems_mut<'e>(&'e mut self) -> impl Iterator<Item = ElementEntryMut<'e>> {
         self.iter_mut_elements()
+    }
+
+    #[doc(alias = "get_property_of_element")]
+    #[inline]
+    pub fn elem_prop<'e, 'p: 'e, Q: AsRef<str>>(
+        &'p self,
+        element_name: Q,
+        property_name: Q,
+    ) -> Option<PropertyEntry<'p>> {
+        self.get_property_of_element(element_name, property_name)
+    }
+
+    #[doc(alias = "get_mut_property_of_element")]
+    #[inline]
+    pub fn elem_prop_mut<'e, 'p: 'e, Q: AsRef<str>>(
+        &'p mut self,
+        element_name: Q,
+        property_name: Q,
+    ) -> Option<PropertyEntryMut<'p>> {
+        self.get_mut_property_of_element(element_name, property_name)
     }
 }
 
@@ -120,6 +141,7 @@ impl Object {
         name: Q,
     ) -> Option<ElementEntry<'e>> {
         let (index, _, meta) = self.header.get_full(name.as_ref())?;
+        // NOTE: Currently, there is only scalar payload implemented.
         let data = self
             .payload
             .try_unwrap_scalar_ref()
@@ -136,6 +158,7 @@ impl Object {
         name: Q,
     ) -> Option<ElementEntryMut<'e>> {
         let (index, _, meta) = self.header.get_full_mut(name.as_ref())?;
+        // NOTE: Currently, there is only scalar payload implemented.
         let data = self
             .payload
             .try_unwrap_scalar_mut()
@@ -145,9 +168,50 @@ impl Object {
         Some(ElementEntryMut { meta, data })
     }
 
+    #[doc(alias = "elem_prop")]
+    #[inline]
+    pub fn get_property_of_element<'e, 'p: 'e, Q: AsRef<str>>(
+        &'p self,
+        element_name: Q,
+        property_name: Q,
+    ) -> Option<PropertyEntry<'p>> {
+        let (index, _, meta) = self.header.get_full(element_name.as_ref())?;
+        // NOTE: Currently, there is only scalar payload implemented.
+        let data = self
+            .payload
+            .try_unwrap_scalar_ref()
+            .unwrap()
+            .data
+            .get(index)?;
+        let (index, _, meta) = meta.get_full(property_name.as_ref())?;
+        let data = data.get(index)?;
+        Some(PropertyEntry { meta, data })
+    }
+
+    #[doc(alias = "elem_prop_mut")]
+    #[inline]
+    pub fn get_mut_property_of_element<'e, 'p: 'e, Q: AsRef<str>>(
+        &'p mut self,
+        element_name: Q,
+        property_name: Q,
+    ) -> Option<PropertyEntryMut<'p>> {
+        let (index, _, meta) = self.header.get_full_mut(element_name.as_ref())?;
+        // NOTE: Currently, there is only scalar payload implemented.
+        let data = self
+            .payload
+            .try_unwrap_scalar_mut()
+            .unwrap()
+            .data
+            .get_mut(index)?;
+        let (index, _, meta) = meta.get_full_mut(property_name.as_ref())?;
+        let data = data.get_mut(index)?;
+        Some(PropertyEntryMut { meta, data })
+    }
+
     #[doc(alias = "elems")]
     #[inline]
     pub fn iter_elements<'e>(&'e self) -> impl Iterator<Item = ElementEntry<'e>> {
+        // NOTE: Currently, there is only scalar payload implemented.
         self.header
             .elements
             .values()
@@ -160,6 +224,7 @@ impl Object {
     pub fn iter_mut_elements<'e>(
         &'e mut self
     ) -> impl Iterator<Item = ElementEntryMut<'e>> {
+        // NOTE: Currently, there is only scalar payload implemented.
         self.header
             .elements
             .values_mut()
@@ -223,6 +288,7 @@ impl<'e, 'p: 'e> ElementEntryMut<'e> {
 }
 
 impl<'p> PropertyEntry<'p> {
+    #[doc(alias = "cast")]
     #[inline]
     pub fn as_kind<T: Pod>(&'p self) -> Result<&'p [T], Error> {
         Ok(try_cast_slice(self.data)?)
@@ -230,6 +296,7 @@ impl<'p> PropertyEntry<'p> {
 }
 
 impl<'p> PropertyEntryMut<'p> {
+    #[doc(alias = "cast_mut")]
     #[inline]
     pub fn as_mut_kind<T: Pod>(&'p mut self) -> Result<&'p mut [T], Error> {
         Ok(try_cast_slice_mut(self.data)?)

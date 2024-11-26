@@ -247,9 +247,7 @@ mod tests {
         assert_eq!(output, target);
 
         object
-            .elem_mut("vertex")
-            .unwrap()
-            .prop_mut("x")
+            .elem_prop_mut("vertex", "x")
             .unwrap()
             .data
             .pop()
@@ -257,6 +255,9 @@ mod tests {
         let output = object.elem("vertex").unwrap();
         let output = output.prop("x").unwrap();
         output.cast::<f32>().unwrap_err();
+        object.elem_prop("vertex", "x").unwrap().cast::<f32>().unwrap_err();
+        object.elem_prop_mut("vertex", "x").unwrap().cast_mut::<f32>().unwrap_err();
+
         let output = &mut object.elem_mut("vertex").unwrap();
         let output = &mut output.prop_mut("x").unwrap();
         output.cast_mut::<f32>().unwrap_err();
@@ -274,6 +275,12 @@ mod tests {
         let output = &mut object.elem_mut("vertex").unwrap();
         let output = output.prop_mut("y");
         assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop("vertex", "y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop_mut("vertex", "y");
+        assert_eq!(output, target);
 
         object.elem_mut("vertex").unwrap().meta.pop().unwrap();
         let target = None;
@@ -283,6 +290,12 @@ mod tests {
 
         let target = 1;
         let output = object.elem_mut("vertex").unwrap().props_mut().count();
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop("vertex", "y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop_mut("vertex", "y");
         assert_eq!(output, target);
 
         object
@@ -297,6 +310,12 @@ mod tests {
         let target = None;
         let output = object.elem_mut("vertex");
         assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop("vertex", "y");
+        assert_eq!(output, target);
+        let target = None;
+        let output = object.elem_prop_mut("vertex", "y");
+        assert_eq!(output, target);
 
         object.header.elements.pop().unwrap();
         let target = None;
@@ -305,13 +324,11 @@ mod tests {
         let target = None;
         let output = object.elem_mut("vertex");
         assert_eq!(output, target);
-
-        object.header.elements.pop();
         let target = None;
-        let output = object.elem("vertex");
+        let output = object.elem_prop("vertex", "y");
         assert_eq!(output, target);
         let target = None;
-        let output = object.elem_mut("vertex");
+        let output = object.elem_prop_mut("vertex", "y");
         assert_eq!(output, target);
 
         let target = 0;

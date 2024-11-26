@@ -48,7 +48,7 @@ impl DecoderWith<&Header> for Payload {
             })
             .collect::<Result<_, Self::Err>>()?;
 
-        // NOTE: Currently, only scalar payload is implemented.
+        // NOTE: Currently, there is only scalar payload implemented.
         let payload = ScalarPayload { data }.into();
 
         #[cfg(all(debug_assertions, not(test)))]
