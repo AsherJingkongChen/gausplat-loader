@@ -393,7 +393,7 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat binary_little_endian 1.0"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(&"ply\nformat ascii \u{b9}.\u{ba}\n"[..]);
+        let source = &mut Cursor::new("ply\nformat ascii \u{b9}.\u{ba}\n");
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.\xff\n"[..]);
@@ -459,7 +459,7 @@ mod tests {
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
-            &"ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} "[..],
+            "ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} ",
         );
         Header::decode(source).unwrap_err();
 
@@ -479,7 +479,7 @@ mod tests {
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
-            &"ply\nformat ascii 1.0\nelement vertex 0\nproperty list \u{ae} "[..],
+            "ply\nformat ascii 1.0\nelement vertex 0\nproperty list \u{ae} ",
         );
         Header::decode(source).unwrap_err();
 
@@ -499,7 +499,7 @@ mod tests {
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
-            &"ply\nformat ascii 1.0\nelement vertex 0\nproperty list uchar \u{ae} "[..],
+            "ply\nformat ascii 1.0\nelement vertex 0\nproperty list uchar \u{ae} ",
         );
         Header::decode(source).unwrap_err();
 
@@ -514,7 +514,7 @@ mod tests {
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
-            &"ply\nformat ascii 1.0\nelement vertex 0\nproperty float \u{ae}\n"[..],
+            "ply\nformat ascii 1.0\nelement vertex 0\nproperty float \u{ae}\n",
         );
         Header::decode(source).unwrap_err();
 
@@ -534,7 +534,7 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement vertex"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(&"ply\nformat ascii 1.0\nelement \u{ae} "[..]);
+        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement \u{ae} ");
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement \xff "[..]);
@@ -546,11 +546,11 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement vertex 1 \n"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(&"ply\nformat ascii 1.0\nelement vertex g\n"[..]);
+        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex g\n");
         Header::decode(source).unwrap_err();
 
         let source =
-            &mut Cursor::new(&"ply\nformat ascii 1.0\nelement vertex \u{ae}\n"[..]);
+            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex \u{ae}\n");
         Header::decode(source).unwrap_err();
 
         let source =

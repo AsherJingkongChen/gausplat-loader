@@ -117,9 +117,11 @@ mod tests {
     fn encode_on_invalid_ascii() {
         use super::*;
 
-        let mut header = Header::default();
-        header.version = "\u{2077}".into();
-
-        header.encode(&mut &mut [][..]).unwrap_err();
+        Header {
+            version: "\u{2077}".into(),
+            ..Default::default()
+        }
+        .encode(&mut &mut [][..])
+        .unwrap_err();
     }
 }

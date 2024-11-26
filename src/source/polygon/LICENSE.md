@@ -1,6 +1,6 @@
 # License
 
-###### The PLY Polygon File Format by Greg Turk
+##### The PLY Polygon File Format by Greg Turk
 
 > Retrieved from: [https://web.archive.org/web/20161204152348/http://www.dcs.ed.ac.uk/teaching/cs4/www/graphics/Web/ply.html](https://web.archive.org/web/20161204152348/http://www.dcs.ed.ac.uk/teaching/cs4/www/graphics/Web/ply.html)
 

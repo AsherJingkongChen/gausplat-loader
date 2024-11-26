@@ -32,31 +32,31 @@ pub struct PropertyEntryMut<'p> {
 impl Object {
     #[doc(alias = "get_element")]
     #[inline]
-    pub fn elem<'e, Q: AsRef<str>>(
-        &'e self,
+    pub fn elem<Q: AsRef<str>>(
+        &self,
         name: Q,
-    ) -> Option<ElementEntry<'e>> {
+    ) -> Option<ElementEntry<'_>> {
         self.get_element(name)
     }
 
     #[doc(alias = "get_mut_element")]
     #[inline]
-    pub fn elem_mut<'e, Q: AsRef<str>>(
-        &'e mut self,
+    pub fn elem_mut<Q: AsRef<str>>(
+        &mut self,
         name: Q,
-    ) -> Option<ElementEntryMut<'e>> {
+    ) -> Option<ElementEntryMut<'_>> {
         self.get_mut_element(name)
     }
 
     #[doc(alias = "iter_elements")]
     #[inline]
-    pub fn elems<'e>(&'e self) -> impl Iterator<Item = ElementEntry<'e>> {
+    pub fn elems(&self) -> impl Iterator<Item = ElementEntry<'_>> {
         self.iter_elements()
     }
 
     #[doc(alias = "iter_mut_elements")]
     #[inline]
-    pub fn elems_mut<'e>(&'e mut self) -> impl Iterator<Item = ElementEntryMut<'e>> {
+    pub fn elems_mut(&mut self) -> impl Iterator<Item = ElementEntryMut<'_>> {
         self.iter_mut_elements()
     }
 
@@ -136,10 +136,10 @@ impl<'p> PropertyEntryMut<'p> {
 impl Object {
     #[doc(alias = "elem")]
     #[inline]
-    pub fn get_element<'e, Q: AsRef<str>>(
-        &'e self,
+    pub fn get_element<Q: AsRef<str>>(
+        &self,
         name: Q,
-    ) -> Option<ElementEntry<'e>> {
+    ) -> Option<ElementEntry<'_>> {
         let (index, _, meta) = self.header.get_full(name.as_ref())?;
         // NOTE: Currently, there is only scalar payload implemented.
         let data = self
@@ -153,10 +153,10 @@ impl Object {
 
     #[doc(alias = "elem_mut")]
     #[inline]
-    pub fn get_mut_element<'e, Q: AsRef<str>>(
-        &'e mut self,
+    pub fn get_mut_element<Q: AsRef<str>>(
+        &mut self,
         name: Q,
-    ) -> Option<ElementEntryMut<'e>> {
+    ) -> Option<ElementEntryMut<'_>> {
         let (index, _, meta) = self.header.get_full_mut(name.as_ref())?;
         // NOTE: Currently, there is only scalar payload implemented.
         let data = self
@@ -210,7 +210,7 @@ impl Object {
 
     #[doc(alias = "elems")]
     #[inline]
-    pub fn iter_elements<'e>(&'e self) -> impl Iterator<Item = ElementEntry<'e>> {
+    pub fn iter_elements(&self) -> impl Iterator<Item = ElementEntry<'_>> {
         // NOTE: Currently, there is only scalar payload implemented.
         self.header
             .elements
@@ -221,9 +221,9 @@ impl Object {
 
     #[doc(alias = "elems_mut")]
     #[inline]
-    pub fn iter_mut_elements<'e>(
-        &'e mut self
-    ) -> impl Iterator<Item = ElementEntryMut<'e>> {
+    pub fn iter_mut_elements(
+        &mut self
+    ) -> impl Iterator<Item = ElementEntryMut<'_>> {
         // NOTE: Currently, there is only scalar payload implemented.
         self.header
             .elements

@@ -108,7 +108,7 @@ impl Elements {
             && self
                 .iter()
                 .zip(other.iter())
-                .all(|(a, b)| a.0 == b.0 && a.1.is_same_order(&b.1))
+                .all(|(a, b)| a.0 == b.0 && a.1.is_same_order(b.1))
     }
 }
 

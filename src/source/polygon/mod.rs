@@ -1,28 +1,25 @@
 //! The module `polygon` can read and write PLY polygon files (`*.ply`).
 //!
-//! # Examples
+//! ## Examples
 //!
 //! **Note:** Click triangle to view content.
-//!
-//! ----
 //!
 //! <details>
 //! <summary>
 //!     <strong><code>another-cube.greg-turk.ascii.ply</code>:</strong>
 //! </summary>
-//! <pre class=language-plaintext>
+//! 
+//! ```plaintext
 #![doc = include_str!("../../../examples/data/polygon/another-cube.greg-turk.ascii.ply")]
-//! </pre>
+//! ```
+//! 
 //! </details>
-//!
-//! ----
 //!
 //! <details>
 //! <summary>
 //!     <strong><code>single-triangle.ascii.ply</code>:</strong>
 //! </summary>
-//! </details>
-//!
+//! 
 //! ```plaintext
 //! ply
 //! format ascii 1.0
@@ -34,15 +31,14 @@
 //! 0.0 0
 //! .0 -1.0
 //! ```
-//!
-//! ----
+//! 
+//! </details>
 //!
 //! <details>
 //! <summary>
 //!     <strong><code>single-triangle.binary-le.ply</code>:</strong>
 //! </summary>
-//! </details>
-//!
+//! 
 //! ```plaintext
 //! ply
 //! format binary_little_endian 1.0
@@ -54,6 +50,11 @@
 //! \x00\x00\x00\x00\x00\x00\x00\x00
 //! \x00\x00\x00\x00\x00\x00\x80\xbf
 //! ```
+//! 
+//! </details>
+//! 
+//! <!---->
+//! 
 #![doc = include_str!("SUPPLEMENT.md")]
 #![doc = include_str!("SYNTAX.md")]
 #![doc = include_str!("LICENSE.md")]

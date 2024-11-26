@@ -105,3 +105,5 @@ This is the structure of a supplemented PLY file:
 ##### 7. Keyword `end_header`:
 
 - <ins class=sup-add>"end_header"</ins> and a line terminator (CRLF or LF) delimits the end of the header.
+
+<!---->

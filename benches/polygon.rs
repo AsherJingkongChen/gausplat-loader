@@ -138,7 +138,7 @@ pub mod splat_decode {
         pub use super::*;
 
         pub const ELEMENT_COUNT: usize = 500500;
-        pub const ELEMENT_SIZE: usize = ELEMENT_COUNT * ((2) * 4 + (4) * 1);
+        pub const ELEMENT_SIZE: usize = ELEMENT_COUNT * ((2) * 4 + (4));
         pub const FLAGS: &[u8; 4] = b"RGBA";
         pub const HEADER: &[u8] = b"\
             ply\n\

@@ -4,7 +4,12 @@
 
 ## Backus-Naur Form
 
-```bnf
+<details>
+<summary>
+    <strong>Click to expand</strong>
+</summary>
+
+```abnf
 <newline> ::= "\r"? "\n"
 <number>  ::= [0-9]
 <space>   ::= " "
@@ -63,3 +68,7 @@
     <header_end> ::=
         "end_header" <newline>
 ```
+
+</details>
+
+<!---->

@@ -255,8 +255,16 @@ mod tests {
         let output = object.elem("vertex").unwrap();
         let output = output.prop("x").unwrap();
         output.cast::<f32>().unwrap_err();
-        object.elem_prop("vertex", "x").unwrap().cast::<f32>().unwrap_err();
-        object.elem_prop_mut("vertex", "x").unwrap().cast_mut::<f32>().unwrap_err();
+        object
+            .elem_prop("vertex", "x")
+            .unwrap()
+            .cast::<f32>()
+            .unwrap_err();
+        object
+            .elem_prop_mut("vertex", "x")
+            .unwrap()
+            .cast_mut::<f32>()
+            .unwrap_err();
 
         let output = &mut object.elem_mut("vertex").unwrap();
         let output = &mut output.prop_mut("x").unwrap();
