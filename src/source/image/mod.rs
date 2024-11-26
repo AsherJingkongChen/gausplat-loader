@@ -18,7 +18,6 @@ pub struct Image {
 
 impl Image {
     /// Obtaining an [`RgbImage`] from a [`Tensor`] with shape of `[H, W, C]`.
-    #[inline]
     pub fn get_rgb_from_tensor<B: Backend>(
         tensor: Tensor<B, 3>
     ) -> Result<RgbImage, Error> {
@@ -95,7 +94,6 @@ impl Image {
     }
 
     /// Encoding an [`RgbImage`] to [`Self::image_encoded`].
-    #[inline]
     pub fn encode_rgb(
         &mut self,
         image: RgbImage,

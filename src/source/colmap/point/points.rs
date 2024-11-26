@@ -5,7 +5,6 @@ pub type Points = Vec<Point>;
 impl Decoder for Points {
     type Err = Error;
 
-    #[inline]
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err> {
         let reader = &mut BufReader::new(reader);
 
@@ -28,7 +27,6 @@ impl Decoder for Points {
 impl Encoder for Points {
     type Err = Error;
 
-    #[inline]
     fn encode(
         &self,
         writer: &mut impl Write,

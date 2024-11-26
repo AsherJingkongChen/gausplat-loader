@@ -135,7 +135,6 @@ impl<'p> PropertyEntryMut<'p> {
 
 impl Object {
     #[doc(alias = "elem")]
-    #[inline]
     pub fn get_element<Q: AsRef<str>>(
         &self,
         name: Q,
@@ -152,7 +151,6 @@ impl Object {
     }
 
     #[doc(alias = "elem_mut")]
-    #[inline]
     pub fn get_mut_element<Q: AsRef<str>>(
         &mut self,
         name: Q,
@@ -169,7 +167,6 @@ impl Object {
     }
 
     #[doc(alias = "elem_prop")]
-    #[inline]
     pub fn get_property_of_element<'e, 'p: 'e, Q: AsRef<str>>(
         &'p self,
         element_name: Q,
@@ -189,7 +186,6 @@ impl Object {
     }
 
     #[doc(alias = "elem_prop_mut")]
-    #[inline]
     pub fn get_mut_property_of_element<'e, 'p: 'e, Q: AsRef<str>>(
         &'p mut self,
         element_name: Q,
