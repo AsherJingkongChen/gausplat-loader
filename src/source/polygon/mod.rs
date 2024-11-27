@@ -8,18 +8,18 @@
 //! <summary>
 //!     <strong><code>another-cube.greg-turk.ascii.ply</code>:</strong>
 //! </summary>
-//! 
+//!
 //! ```plaintext
 #![doc = include_str!("../../../examples/data/polygon/another-cube.greg-turk.ascii.ply")]
 //! ```
-//! 
+//!
 //! </details>
 //!
 //! <details>
 //! <summary>
 //!     <strong><code>single-triangle.ascii.ply</code>:</strong>
 //! </summary>
-//! 
+//!
 //! ```plaintext
 //! ply
 //! format ascii 1.0
@@ -31,14 +31,14 @@
 //! 0.0 0
 //! .0 -1.0
 //! ```
-//! 
+//!
 //! </details>
 //!
 //! <details>
 //! <summary>
 //!     <strong><code>single-triangle.binary-le.ply</code>:</strong>
 //! </summary>
-//! 
+//!
 //! ```plaintext
 //! ply
 //! format binary_little_endian 1.0
@@ -50,11 +50,11 @@
 //! \x00\x00\x00\x00\x00\x00\x00\x00
 //! \x00\x00\x00\x00\x00\x00\x80\xbf
 //! ```
-//! 
+//!
 //! </details>
-//! 
+//!
 //! <!---->
-//! 
+//!
 #![doc = include_str!("SUPPLEMENT.md")]
 #![doc = include_str!("SYNTAX.md")]
 #![doc = include_str!("LICENSE.md")]
@@ -67,6 +67,6 @@ pub use crate::{
     error::Error,
     function::{Decoder, DecoderWith, Encoder},
 };
-pub use header::Header;
+pub use header::{Format, Header};
 pub use object::Object;
 pub use payload::Payload;

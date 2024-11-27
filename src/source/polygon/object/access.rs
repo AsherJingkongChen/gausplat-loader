@@ -27,8 +27,7 @@ pub struct PropertyEntryMut<'p> {
     pub data: &'p mut Vec<u8>,
 }
 
-// Short name accessors
-
+/// Short named accessors and mutators
 impl Object {
     #[doc(alias = "get_element")]
     #[inline]
@@ -81,6 +80,7 @@ impl Object {
     }
 }
 
+/// Short named accessors
 impl<'e, 'p: 'e> ElementEntry<'e> {
     #[doc(alias = "get_property")]
     #[inline]
@@ -98,6 +98,7 @@ impl<'e, 'p: 'e> ElementEntry<'e> {
     }
 }
 
+/// Short named mutators
 impl<'e, 'p: 'e> ElementEntryMut<'e> {
     #[doc(alias = "get_mut_property")]
     #[inline]
@@ -115,6 +116,7 @@ impl<'e, 'p: 'e> ElementEntryMut<'e> {
     }
 }
 
+/// Short named accessors
 impl<'p> PropertyEntry<'p> {
     #[doc(alias = "as_kind")]
     #[inline]
@@ -123,6 +125,7 @@ impl<'p> PropertyEntry<'p> {
     }
 }
 
+/// Short named mutators
 impl<'p> PropertyEntryMut<'p> {
     #[doc(alias = "as_mut_kind")]
     #[inline]
@@ -131,8 +134,7 @@ impl<'p> PropertyEntryMut<'p> {
     }
 }
 
-// Full name accessors
-
+/// Long named accessors and mutators
 impl Object {
     #[doc(alias = "elem")]
     pub fn get_element<Q: AsRef<str>>(
@@ -217,9 +219,7 @@ impl Object {
 
     #[doc(alias = "elems_mut")]
     #[inline]
-    pub fn iter_mut_elements(
-        &mut self
-    ) -> impl Iterator<Item = ElementEntryMut<'_>> {
+    pub fn iter_mut_elements(&mut self) -> impl Iterator<Item = ElementEntryMut<'_>> {
         // NOTE: Currently, there is only scalar payload implemented.
         self.header
             .elements
@@ -235,6 +235,7 @@ impl Object {
     }
 }
 
+/// Long named accessors
 impl<'e, 'p: 'e> ElementEntry<'e> {
     #[doc(alias = "prop")]
     #[inline]
@@ -258,6 +259,7 @@ impl<'e, 'p: 'e> ElementEntry<'e> {
     }
 }
 
+/// Long named mutators
 impl<'e, 'p: 'e> ElementEntryMut<'e> {
     #[doc(alias = "prop_mut")]
     #[inline]
@@ -283,6 +285,7 @@ impl<'e, 'p: 'e> ElementEntryMut<'e> {
     }
 }
 
+/// Long named accessors
 impl<'p> PropertyEntry<'p> {
     #[doc(alias = "cast")]
     #[inline]
@@ -291,6 +294,7 @@ impl<'p> PropertyEntry<'p> {
     }
 }
 
+/// Long named mutators
 impl<'p> PropertyEntryMut<'p> {
     #[doc(alias = "cast_mut")]
     #[inline]

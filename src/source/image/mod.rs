@@ -31,15 +31,18 @@ impl Image {
             ));
         }
 
+        // NOTE: The data type is converted.
         let value = tensor
             .mul_scalar(255.0)
             .add_scalar(0.5)
             .clamp(0.0, 255.0)
             .into_data()
             .convert::<u8>()
-            .bytes;
+            .into_vec()
+            .unwrap();
 
-        Ok(RgbImage::from_raw(width as u32, height as u32, value).expect("Unreachable"))
+        // NOTE: The data size just fits.
+        Ok(RgbImage::from_raw(width as u32, height as u32, value).unwrap())
     }
 
     /// Obtaining a [`Tensor`] with shape of `[H, W, C]` from an [`RgbImage`].

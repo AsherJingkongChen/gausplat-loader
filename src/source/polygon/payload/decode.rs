@@ -33,7 +33,7 @@ impl DecoderWith<&Header> for Payload {
                             0,
                             |start, (prop, size)| {
                                 let end = start + size;
-                                // NOTE: The index is guaranteed to be valid
+                                // NOTE: The index is guaranteed to be valid.
                                 let datum = data.get_mut(start..end).unwrap();
                                 if should_reverse_datum {
                                     datum.reverse();

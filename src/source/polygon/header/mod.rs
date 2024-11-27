@@ -120,6 +120,14 @@ impl Format {
         #[cfg(target_endian = "little")]
         return self.is_binary_little_endian();
     }
+
+    #[inline]
+    pub const fn binary_native_endian() -> Self {
+        #[cfg(target_endian = "big")]
+        return Self::BinaryBigEndian;
+        #[cfg(target_endian = "little")]
+        return Self::BinaryLittleEndian;
+    }
 }
 
 impl Default for Header {
@@ -217,5 +225,23 @@ mod tests {
             .swap_indices(0, 1);
         let output = elements.0.is_same_order(&elements.1);
         assert_eq!(output, target);
+    }
+
+    #[test]
+    fn format_on_native_endian() {
+        use super::*;
+
+        #[cfg(target_endian = "big")]
+        {
+            let target = Format::BinaryBigEndian;
+            let output = Format::binary_native_endian();
+            assert_eq!(output, target);
+        }
+        #[cfg(target_endian = "little")]
+        {
+            let target = Format::BinaryLittleEndian;
+            let output = Format::binary_native_endian();
+            assert_eq!(output, target);
+        }
     }
 }

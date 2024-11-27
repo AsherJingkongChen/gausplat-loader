@@ -458,9 +458,8 @@ mod tests {
         );
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new(
-            "ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} ",
-        );
+        let source =
+            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} ");
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
@@ -549,8 +548,7 @@ mod tests {
         let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex g\n");
         Header::decode(source).unwrap_err();
 
-        let source =
-            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex \u{ae}\n");
+        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex \u{ae}\n");
         Header::decode(source).unwrap_err();
 
         let source =
