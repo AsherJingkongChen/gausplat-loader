@@ -19,12 +19,7 @@ impl Decoder for Header {
 
         // NOTE: Optimized format matching
         let format = match &read_bytes_const(reader)? {
-            b"b" => {
-                if &read_bytes_const(reader)? != b"inary_" {
-                    return Err(MissingSymbol(format!(
-                        "{BinaryLittleEndian} or {BinaryBigEndian}",
-                    )));
-                }
+            b"b" if &read_bytes_const(reader)? == b"inary_" => {
                 match &read_bytes_const(reader)? {
                     b"l" => {
                         if &read_bytes_const(reader)? != b"ittle_endian " {
@@ -45,12 +40,7 @@ impl Decoder for Header {
                     },
                 }
             },
-            b"a" => {
-                if &read_bytes_const(reader)? != b"scii " {
-                    return Err(MissingSymbol(Ascii.to_string()));
-                }
-                Ascii
-            },
+            b"a" if &read_bytes_const(reader)? == b"scii " => Ascii,
             _ => {
                 return Err(MissingSymbol(format!(
                     "{BinaryLittleEndian}, {BinaryBigEndian}, or {Ascii}"
