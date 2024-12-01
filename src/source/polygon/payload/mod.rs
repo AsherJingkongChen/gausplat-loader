@@ -12,7 +12,7 @@ use std::fmt;
 #[try_unwrap(owned, ref, ref_mut)]
 pub enum Payload {
     Scalar(ScalarPayload),
-    // TODO: Non-scaler payload
+    // TODO: Non-scalar payload
 }
 
 /// A payload that only contains scalar data.

@@ -6,7 +6,7 @@ pub use files::*;
 
 use std::{
     fs,
-    io::{BufReader, BufWriter, Read, Seek, Write},
+    io::{self, BufReader, BufWriter, Read, Seek, Write},
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
 };
@@ -20,32 +20,55 @@ pub struct File<F> {
 
 impl<R: Read> File<R> {
     #[inline]
-    pub fn read(&mut self) -> Result<Vec<u8>, Error> {
+    pub fn read_all(&mut self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
-        let reader = &mut BufReader::new(&mut self.inner);
-        reader.read_to_end(&mut bytes)?;
-
+        BufReader::new(&mut self.inner).read_to_end(&mut bytes)?;
         Ok(bytes)
     }
 }
 
 impl<W: Write> File<W> {
     #[inline]
-    pub fn write(
+    pub fn write_all(
         &mut self,
         bytes: &[u8],
     ) -> Result<(), Error> {
-        let writer = &mut BufWriter::new(&mut self.inner);
-        writer.write_all(bytes)?;
-
-        Ok(())
+        Ok(BufWriter::new(&mut self.inner).write_all(bytes)?)
     }
 }
 
-impl<S: Seek> File<S> {
+impl<R: Read> Read for File<R> {
     #[inline]
-    pub fn rewind(&mut self) -> Result<(), Error> {
-        Ok(self.inner.rewind()?)
+    fn read(
+        &mut self,
+        buf: &mut [u8],
+    ) -> io::Result<usize> {
+        self.inner.read(buf)
+    }
+}
+
+impl<S: Seek> Seek for File<S> {
+    #[inline]
+    fn seek(
+        &mut self,
+        pos: io::SeekFrom,
+    ) -> io::Result<u64> {
+        self.inner.seek(pos)
+    }
+}
+
+impl<W: Write> Write for File<W> {
+    #[inline]
+    fn write(
+        &mut self,
+        buf: &[u8],
+    ) -> io::Result<usize> {
+        self.inner.write(buf)
+    }
+
+    #[inline]
+    fn flush(&mut self) -> io::Result<()> {
+        self.inner.flush()
     }
 }
 
@@ -93,14 +116,14 @@ impl Opener for File<fs::File> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn open() {
+    fn open_and_read_all() {
         use super::*;
 
         let source = "examples/data/hello-world/ascii.txt";
         let mut file = File::open(source).unwrap();
 
         let target = b"Hello, World!";
-        let output = file.read().unwrap();
+        let output = file.read_all().unwrap();
         assert_eq!(output, target);
     }
 
@@ -112,7 +135,7 @@ mod tests {
         let mut file = File::open(source).unwrap();
 
         let target = b"Hello, World!";
-        let output = file.read().unwrap();
+        let output = file.read_all().unwrap();
         assert_eq!(output, target);
     }
 
@@ -135,7 +158,7 @@ mod tests {
         };
 
         let target = source;
-        let output = file.read().unwrap();
+        let output = file.read_all().unwrap();
         assert_eq!(output, target);
     }
 
