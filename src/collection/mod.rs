@@ -1,3 +1,3 @@
 pub mod indexmap;
 
-pub use indexmap::IndexMap;
+pub use indexmap::{IndexMap, IndexSet};

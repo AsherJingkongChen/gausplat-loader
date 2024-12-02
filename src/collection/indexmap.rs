@@ -9,6 +9,12 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+/// A hash set where the iteration order of the values
+/// is independent of their hash values.
+///
+/// This is an alias of [`IndexMap`] with empty values.
+pub type IndexSet<T, S = RandomState> = IndexMap<T, (), S>;
+
 /// A hash table where the iteration order of the key-value pairs
 /// is independent of the hash values of the keys.
 ///
@@ -164,9 +170,9 @@ impl<K, V: Ord, S> IndexMap<K, V, S> {
     ///
     /// See [`sort_by`](IndexMapInner::sort_by) for details.
     #[inline]
-    pub fn sort_values(&mut self) {
-        self.inner
-            .sort_by(|_, a_value, _, b_value| a_value.cmp(b_value));
+    pub fn sort_values(&mut self) -> &mut Self {
+        self.inner.sort_by(|_, a, _, b| a.cmp(b));
+        self
     }
 
     /// Sort the map's key-value pairs by the default ordering of the keys,
@@ -174,9 +180,9 @@ impl<K, V: Ord, S> IndexMap<K, V, S> {
     ///
     /// See [`sort_unstable_by`](IndexMapInner::sort_unstable_by) for details.
     #[inline]
-    pub fn sort_unstable_values(&mut self) {
-        self.inner
-            .sort_unstable_by(|_, a_value, _, b_value| a_value.cmp(b_value));
+    pub fn sort_unstable_values(&mut self) -> &mut Self {
+        self.inner.sort_unstable_by(|_, a, _, b| a.cmp(b));
+        self
     }
 }
 

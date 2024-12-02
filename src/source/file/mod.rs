@@ -18,6 +18,14 @@ pub struct File<F> {
     pub path: PathBuf,
 }
 
+impl File<fs::File> {
+    #[inline]
+    pub fn truncate(&mut self) -> Result<&mut Self, Error> {
+        self.inner.set_len(0)?;
+        Ok(self)
+    }
+}
+
 impl<R: Read> File<R> {
     #[inline]
     pub fn read_all(&mut self) -> Result<Vec<u8>, Error> {
@@ -32,8 +40,9 @@ impl<W: Write> File<W> {
     pub fn write_all(
         &mut self,
         bytes: &[u8],
-    ) -> Result<(), Error> {
-        Ok(BufWriter::new(&mut self.inner).write_all(bytes)?)
+    ) -> Result<&mut Self, Error> {
+        BufWriter::new(&mut self.inner).write_all(bytes)?;
+        Ok(self)
     }
 }
 
@@ -99,6 +108,10 @@ impl<F> DerefMut for File<F> {
 }
 
 impl Opener for File<fs::File> {
+    /// The file is opened in read and write mode.
+    /// 
+    /// This won't truncate the previous file.
+    /// One should call [`File::truncate`] to do so.
     #[inline]
     fn open(path: impl AsRef<Path>) -> Result<Self, Error> {
         let inner = fs::OpenOptions::new()
