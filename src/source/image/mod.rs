@@ -5,6 +5,7 @@ pub use burn_tensor::{backend::Backend, Tensor};
 pub use image::RgbImage;
 pub use images::*;
 
+use super::file::{File, Opener};
 use burn_tensor::TensorData;
 use image::{GenericImageView, ImageFormat, Pixel, Rgb};
 use std::{fmt, io::Cursor, path::PathBuf};
@@ -16,8 +17,42 @@ pub struct Image {
     pub image_id: u32,
 }
 
+/// Interoperability with [`RgbImage`].
 impl Image {
-    /// Obtaining an [`RgbImage`] from a [`Tensor`] with shape of `[H, W, C]`.
+    /// Decoding the image dimensions `(width, height)`.
+    #[inline]
+    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
+        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
+    }
+
+    /// Decoding an [`RgbImage`] from [`Self::image_encoded`].
+    #[inline]
+    pub fn decode_rgb(&self) -> Result<RgbImage, Error> {
+        Ok(image::load_from_memory(&self.image_encoded)?.into_rgb8())
+    }
+
+    /// Encoding an [`RgbImage`] to [`Self::image_encoded`].
+    pub fn encode_rgb(
+        &mut self,
+        image: RgbImage,
+    ) -> Result<&mut Self, Error> {
+        const CHANNEL_COUNT: u32 = Rgb::<u8>::CHANNEL_COUNT as u32;
+
+        let (width, height) = image.dimensions();
+        let mut writer = Cursor::new(Vec::with_capacity(
+            (height * width * CHANNEL_COUNT) as usize,
+        ));
+        image.write_to(&mut writer, ImageFormat::from_path(&self.image_file_path)?)?;
+        self.image_encoded = writer.into_inner();
+
+        Ok(self)
+    }
+}
+
+/// Interoperability with [`Tensor`].
+impl Image {
+    /// Obtaining an [`RgbImage`] from a [`Tensor`] with shape of `[H, W, C]`
+    /// where `C == 3`.
     pub fn get_rgb_from_tensor<B: Backend>(
         tensor: Tensor<B, 3>
     ) -> Result<RgbImage, Error> {
@@ -45,7 +80,8 @@ impl Image {
         Ok(RgbImage::from_raw(width as u32, height as u32, value).unwrap())
     }
 
-    /// Obtaining a [`Tensor`] with shape of `[H, W, C]` from an [`RgbImage`].
+    /// Obtaining a [`Tensor`] with shape of `[H, W, C]` from an [`RgbImage`]
+    /// where `C == 3`.
     #[inline]
     pub fn get_tensor_from_rgb<B: Backend>(
         image: RgbImage,
@@ -84,32 +120,10 @@ impl Image {
 }
 
 impl Image {
-    /// Decoding the image dimensions.
-    #[inline]
-    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
-        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
-    }
-
-    /// Decoding an [`RgbImage`] from [`Self::image_encoded`].
-    #[inline]
-    pub fn decode_rgb(&self) -> Result<RgbImage, Error> {
-        Ok(image::load_from_memory(&self.image_encoded)?.into_rgb8())
-    }
-
-    /// Encoding an [`RgbImage`] to [`Self::image_encoded`].
-    pub fn encode_rgb(
-        &mut self,
-        image: RgbImage,
-    ) -> Result<&mut Self, Error> {
-        const CHANNEL_COUNT: u32 = Rgb::<u8>::CHANNEL_COUNT as u32;
-
-        let (width, height) = image.dimensions();
-        let mut writer = Cursor::new(Vec::with_capacity(
-            (height * width * CHANNEL_COUNT) as usize,
-        ));
-        image.write_to(&mut writer, ImageFormat::from_path(&self.image_file_path)?)?;
-        self.image_encoded = writer.into_inner();
-
+    pub fn save(&self) -> Result<&Self, Error> {
+        File::open(&self.image_file_path)?
+            .truncate()?
+            .write_all(&self.image_encoded)?;
         Ok(self)
     }
 }

@@ -1,8 +1,8 @@
 pub use indexmap::IndexMap as IndexMapInner;
 pub use rand::rngs::StdRng;
-pub use rayon::iter::{FromParallelIterator, IntoParallelIterator};
+pub use rayon::iter::{FromParallelIterator, IntoParallelIterator, ParallelIterator};
 
-use indexmap::map::IntoIter;
+use indexmap::map::{rayon::IntoParIter, IntoIter};
 use rand::{Rng, SeedableRng};
 use std::{
     hash::{BuildHasher, Hash, RandomState},
@@ -273,7 +273,6 @@ where
     V: Send,
     S: BuildHasher + Default + Send,
 {
-    /// Create an [`IndexMap`] from the sequence of key-value pairs in the parallel iterable.
     #[inline]
     fn from_par_iter<I: IntoParallelIterator<Item = (K, V)>>(iterable: I) -> Self {
         Self {
@@ -287,10 +286,23 @@ impl<K, V, S> IntoIterator for IndexMap<K, V, S> {
     type Item = (K, V);
     type IntoIter = IntoIter<K, V>;
 
-    /// Creates an iterator from a value.
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.inner.into_iter()
+    }
+}
+
+impl<K, V, S> IntoParallelIterator for IndexMap<K, V, S>
+where
+    K: Send,
+    V: Send,
+{
+    type Iter = IntoParIter<K, V>;
+    type Item = (K, V);
+
+    #[inline]
+    fn into_par_iter(self) -> Self::Iter {
+        self.inner.into_par_iter()
     }
 }
 
@@ -301,7 +313,6 @@ where
     S1: BuildHasher,
     S2: BuildHasher,
 {
-    /// Return `true` if the underlying maps are equal.
     #[inline]
     fn eq(
         &self,

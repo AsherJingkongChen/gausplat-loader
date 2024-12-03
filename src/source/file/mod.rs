@@ -109,7 +109,7 @@ impl<F> DerefMut for File<F> {
 
 impl Opener for File<fs::File> {
     /// The file is opened in read and write mode.
-    /// 
+    ///
     /// This won't truncate the previous file.
     /// One should call [`File::truncate`] to do so.
     #[inline]
@@ -183,7 +183,7 @@ mod tests {
         let mut file = File::<std::io::Cursor<Vec<u8>>>::default();
 
         let target = source;
-        file.write(source).unwrap();
+        file.write_all(source).unwrap();
         file.rewind().unwrap();
         let output = file.deref().to_owned().into_inner();
         assert_eq!(output, target);
