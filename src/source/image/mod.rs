@@ -36,16 +36,26 @@ impl Image {
         &mut self,
         image: RgbImage,
     ) -> Result<&mut Self, Error> {
+        let format = ImageFormat::from_path(&self.image_file_path)?;
+        self.image_encoded = Self::get_code_from_rgb(image, format)?;
+        Ok(self)
+    }
+
+    /// Obtaining the encoded bytes from an [`RgbImage`]
+    /// with the specified [`ImageFormat`].
+    fn get_code_from_rgb(
+        image: RgbImage,
+        format: ImageFormat,
+    ) -> Result<Vec<u8>, Error> {
         const CHANNEL_COUNT: u32 = Rgb::<u8>::CHANNEL_COUNT as u32;
 
         let (width, height) = image.dimensions();
         let mut writer = Cursor::new(Vec::with_capacity(
             (height * width * CHANNEL_COUNT) as usize,
         ));
-        image.write_to(&mut writer, ImageFormat::from_path(&self.image_file_path)?)?;
-        self.image_encoded = writer.into_inner();
+        image.write_to(&mut writer, format)?;
 
-        Ok(self)
+        Ok(writer.into_inner())
     }
 }
 
@@ -119,11 +129,27 @@ impl Image {
     }
 }
 
+/// I/O operations.
 impl Image {
+    /// Writing [`Self::image_encoded`] to the file at [`Self::image_file_path`].
+    /// 
+    /// ## Details
+    /// 
+    /// The image format is determined by
+    /// [`ImageFormat::from_path(&self.image_file_path)`](ImageFormat::from_path).
+    /// 
     pub fn save(&self) -> Result<&Self, Error> {
+        let format_source = image::guess_format(&self.image_encoded)?;
+        let format_target = ImageFormat::from_path(&self.image_file_path)?;
+        let bytes = if format_source != format_target {
+            &Self::get_code_from_rgb(self.decode_rgb()?, format_target)?
+        } else {
+            &self.image_encoded
+        };
+
         File::open(&self.image_file_path)?
             .truncate()?
-            .write_all(&self.image_encoded)?;
+            .write_all(bytes)?;
         Ok(self)
     }
 }
