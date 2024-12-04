@@ -13,10 +13,7 @@ pub const NULL: &[u8; 1] = b"\0";
 /// Space.
 pub const SPACE: &[u8; 1] = b" ";
 
-pub trait Encoder
-where
-    Self: Sized,
-{
+pub trait Encoder: Sized {
     type Err;
 
     fn encode(

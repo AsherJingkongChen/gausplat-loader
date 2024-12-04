@@ -3,10 +3,7 @@ pub use crate::error::Error;
 
 use std::io::Read;
 
-pub trait Decoder
-where
-    Self: Sized,
-{
+pub trait Decoder: Sized {
     type Err;
 
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err>;
