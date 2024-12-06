@@ -1,3 +1,5 @@
+//! Polygon object decoding implementation.
+
 pub use super::*;
 
 use std::io::{BufReader, Read};

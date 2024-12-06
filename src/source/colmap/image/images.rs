@@ -1,5 +1,10 @@
+//! A collection of images.
+//!
+//! It is generally stored in the `images.bin` file.
+
 pub use super::*;
 
+/// A map of [`Image::image_id`] to [`Image`].
 pub type Images = crate::collection::IndexMap<u32, Image>;
 
 impl Decoder for Images {

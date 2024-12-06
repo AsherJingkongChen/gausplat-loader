@@ -1,3 +1,5 @@
+//! Polygon header module.
+
 pub mod decode;
 pub mod encode;
 pub mod property;
@@ -14,6 +16,7 @@ use std::{fmt, str::FromStr};
 use Error::*;
 use Format::*;
 
+/// Polygon element.
 #[derive(
     AsRef,
     Clone,
@@ -31,15 +34,18 @@ use Format::*;
 #[display("element {name} {count}\n{properties}")]
 #[from((usize, String, Properties), (usize, &str, IndexMap<String, Property>))]
 pub struct Element {
+    /// Element count.
     pub count: usize,
+    /// Element name.
     pub name: String,
-
+    /// Owned [`Properties`].
     #[deref]
     #[deref_mut]
     #[into_iterator(owned, ref, ref_mut)]
     pub properties: Properties,
 }
 
+/// A map of [`Element::name`] to [`Element`].
 #[derive(
     AsRef,
     Clone,
@@ -54,26 +60,30 @@ pub struct Element {
     PartialEq,
 )]
 pub struct Elements {
+    /// Inner map.
     #[into_iterator(owned, ref, ref_mut)]
     pub inner: IndexMap<String, Element>,
 }
 
+/// Polygon format.
 #[derive(
     Clone, Copy, Debug, Default, Display, Eq, From, Hash, IsVariant, PartialEq, TryUnwrap,
 )]
 #[try_unwrap(owned, ref, ref_mut)]
 pub enum Format {
+    /// Binary little endian format.
     #[default]
     #[display("binary_little_endian")]
     BinaryLittleEndian,
-
+    /// ASCII format.
     #[display("ascii")]
     Ascii,
-
+    /// Binary big endian format.
     #[display("binary_big_endian")]
     BinaryBigEndian,
 }
 
+/// Polygon header.
 #[derive(
     AsRef,
     Clone,
@@ -90,15 +100,21 @@ pub enum Format {
 #[display("ply\nformat {format} {version}\n{elements}end_header\n")]
 #[from((Elements, Format, String), (IndexMap<String, Element>, Format, &str))]
 pub struct Header {
+    /// Owned [`Elements`].
     #[deref]
     #[deref_mut]
     #[into_iterator(owned, ref, ref_mut)]
     pub elements: Elements,
+    /// Format.
     pub format: Format,
+    /// Version.
     pub version: String,
 }
 
 impl Elements {
+    /// Check if the two elements have the same structure.
+    ///
+    /// It can be used for checking the compatibility of two polygon objects.
     #[inline]
     pub fn is_same_order(
         &self,
@@ -113,6 +129,7 @@ impl Elements {
 }
 
 impl Format {
+    /// Check if the format is binary little endian.
     #[inline]
     pub const fn is_binary_native_endian(&self) -> bool {
         #[cfg(target_endian = "big")]
@@ -121,6 +138,7 @@ impl Format {
         return self.is_binary_little_endian();
     }
 
+    /// Return the binary format with native endianness.
     #[inline]
     pub const fn binary_native_endian() -> Self {
         #[cfg(target_endian = "big")]

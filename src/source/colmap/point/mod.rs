@@ -1,3 +1,5 @@
+//! COLMAP point module.
+
 pub mod points;
 
 pub use crate::{
@@ -10,13 +12,17 @@ use crate::function::{advance, read_bytes_const};
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{BufReader, BufWriter, Read, Write};
 
+/// A COLMAP point.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Point {
+    /// Position in world space.
     pub position: [f64; 3],
+    /// Color in 8-bit RGB.
     pub color_rgb: [u8; 3],
 }
 
 impl Point {
+    /// Color in 32-bit normalized RGB.
     #[inline]
     pub fn color_rgb_normalized(&self) -> [f32; 3] {
         [

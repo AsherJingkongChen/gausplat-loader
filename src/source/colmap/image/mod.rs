@@ -1,3 +1,5 @@
+//! COLMAP image module.
+
 pub mod images;
 
 pub use crate::{
@@ -33,7 +35,7 @@ pub struct Image {
 }
 
 impl Image {
-    /// Returns the 3D position in world space.
+    /// Return the 3D position in world space.
     ///
     /// It takes the 3D rotation from world space to view space, i.e., [`Self::rotation`].
     ///
@@ -55,7 +57,7 @@ impl Image {
         ]
     }
 
-    /// Returns the 3D rotation from world space to view space.
+    /// Return the 3D rotation from world space to view space.
     ///
     /// It is in **column-major order**, i.e., `M[col][row]`.
     pub const fn rotation(&self) -> [[f64; 3]; 3] {

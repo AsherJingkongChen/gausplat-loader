@@ -1,5 +1,8 @@
+//! A collection of points.
+
 pub use super::*;
 
+/// A list of points.
 pub type Points = Vec<Point>;
 
 impl Decoder for Points {

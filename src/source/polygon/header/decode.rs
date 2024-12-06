@@ -1,3 +1,5 @@
+//! Polygon header decoding implementation.
+
 pub use super::*;
 
 use crate::function::{

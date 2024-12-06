@@ -1,3 +1,9 @@
+//! [`IndexMap`] is a hash table where the iteration order of the key-value
+//! pairs is independent of the hash values of the keys.
+//!
+//! [`IndexSet`] is a corresponding hash set using the same implementation and
+//! with similar properties.
+
 pub use indexmap::IndexMap as IndexMapInner;
 pub use rand::rngs::StdRng;
 pub use rayon::iter::{FromParallelIterator, IntoParallelIterator, ParallelIterator};
@@ -65,11 +71,13 @@ pub struct IndexMap<K, V, S = RandomState> {
 }
 
 impl<K, V, S> IndexMap<K, V, S> {
+    /// Return the inner value [`IndexMapInner`].
     #[inline]
     pub fn into_inner(self) -> IndexMapInner<K, V, S> {
         self.inner
     }
 
+    /// Seed the random number generator with a new `seed`.
     #[inline]
     pub fn seed(
         &mut self,

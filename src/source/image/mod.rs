@@ -1,3 +1,5 @@
+//! Image source module.
+
 pub mod images;
 
 pub use crate::error::Error;
@@ -10,10 +12,14 @@ use burn_tensor::TensorData;
 use image::{imageops, GenericImageView, ImageFormat, Pixel, Rgb};
 use std::{fmt, io::Cursor, path::PathBuf};
 
+/// An encoded image.
 #[derive(Clone, Default, PartialEq)]
 pub struct Image {
+    /// Encoded image bytes.
     pub image_encoded: Vec<u8>,
+    /// Image file path.
     pub image_file_path: PathBuf,
+    /// Image ID.
     pub image_id: u32,
 }
 
@@ -61,6 +67,7 @@ impl Image {
         Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
     }
 
+    /// Return the aspect ratio of the image (`width / height`).
     #[inline]
     pub fn get_aspect_ratio(image: &RgbImage) -> f32 {
         image.width() as f32 / image.height() as f32
@@ -382,15 +389,17 @@ mod tests {
             image_id: Default::default(),
         };
         image.resize_max(8).unwrap_err();
-        
+
         let target = (4, 8);
-        image.image_encoded = include_bytes!("../../../examples/data/image/rainbow-3x6.png").to_vec();
+        image.image_encoded =
+            include_bytes!("../../../examples/data/image/rainbow-3x6.png").to_vec();
         image.resize_max(8).unwrap();
         let output = image.decode_dimensions().unwrap();
         assert_eq!(output, target);
 
         let target = (12, 6);
-        image.image_encoded = include_bytes!("../../../examples/data/image/rainbow-6x3.png").to_vec();
+        image.image_encoded =
+            include_bytes!("../../../examples/data/image/rainbow-6x3.png").to_vec();
         image.resize_max(12).unwrap();
         let output = image.decode_dimensions().unwrap();
         assert_eq!(output, target);
@@ -416,7 +425,8 @@ mod tests {
         image.image_file_path = "rainbow-8x8.avif".into();
         image.save().unwrap_err();
 
-        image.image_file_path = temp_dir().join("gausplat-loader::tests::save.rainbow-8x8.png");
+        image.image_file_path =
+            temp_dir().join("gausplat-loader::tests::save.rainbow-8x8.png");
         image.save().unwrap();
 
         let target = source;

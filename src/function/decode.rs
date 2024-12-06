@@ -1,20 +1,28 @@
+//! Functions for decoding process.
+
 pub use super::{NULL, SPACE};
 pub use crate::error::Error;
 
 use std::io::Read;
 
+/// Decoding function.
 pub trait Decoder: Sized {
+    /// Error during decoding.
     type Err;
 
+    /// Decoding from the `reader`.
     fn decode(reader: &mut impl Read) -> Result<Self, Self::Err>;
 }
 
+/// Decoding function with an initial state.
 pub trait DecoderWith<T>
 where
     Self: Sized,
 {
+    /// Error during decoding.
     type Err;
 
+    /// Decoding from the `reader` with the `init` state.
     fn decode_with(
         reader: &mut impl Read,
         init: T,

@@ -1,3 +1,5 @@
+//! A collection of files.
+
 pub use super::File;
 pub use crate::{error::Error, function::Opener};
 
@@ -6,6 +8,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// A map of [`File::path`] to [`File`].
 pub type Files<S> = crate::collection::IndexMap<PathBuf, File<S>>;
 
 impl Opener for Files<fs::File> {

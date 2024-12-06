@@ -1,3 +1,5 @@
+//! Polygon payload decoding implementation.
+
 pub use super::*;
 
 use crate::function::read_bytes;

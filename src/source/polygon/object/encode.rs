@@ -1,3 +1,5 @@
+//! Polygon object encoding implementation.
+
 pub use super::*;
 
 use std::io::{BufWriter, Write};

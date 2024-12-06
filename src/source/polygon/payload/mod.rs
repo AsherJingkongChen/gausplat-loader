@@ -1,3 +1,5 @@
+//! Polygon payload module.
+
 pub mod decode;
 
 pub use super::*;
@@ -8,9 +10,11 @@ use derive_more::derive::{
 };
 use std::fmt;
 
+/// Polygon payload variants.
 #[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
 #[try_unwrap(owned, ref, ref_mut)]
 pub enum Payload {
+    /// Scalar-only payload.
     Scalar(ScalarPayload),
     // TODO: Non-scalar payload
 }
@@ -31,20 +35,24 @@ pub enum Payload {
     PartialEq,
 )]
 pub struct ScalarPayload {
+    /// Inner data list.
     pub data: Vec<Vec<Vec<u8>>>,
 }
 
 impl ScalarPayload {
+    /// Returns the number of elements.
     #[inline]
     pub fn element_count(&self) -> usize {
         self.len()
     }
 
+    /// Returns the number of properties.
     #[inline]
     pub fn property_count(&self) -> usize {
         self.iter().map(Vec::len).sum()
     }
 
+    /// Returns the number of bytes.
     #[inline]
     pub fn byte_count(&self) -> usize {
         self.iter()

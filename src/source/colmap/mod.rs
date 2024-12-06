@@ -1,3 +1,7 @@
+//! COLMAP source.
+//!
+//! For more information, see the COLMAP [website](https://colmap.github.io/).
+
 pub mod camera;
 pub mod image;
 pub mod point;
@@ -9,11 +13,16 @@ pub use point::*;
 
 use std::fmt;
 
+/// Colmap source.
 #[derive(Clone, PartialEq)]
 pub struct ColmapSource<S> {
+    /// Cameras.
     pub cameras: Cameras,
+    /// Images.
     pub images: Images,
+    /// Images' file.
     pub images_file: Files<S>,
+    /// Points.
     pub points: Points,
 }
 

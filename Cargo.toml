@@ -1,6 +1,6 @@
 [package]
 authors = ["Asher Jingkong Chen"]
-description = "A library to load scenes for `gausplat`"
+description = "A library to load assets for `gausplat`"
 edition.workspace = true
 license-file = "LICENSE"
 name = "gausplat-loader"

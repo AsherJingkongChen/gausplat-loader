@@ -1,3 +1,5 @@
+//! Polygon header encoding implementation.
+
 pub use super::*;
 
 use std::io::Write;

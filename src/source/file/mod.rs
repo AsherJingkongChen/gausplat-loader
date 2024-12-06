@@ -1,3 +1,5 @@
+//! File source module.
+
 pub mod files;
 
 pub use crate::error::Error;
@@ -14,11 +16,16 @@ use std::{
 /// Duplex file stream.
 #[derive(Clone, Debug, PartialEq)]
 pub struct File<F> {
+    /// Inner stream.
     pub inner: F,
+    /// File path.
     pub path: PathBuf,
 }
 
 impl File<fs::File> {
+    /// Truncate the file.
+    ///
+    /// It sets the length of the file to `0`.
     #[inline]
     pub fn truncate(&mut self) -> Result<&mut Self, Error> {
         self.inner.set_len(0)?;
@@ -27,6 +34,7 @@ impl File<fs::File> {
 }
 
 impl<R: Read> File<R> {
+    /// Read all bytes from the file.
     #[inline]
     pub fn read_all(&mut self) -> Result<Vec<u8>, Error> {
         let mut bytes = vec![];
@@ -36,6 +44,7 @@ impl<R: Read> File<R> {
 }
 
 impl<W: Write> File<W> {
+    /// Write all bytes to the file.
     #[inline]
     pub fn write_all(
         &mut self,

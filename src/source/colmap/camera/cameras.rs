@@ -1,5 +1,10 @@
+//! A collection of cameras.
+//!
+//! It is generally stored in the `cameras.bin` file.
+
 pub use super::*;
 
+/// A map of [`Camera::camera_id`] to [`Camera`].
 pub type Cameras = crate::collection::IndexMap<u32, Camera>;
 
 impl Decoder for Cameras {

@@ -1,3 +1,5 @@
+//! COLMAP camera module.
+
 pub mod cameras;
 
 pub use crate::{
@@ -9,23 +11,38 @@ pub use cameras::*;
 use byteorder::{ReadBytesExt, WriteBytesExt, LE};
 use std::io::{BufReader, BufWriter, Read, Write};
 
+/// A COLMAP camera.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Camera {
+    /// Camera ID.
     pub camera_id: u32,
+    /// Camera width.
     pub width: u64,
+    /// Camera height.
     pub height: u64,
+    /// Principal point x value.
     pub principal_point_x: f64,
+    /// Principal point y value.
     pub principal_point_y: f64,
+    /// Camera variant.
     pub variant: CameraVariant,
 }
 
+/// A COLMAP camera variant.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum CameraVariant {
+    /// Simple pinhole camera.
     SimplePinhole {
+        /// Focal length.
+        ///
+        /// It is the same for x and y.
         focal_length: f64,
     },
+    /// Pinhole camera.
     Pinhole {
+        /// Focal length x value.
         focal_length_x: f64,
+        /// Focal length y value.
         focal_length_y: f64,
     },
     // TODO: Support more camera models from COLMAP.
@@ -33,8 +50,9 @@ pub enum CameraVariant {
 }
 
 impl Camera {
+    /// Return the model ID.
     #[inline]
-    pub fn model_id(&self) -> u32 {
+    pub const fn model_id(&self) -> u32 {
         use CameraVariant::*;
 
         match self.variant {
@@ -43,8 +61,9 @@ impl Camera {
         }
     }
 
+    /// Return the focal length x value.
     #[inline]
-    pub fn focal_length_x(&self) -> f64 {
+    pub const fn focal_length_x(&self) -> f64 {
         use CameraVariant::*;
 
         match self.variant {
@@ -53,8 +72,9 @@ impl Camera {
         }
     }
 
+    /// Return the focal length y value.
     #[inline]
-    pub fn focal_length_y(&self) -> f64 {
+    pub const fn focal_length_y(&self) -> f64 {
         use CameraVariant::*;
 
         match self.variant {

@@ -1,7 +1,10 @@
+//! Polygon header property.
+
 pub use super::*;
 
 use std::sync::{LazyLock, RwLock};
 
+/// List property kind.
 #[derive(
     AsRef,
     Clone,
@@ -19,14 +22,17 @@ use std::sync::{LazyLock, RwLock};
 #[display("list {count} {value}")]
 #[from((String, String), (&str, &str))]
 pub struct ListPropertyKind {
+    /// The property kind of the list count.
     pub count: ScalarPropertyKind,
 
+    /// The property kind of the list value.
     #[as_ref]
     #[deref]
     #[deref_mut]
     pub value: ScalarPropertyKind,
 }
 
+/// Polygon Property.
 #[derive(
     AsRef,
     Clone,
@@ -44,19 +50,25 @@ pub struct ListPropertyKind {
 #[display("property {kind} {name}")]
 #[from((PropertyKind, String), (PropertyKind, &str))]
 pub struct Property {
+    /// Property kind.
     #[deref]
     #[deref_mut]
     pub kind: PropertyKind,
+    /// Property name.
     pub name: String,
 }
 
+/// Property kind variants.
 #[derive(Clone, Debug, Display, Eq, Hash, From, IsVariant, PartialEq, TryUnwrap)]
 #[try_unwrap(owned, ref, ref_mut)]
 pub enum PropertyKind {
+    /// List property kind.
     List(ListPropertyKind),
+    /// Scalar property kind.
     Scalar(ScalarPropertyKind),
 }
 
+/// A map of [`Property::name`] to [`Property`].
 #[derive(
     AsRef,
     Clone,
@@ -71,10 +83,12 @@ pub enum PropertyKind {
     PartialEq,
 )]
 pub struct Properties {
+    /// Inner map.
     #[into_iterator(owned, ref, ref_mut)]
     pub inner: IndexMap<String, Property>,
 }
 
+/// Scalar property kind.
 #[derive(
     AsRef,
     Clone,
@@ -92,10 +106,14 @@ pub struct Properties {
 #[display("{value}")]
 #[from(String, &str)]
 pub struct ScalarPropertyKind {
+    /// Kind representation.
     pub value: String,
 }
 
 impl Properties {
+    /// Check if the two properties have the same order.
+    ///
+    /// It can be used for checking the compatibility of two polygon objects.
     #[inline]
     pub fn is_same_order(
         &self,
@@ -104,6 +122,7 @@ impl Properties {
         self.len().eq(&other.len()) && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 
+    /// Return an iterator of property sizes.
     #[inline]
     pub fn property_sizes(&self) -> impl '_ + Iterator<Item = Result<usize, Error>> {
         self.values().map(|prop| {
@@ -116,6 +135,7 @@ impl Properties {
 }
 
 impl ScalarPropertyKind {
+    /// Query the size of the scalar property.
     #[inline]
     pub fn size(&self) -> Option<usize> {
         SCALAR_PROPERTY_SIZES
@@ -143,6 +163,7 @@ impl fmt::Display for Properties {
     }
 }
 
+/// A map of scalar property kind to its size.
 pub static SCALAR_PROPERTY_SIZES: LazyLock<RwLock<IndexMap<String, usize>>> =
     LazyLock::new(|| {
         [
