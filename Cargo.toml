@@ -2,6 +2,7 @@
 authors = ["Asher Jingkong Chen"]
 description = "A library to load assets for `gausplat`"
 edition.workspace = true
+homepage.workspace = true
 license-file = "LICENSE"
 name = "gausplat-loader"
 publish = false
@@ -45,5 +46,5 @@ divan = {workspace = true}
 ply-rs = {workspace = true}
 
 [[bench]]
-name = "polygon"
 harness = false
+name = "polygon"
