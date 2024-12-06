@@ -7,7 +7,7 @@ pub use images::*;
 
 use super::file::{File, Opener};
 use burn_tensor::TensorData;
-use image::{GenericImageView, ImageFormat, Pixel, Rgb};
+use image::{imageops, GenericImageView, ImageFormat, Pixel, Rgb};
 use std::{fmt, io::Cursor, path::PathBuf};
 
 #[derive(Clone, Default, PartialEq)]
@@ -19,12 +19,6 @@ pub struct Image {
 
 /// Interoperability with [`RgbImage`].
 impl Image {
-    /// Decoding the image dimensions `(width, height)`.
-    #[inline]
-    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
-        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
-    }
-
     /// Decoding an [`RgbImage`] from [`Self::image_encoded`].
     #[inline]
     pub fn decode_rgb(&self) -> Result<RgbImage, Error> {
@@ -56,6 +50,37 @@ impl Image {
         image.write_to(&mut writer, format)?;
 
         Ok(writer.into_inner())
+    }
+}
+
+/// Dimension operations.
+impl Image {
+    /// Decoding the image dimensions to `(width, height)`.
+    #[inline]
+    pub fn decode_dimensions(&self) -> Result<(u32, u32), Error> {
+        Ok(image::load_from_memory(&self.image_encoded)?.dimensions())
+    }
+
+    #[inline]
+    pub fn get_aspect_ratio(image: &RgbImage) -> f32 {
+        image.width() as f32 / image.height() as f32
+    }
+
+    /// Resizing the image to the maximum side length of `to`.
+    pub fn resize_max(
+        &mut self,
+        to: u32,
+    ) -> Result<&mut Self, Error> {
+        let image = self.decode_rgb()?;
+        let ratio = Self::get_aspect_ratio(&image);
+        let (width_new, height_new) = if ratio > 1.0 {
+            (to, (to as f32 / ratio).ceil() as u32)
+        } else {
+            ((to as f32 * ratio).ceil() as u32, to)
+        };
+        let filter = imageops::FilterType::CatmullRom;
+
+        self.encode_rgb(imageops::resize(&image, width_new, height_new, filter))
     }
 }
 
@@ -132,12 +157,12 @@ impl Image {
 /// I/O operations.
 impl Image {
     /// Writing [`Self::image_encoded`] to the file at [`Self::image_file_path`].
-    /// 
+    ///
     /// ## Details
-    /// 
+    ///
     /// The image format is determined by
     /// [`ImageFormat::from_path(&self.image_file_path)`](ImageFormat::from_path).
-    /// 
+    ///
     pub fn save(&self) -> Result<&Self, Error> {
         let format_source = image::guess_format(&self.image_encoded)?;
         let format_target = ImageFormat::from_path(&self.image_file_path)?;
@@ -343,6 +368,62 @@ mod tests {
             if output_0 == target.0 && output_1 == target.1,
         );
         let target = true;
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn resize_max() {
+        use super::*;
+
+        let source = vec![];
+        let mut image = Image {
+            image_encoded: source,
+            image_file_path: "rainbow-8x8.png".into(),
+            image_id: Default::default(),
+        };
+        image.resize_max(8).unwrap_err();
+        
+        let target = (4, 8);
+        image.image_encoded = include_bytes!("../../../examples/data/image/rainbow-3x6.png").to_vec();
+        image.resize_max(8).unwrap();
+        let output = image.decode_dimensions().unwrap();
+        assert_eq!(output, target);
+
+        let target = (12, 6);
+        image.image_encoded = include_bytes!("../../../examples/data/image/rainbow-6x3.png").to_vec();
+        image.resize_max(12).unwrap();
+        let output = image.decode_dimensions().unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn save_on_invalid_format() {
+        use super::*;
+        use std::env::temp_dir;
+
+        let source = vec![];
+        let mut image = Image {
+            image_encoded: source,
+            image_file_path: "rainbow-8x8".into(),
+            image_id: Default::default(),
+        };
+        image.save().unwrap_err();
+
+        let source = &include_bytes!("../../../examples/data/image/rainbow-8x8.png")[..];
+        image.image_encoded = source.to_vec();
+        image.save().unwrap_err();
+
+        image.image_file_path = "rainbow-8x8.avif".into();
+        image.save().unwrap_err();
+
+        image.image_file_path = temp_dir().join("gausplat-loader::tests::save.rainbow-8x8.png");
+        image.save().unwrap();
+
+        let target = source;
+        let output = File::open(&image.image_file_path)
+            .unwrap()
+            .read_all()
+            .unwrap();
         assert_eq!(output, target);
     }
 }

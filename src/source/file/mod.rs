@@ -173,6 +173,27 @@ mod tests {
         let target = source;
         let output = file.read_all().unwrap();
         assert_eq!(output, target);
+
+        let target = 0;
+        let output = file.read(&mut [][..]).unwrap();
+        assert_eq!(output, target);
+    }
+
+    #[test]
+    fn truncate() {
+        use super::*;
+        use std::env::temp_dir;
+
+        let path = temp_dir().join("gausplat-loader::tests::truncate.tmp");
+        let target = true;
+        let output = File::open(&path)
+            .unwrap()
+            .truncate()
+            .unwrap()
+            .read_all()
+            .unwrap()
+            .is_empty();
+        assert_eq!(output, target);
     }
 
     #[test]
@@ -189,5 +210,11 @@ mod tests {
         assert_eq!(output, target);
         let output = file.deref_mut().to_owned().into_inner();
         assert_eq!(output, target);
+
+        let target = 0;
+        let output = file.write(&[][..]).unwrap();
+        assert_eq!(output, target);
+
+        file.flush().unwrap();
     }
 }

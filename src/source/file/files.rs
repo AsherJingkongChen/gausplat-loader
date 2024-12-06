@@ -112,10 +112,10 @@ mod tests {
 
         // SAFETY: This is a deliberately invalid UTF-8 string literal.
         let source = unsafe {
-            std::ffi::OsStr::from_encoded_bytes_unchecked(
-                b"examples/data/hello-world/\x8e\xcd*",
+            std::str::from_boxed_utf8_unchecked(
+                b"examples/data/hello-world/\x8e\xcd*".as_slice().into(),
             )
         };
-        Files::open(source).unwrap_err();
+        Files::open(source.as_ref()).unwrap_err();
     }
 }

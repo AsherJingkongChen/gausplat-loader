@@ -28,7 +28,8 @@ pub enum CameraVariant {
         focal_length_x: f64,
         focal_length_y: f64,
     },
-    // TODO: Support more camera models from COLMAP. See https://github.com/colmap/colmap/blob/c238aec0e669610850badf3a3279dc2858f37f0f/src/colmap/sensor/models.h#L82
+    // TODO: Support more camera models from COLMAP.
+    // See https://github.com/colmap/colmap/blob/c238aec0e669610850badf3a3279dc2858f37f0f/src/colmap/sensor/models.h#L82
 }
 
 impl Camera {

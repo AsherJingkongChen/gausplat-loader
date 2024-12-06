@@ -383,7 +383,7 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat binary_little_endian 1.0"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new("ply\nformat ascii \u{b9}.\u{ba}\n");
+        let source = &mut Cursor::new("ply\nformat ascii \u{b9}.\u{ba}\n".as_bytes());
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.\xff\n"[..]);
@@ -448,8 +448,9 @@ mod tests {
         );
         Header::decode(source).unwrap_err();
 
-        let source =
-            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} ");
+        let source = &mut Cursor::new(
+            "ply\nformat ascii 1.0\nelement vertex 0\nproperty \u{ae} ".as_bytes(),
+        );
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(
@@ -523,7 +524,8 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement vertex"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement \u{ae} ");
+        let source =
+            &mut Cursor::new("ply\nformat ascii 1.0\nelement \u{ae} ".as_bytes());
         Header::decode(source).unwrap_err();
 
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement \xff "[..]);
@@ -535,10 +537,12 @@ mod tests {
         let source = &mut Cursor::new(&b"ply\nformat ascii 1.0\nelement vertex 1 \n"[..]);
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex g\n");
+        let source =
+            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex g\n".as_bytes());
         Header::decode(source).unwrap_err();
 
-        let source = &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex \u{ae}\n");
+        let source =
+            &mut Cursor::new("ply\nformat ascii 1.0\nelement vertex \u{ae}\n".as_bytes());
         Header::decode(source).unwrap_err();
 
         let source =

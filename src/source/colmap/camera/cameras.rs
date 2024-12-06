@@ -51,7 +51,6 @@ mod tests {
 
         let source =
             &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
-        let mut reader = Cursor::new(source);
 
         let targets = [
             (
@@ -84,6 +83,12 @@ mod tests {
         ]
         .into_iter()
         .collect::<Cameras>();
+
+        (0..source.len()).for_each(|i| {
+            let mut reader = Cursor::new(&source[..i]);
+            Cameras::decode(&mut reader).unwrap_err();
+        });
+        let mut reader = Cursor::new(source);
         let output = Cameras::decode(&mut reader).unwrap();
         assert_eq!(output, targets);
 
@@ -118,8 +123,9 @@ mod tests {
     #[test]
     fn decode_on_zero_bytes() {
         use super::*;
+        use std::io::Cursor;
 
-        let mut reader = std::io::Cursor::new(&b""[..]);
+        let mut reader = Cursor::new(&b""[..]);
         Cameras::decode(&mut reader).unwrap_err();
     }
 
@@ -141,6 +147,7 @@ mod tests {
     #[test]
     fn encode() {
         use super::super::*;
+        use std::io::Cursor;
 
         let source = [
             (
@@ -176,7 +183,7 @@ mod tests {
 
         let target =
             &include_bytes!("../../../../examples/data/colmap/0/cameras.bin")[..];
-        let mut writer = std::io::Cursor::new(vec![]);
+        let mut writer = Cursor::new(vec![]);
         source.encode(&mut writer).unwrap();
         let output = writer.into_inner();
         assert_eq!(output, target);

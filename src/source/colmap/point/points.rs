@@ -54,10 +54,10 @@ mod tests {
     #[test]
     fn decode() {
         use super::*;
+        use std::io::Cursor;
 
         let source =
             &include_bytes!("../../../../examples/data/colmap/0/points3D.bin")[..];
-        let mut reader = std::io::Cursor::new(source);
 
         let targets = vec![
             Point {
@@ -101,6 +101,12 @@ mod tests {
                 color_rgb: [58, 67, 50],
             },
         ];
+
+        (0..128).for_each(|i| {
+            let mut reader = Cursor::new(&source[..i]);
+            Points::decode(&mut reader).unwrap_err();
+        });
+        let mut reader = Cursor::new(source);
         let output = Points::decode(&mut reader).unwrap();
         assert_eq!(output, targets);
     }

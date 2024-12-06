@@ -261,7 +261,7 @@ mod tests {
         let output = read_byte_after(reader, |b| b" Helo".contains(&b)).unwrap();
         assert_eq!(output, target);
 
-        read_byte_after(&mut Cursor::new([]), is_space).unwrap_err();
+        read_byte_after(&mut Cursor::new(&[][..]), is_space).unwrap_err();
 
         read_byte_after(&mut InvalidRead, is_null).unwrap_err();
     }

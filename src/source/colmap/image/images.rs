@@ -47,9 +47,9 @@ mod tests {
     #[test]
     fn decode() {
         use super::*;
+        use std::io::Cursor;
 
         let source = &include_bytes!("../../../../examples/data/colmap/0/images.bin")[..];
-        let mut reader = std::io::Cursor::new(source);
 
         let targets = [
             (
@@ -150,6 +150,12 @@ mod tests {
         ]
         .into_iter()
         .collect::<Images>();
+
+        (0..256).for_each(|i| {
+            let mut reader = Cursor::new(&source[..i]);
+            Images::decode(&mut reader).unwrap_err();
+        });
+        let mut reader = Cursor::new(source);
         let output = Images::decode(&mut reader).unwrap();
         assert_eq!(output, targets);
     }

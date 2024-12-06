@@ -356,6 +356,10 @@ mod tests {
         let target = vec![0.1, 0.4, 0.2, 0.5];
         let output = map.to_owned().into_values().collect::<Vec<_>>();
         assert_eq!(output, target);
+
+        let target = vec![(0, 0.1), (3, 0.4), (1, 0.2), (4, 0.5)];
+        let output = map.to_owned().into_par_iter().collect::<Vec<_>>();
+        assert_eq!(output, target);
     }
 
     #[test]
@@ -396,10 +400,10 @@ mod tests {
         let output = map.get_random_value_mut().copied();
         assert_eq!(output, target);
 
-        let mut map = IndexMap::<i16, f32>::with_capacity(1);
-        map.insert(-123, -4.5);
+        let mut map = IndexMap::<u8, f32>::with_capacity(1);
+        map.insert(123, -4.5);
 
-        let target = Some(&-123);
+        let target = Some(&123);
         let output = map.get_random_key();
         assert_eq!(output, target);
 
@@ -408,7 +412,7 @@ mod tests {
         assert_eq!(output, target);
 
         let target = Some(67.8);
-        map.insert(-123, 67.8);
+        map.insert(123, 67.8);
         let output = map.get_random_value_mut().copied();
         assert_eq!(output, target);
     }
