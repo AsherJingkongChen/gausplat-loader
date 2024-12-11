@@ -24,7 +24,7 @@ pub struct Image {
     ///
     /// It represents the rotation from world space to view space.
     ///
-    /// It is in **scalar-first** order, i.e., `[w, x, y, z]`.
+    /// It is in **scalar-first order**, i.e., `[w, x, y, z]`.
     pub quaternion: [f64; 4],
     /// Translation in view space.
     pub translation: [f64; 3],

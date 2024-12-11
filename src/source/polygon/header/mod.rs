@@ -174,7 +174,7 @@ impl FromStr for Header {
 
     #[inline]
     fn from_str(input: &str) -> Result<Self, Self::Err> {
-        Header::decode(&mut std::io::Cursor::new(input))
+        Header::decode(&mut std::io::Cursor::new(input.as_bytes()))
     }
 }
 
